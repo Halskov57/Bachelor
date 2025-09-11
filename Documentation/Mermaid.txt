@@ -1,0 +1,116 @@
+(opret bruger)
+sequenceDiagram
+    actor Bruger
+    participant Frontend
+    participant Backend
+    participant Database
+
+    Bruger->>Frontend: Udfylder oprettelsesformular
+    Bruger->>Frontend: Klikker 'Opret Bruger'
+
+    activate Frontend
+    Frontend->>Backend: createUserRequest(userData)
+    activate Backend
+
+    Backend->>Database: insertUser(userData)
+    activate Database
+    Database-->>Backend: returnSuccess(newUser.id)
+    deactivate Database
+
+    Backend-->>Frontend: creationSuccess("Bruger oprettet!")
+    activate Frontend
+    Frontend-->>Bruger: Viser success-side / sender til login
+    deactivate Frontend
+    deactivate Backend
+
+
+
+
+(login)
+    sequenceDiagram
+    actor Bruger
+    participant Frontend
+    participant Backend
+    participant Database
+
+    Bruger->>Frontend: Indtaster brugernavn & password
+    Bruger->>Frontend: Klikker 'Log Ind'
+
+    activate Frontend
+    Frontend->>Backend: sendLoginRequest(brugernavn, password)
+    activate Backend
+
+    Backend->>Database: findUser(brugernavn, hashedPassword)
+    activate Database
+    Database-->>Backend: returnUser(userData)
+    deactivate Database
+
+    alt Hvis bruger findes (login succes)
+        Backend->>Database: getProjectsForUser(user.id)
+        activate Database
+        Database-->>Backend: returnProjects(projektListe)
+        deactivate Database
+
+        Backend-->>Frontend: loginSuccess(projektListe)
+        activate Frontend
+        Frontend-->>Bruger: Viser projektside
+        deactivate Frontend
+
+    else Hvis bruger ikke findes (login fejl)
+        Backend-->>Frontend: loginFailure("Forkert bruger/pass")
+        activate Frontend
+        Frontend-->>Bruger: Viser fejlmeddelelse
+        deactivate Frontend
+    end
+
+    deactivate Backend
+
+
+(redigere projekt)
+sequenceDiagram
+    actor Bruger
+    participant Frontend
+    participant Backend
+    participant Database
+
+    Bruger->>Frontend: Vælger et projekt fra listen
+    activate Frontend
+    Frontend->>Backend: getProjectDetails(projectId)
+    activate Backend
+    Backend->>Database: fetchProjectData(projectId)
+    activate Database
+    Database-->>Backend: returnProjectData(data)
+    deactivate Database
+    Backend-->>Frontend: displayProjectDetails(data)
+    deactivate Backend
+    Frontend-->>Bruger: Viser projektdetaljer/redigeringsside
+    deactivate Frontend
+
+    alt Rediger data i projekt
+        Bruger->>Frontend: Ændrer data (f.eks. opgave, indstilling)
+        activate Frontend
+        Frontend->>Backend: updateProjectData(projectId, updatedData)
+        activate Backend
+        Backend->>Database: saveProjectData(projectId, updatedData)
+        activate Database
+        Database-->>Backend: returnSuccess()
+        deactivate Database
+        Backend-->>Frontend: updateSuccess("Data opdateret!")
+        deactivate Backend
+        Frontend-->>Bruger: Bekræfter opdatering
+        deactivate Frontend
+    
+    else Slet data fra projekt
+        Bruger->>Frontend: Vælger at slette et element
+        activate Frontend
+        Frontend->>Backend: deleteProjectItem(projectId, itemId)
+        activate Backend
+        Backend->>Database: removeProjectItem(projectId, itemId)
+        activate Database
+        Database-->>Backend: returnSuccess()
+        deactivate Database
+        Backend-->>Frontend: deleteSuccess("Element slettet!")
+        deactivate Backend
+        Frontend-->>Bruger: Bekræfter sletning
+        deactivate Frontend
+    end
