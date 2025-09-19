@@ -4,12 +4,19 @@ const LoginBox: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (mode === 'login') {
       alert(`Login: ${username}`);
     } else {
+      if (password !== password2) {
+        setError('Passwords do not match');
+        return;
+      }
       alert(`Create Account: ${username}`);
     }
   };
@@ -51,7 +58,12 @@ const LoginBox: React.FC = () => {
           <input
             type="checkbox"
             checked={mode === 'create'}
-            onChange={() => setMode(mode === 'login' ? 'create' : 'login')}
+            onChange={() => {
+              setMode(mode === 'login' ? 'create' : 'login');
+              setError('');
+              setPassword('');
+              setPassword2('');
+            }}
             style={{ opacity: 0, width: 0, height: 0 }}
           />
           <span
@@ -109,7 +121,7 @@ const LoginBox: React.FC = () => {
           onChange={e => setPassword(e.target.value)}
           style={{
             width: '100%',
-            marginBottom: '28px',
+            marginBottom: mode === 'create' ? '16px' : '28px',
             padding: '14px',
             borderRadius: '8px',
             border: '1px solid #022AFF',
@@ -119,6 +131,30 @@ const LoginBox: React.FC = () => {
             boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
           }}
         />
+        {mode === 'create' && (
+          <input
+            type="password"
+            placeholder="Repeat Password"
+            value={password2}
+            onChange={e => setPassword2(e.target.value)}
+            style={{
+              width: '100%',
+              marginBottom: '28px',
+              padding: '14px',
+              borderRadius: '8px',
+              border: '1px solid #022AFF',
+              background: 'rgba(240,240,255,0.95)',
+              color: '#222',
+              fontSize: '1.05rem',
+              boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
+            }}
+          />
+        )}
+        {error && (
+          <div style={{ color: '#d32f2f', marginBottom: '12px', textAlign: 'center', fontWeight: 600 }}>
+            {error}
+          </div>
+        )}
         <button
           type="submit"
           style={{
