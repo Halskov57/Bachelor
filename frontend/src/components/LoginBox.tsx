@@ -99,13 +99,13 @@ const LoginBox: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          placeholder="Username"
+          placeholder=" Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
           style={{
             width: '100%',
             marginBottom: '16px',
-            padding: '14px',
+            padding: '12px 0',
             borderRadius: '8px',
             border: '1px solid #022AFF',
             background: 'rgba(240,240,255,0.95)',
@@ -116,13 +116,13 @@ const LoginBox: React.FC = () => {
         />
         <input
           type="password"
-          placeholder="Password"
+          placeholder=" Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           style={{
             width: '100%',
             marginBottom: mode === 'create' ? '16px' : '28px',
-            padding: '14px',
+            padding: '12px 0',
             borderRadius: '8px',
             border: '1px solid #022AFF',
             background: 'rgba(240,240,255,0.95)',
@@ -134,13 +134,13 @@ const LoginBox: React.FC = () => {
         {mode === 'create' && (
           <input
             type="password"
-            placeholder="Repeat Password"
+            placeholder=" Repeat Password"
             value={password2}
             onChange={e => setPassword2(e.target.value)}
             style={{
               width: '100%',
               marginBottom: '28px',
-              padding: '14px',
+              padding: '12px 0',
               borderRadius: '8px',
               border: '1px solid #022AFF',
               background: 'rgba(240,240,255,0.95)',
