@@ -21,8 +21,8 @@ const logoStyle: React.CSSProperties = {
 const Header: React.FC = () => {
   return (
     <header style={headerStyle}>
-      <div style={logoStyle}>
         This is a bachelor project made by Nicolai and Jonas from Aarhus University in winter of 2025-2026
+      <div style={logoStyle}>
       </div>
       {/* You can add navigation links here */}
     </header>

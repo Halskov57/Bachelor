@@ -26,7 +26,7 @@ const LoginBox: React.FC = () => {
       style={{
         background: 'rgba(230,230,240,0.92)',
         borderRadius: '18px',
-        padding: '56px',
+        padding: '35px',
         maxWidth: '420px',
         minWidth: '340px',
         margin: 'auto',
