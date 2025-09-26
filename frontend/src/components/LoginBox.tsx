@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginBox: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
@@ -6,18 +7,49 @@ const LoginBox: React.FC = () => {
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (mode === 'login') {
-      alert(`Login: ${username}`);
+      try {
+        const res = await fetch('http://localhost:8081/users/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        if (res.ok) {
+          // Optionally store token/session here
+          navigate('/dashboard'); // Change to your target route
+        } else {
+          const data = await res.json();
+          setError(data.message || 'Login failed');
+        }
+      } catch (err) {
+        setError('Network error');
+      }
     } else {
       if (password !== password2) {
         setError('Passwords do not match');
         return;
       }
-      alert(`Create Account: ${username}`);
+      // Registration logic here (similar to login)
+      try {
+        const res = await fetch('http://localhost:8081/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        if (res.ok) {
+          navigate('/dashboard'); // Or show success message
+        } else {
+          const data = await res.json();
+          setError(data.message || 'Account creation failed');
+        }
+      } catch (err) {
+        setError('Network error');
+      }
     }
   };
 
