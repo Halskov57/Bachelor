@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
 import Admin from './pages/Admin';
+import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
 const PageTitle: React.FC = () => {
@@ -45,9 +46,21 @@ const App: React.FC = () => {
           <PageTitle />
           <Routes>
             <Route path="/" element={<LoginBox />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/project" element={<Project />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/dashboard" element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/project" element={
+              <PrivateRoute>
+                <Project />
+              </PrivateRoute>
+            } />
+            <Route path="/admin" element={
+              <PrivateRoute requiredRole="ADMIN">
+                <Admin />
+              </PrivateRoute>
+            } />
           </Routes>
         </main>
       </div>

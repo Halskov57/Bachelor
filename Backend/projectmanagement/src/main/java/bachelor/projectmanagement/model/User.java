@@ -10,6 +10,7 @@ public class User {
     private String id;
     private String username;
     private String hashedPassword;
+    private String role; // "USER" or "ADMIN"
 
     public User() {}
 
@@ -27,4 +28,12 @@ public class User {
 
     public String getHashedPassword() { return hashedPassword; }
     public void setHashedPassword(String hashedPassword) { this.hashedPassword = hashedPassword; }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 }

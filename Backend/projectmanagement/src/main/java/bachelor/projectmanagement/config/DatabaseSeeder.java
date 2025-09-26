@@ -13,13 +13,18 @@ public class DatabaseSeeder {
     @Bean
     CommandLineRunner seedUsers(UserRepository userRepository, UserService userService) {
         return args -> {
-            // Only seed if the collection is empty
             if (userRepository.count() == 0) {
+                // Regular users
                 userService.createUser("alice", "hashedPassword1");
                 userService.createUser("bob", "hashedPassword2");
                 userService.createUser("charlie", "hashedPassword3");
 
-                System.out.println("✅ Seeded 3 users into the database.");
+                // Admin user
+                var admin = userService.createUser("admin", "adminPassword");
+                admin.setRole("ADMIN");
+                userRepository.save(admin);
+
+                System.out.println("✅ Seeded 3 users and 1 admin into the database.");
             } else {
                 System.out.println("⚠ Users collection is not empty. Skipping seeding.");
             }

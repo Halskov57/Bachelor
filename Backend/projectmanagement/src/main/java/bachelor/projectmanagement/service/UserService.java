@@ -21,11 +21,10 @@ public class UserService {
             throw new RuntimeException("Username already exists");
         }
 
-        // Hash password using BCrypt
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
-        // Use salt as empty or keep it for legacy reasons
         User user = new User(username, hashedPassword);
+        user.setRole("USER"); // <-- assign USER role here
         return userRepository.save(user);
     }
 
@@ -34,5 +33,9 @@ public class UserService {
         if (user == null) return false;
 
         return passwordEncoder.matches(rawPassword, user.getHashedPassword());
+    }
+
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

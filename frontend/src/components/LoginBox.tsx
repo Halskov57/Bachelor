@@ -20,8 +20,13 @@ const LoginBox: React.FC = () => {
           body: JSON.stringify({ username, password }),
         });
         if (res.ok) {
-          // Optionally store token/session here
-          navigate('/dashboard'); // Change to your target route
+          const data = await res.json();
+          if (data.token) {
+            localStorage.setItem('token', data.token); // Save JWT for later use
+            navigate('/dashboard');
+          } else {
+            setError('Login failed: No token received');
+          }
         } else {
           const data = await res.json();
           setError(data.message || 'Login failed');
