@@ -42,7 +42,10 @@ const LoginBox: React.FC = () => {
           body: JSON.stringify({ username, password }),
         });
         if (res.ok) {
-          navigate('/dashboard'); // Or show success message
+          setError('Account created');
+          setMode('login');
+          setPassword('');
+          setPassword2('');
         } else {
           const data = await res.json();
           setError(data.message || 'Account creation failed');
@@ -131,59 +134,78 @@ const LoginBox: React.FC = () => {
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          placeholder=" Username"
+          placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
           style={{
             width: '100%',
             marginBottom: '16px',
-            padding: '12px 0',
+            paddingLeft: '12px',
+            paddingRight: '12px',
+            paddingTop: '12px',
+            paddingBottom: '12px',
             borderRadius: '8px',
             border: '1px solid #022AFF',
             background: 'rgba(240,240,255,0.95)',
             color: '#222',
             fontSize: '1.05rem',
             boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
+            boxSizing: 'border-box', // <-- add this line
           }}
         />
         <input
           type="password"
-          placeholder=" Password"
+          placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           style={{
             width: '100%',
             marginBottom: mode === 'create' ? '16px' : '28px',
-            padding: '12px 0',
+            paddingLeft: '12px',
+            paddingRight: '12px',
+            paddingTop: '12px',
+            paddingBottom: '12px',
             borderRadius: '8px',
             border: '1px solid #022AFF',
             background: 'rgba(240,240,255,0.95)',
             color: '#222',
             fontSize: '1.05rem',
             boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
+            boxSizing: 'border-box', // <-- add this line
           }}
         />
         {mode === 'create' && (
           <input
             type="password"
-            placeholder=" Repeat Password"
+            placeholder="Repeat Password"
             value={password2}
             onChange={e => setPassword2(e.target.value)}
             style={{
               width: '100%',
               marginBottom: '28px',
-              padding: '12px 0',
+              paddingLeft: '12px',
+              paddingRight: '12px',
+              paddingTop: '12px',
+              paddingBottom: '12px',
               borderRadius: '8px',
               border: '1px solid #022AFF',
               background: 'rgba(240,240,255,0.95)',
               color: '#222',
               fontSize: '1.05rem',
               boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
+              boxSizing: 'border-box', // <-- add this line
             }}
           />
         )}
         {error && (
-          <div style={{ color: '#d32f2f', marginBottom: '12px', textAlign: 'center', fontWeight: 600 }}>
+          <div
+            style={{
+              color: error === 'Account created' ? '#388e3c' : '#d32f2f', // green for success, red for error
+              marginBottom: '12px',
+              textAlign: 'center',
+              fontWeight: 600,
+            }}
+          >
             {error}
           </div>
         )}
