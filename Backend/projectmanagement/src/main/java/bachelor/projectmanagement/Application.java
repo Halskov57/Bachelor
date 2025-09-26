@@ -27,7 +27,7 @@ public class Application {
             try {
                 Document ping = mongoTemplate.executeCommand("{ ping: 1 }");
                 System.out.println("✅ Connection successful! Ping response: " + ping.toJson());
-                
+
                 System.out.println("Collections in database: " + mongoTemplate.getCollectionNames());
 
             } catch (Exception e) {
