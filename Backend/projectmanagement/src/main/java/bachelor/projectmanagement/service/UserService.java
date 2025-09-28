@@ -17,8 +17,8 @@ public class UserService {
     }
 
     public User createUser(String username, String rawPassword) {
-        if (userRepository.findByUsername(username) != null) {
-            throw new RuntimeException("Username already exists");
+    if (userRepository.findByUsername(username).isPresent()) {
+        throw new RuntimeException("Username already exists");
         }
 
         String hashedPassword = passwordEncoder.encode(rawPassword);
@@ -29,6 +29,10 @@ public class UserService {
     }
 
     public boolean verifyPassword(String username, String rawPassword) {
+    return userRepository.findByUsername(username)
+            .map(user -> passwordEncoder.matches(rawPassword, user.getHashedPassword()))
+            .orElse(false);
+}
         User user = userRepository.findByUsername(username);
         if (user == null) return false;
 
