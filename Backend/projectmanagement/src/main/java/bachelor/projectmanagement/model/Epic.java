@@ -19,7 +19,6 @@ public class Epic {
     @DBRef
     private User owner;
 
-    @DBRef
     @JsonIgnore
     private List<Feature> features = new ArrayList<>();
 

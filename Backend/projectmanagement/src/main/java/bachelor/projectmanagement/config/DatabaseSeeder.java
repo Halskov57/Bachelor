@@ -1,6 +1,4 @@
 package bachelor.projectmanagement.config;
-
-
 import bachelor.projectmanagement.model.Project;
 import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.service.ProjectService;
@@ -8,6 +6,11 @@ import bachelor.projectmanagement.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import bachelor.projectmanagement.model.Epic;
+import bachelor.projectmanagement.model.Feature;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 public class DatabaseSeeder {
@@ -15,34 +18,79 @@ public class DatabaseSeeder {
 @Bean
 CommandLineRunner seedUsers(UserRepository userRepository, UserService userService, ProjectService projectService) {
     return args -> {
-        String[] usernames = {"alice", "bob", "charlie"};
-
-        for (String username : usernames) {
-            // Check if the user already exists
-            if (userRepository.findByUsername(username).isEmpty()) {
-                userService.createUser(username, "hashedPassword");
-                System.out.println("✅ Created user " + username);
-            } else {
-                System.out.println("⚠ User " + username + " already exists, skipping creation");
-            }
-
-            // Now create a project for this user if none exists
-            var user = userRepository.findByUsername(username).get();
-            if (user.getProjects() == null || user.getProjects().isEmpty()) {
-                Project project = new Project();
-                project.setTitle(username + "'s Project");
-                project.setDescription("This is a project for " + username);
-                project.setDepth(0);
-                project.setCourseLevel(7);
-                projectService.createProject(project, username);
-                System.out.println("✅ Created project for " + username);
-            }
+        // Create users if they don't exist
+        if (userRepository.findByUsername("alice").isEmpty()) {
+            userService.createUser("alice", "hashedPassword");
+            System.out.println("✅ Created user alice");
         }
-        var admin = userService.createUser("admin", "adminPassword");
-        admin.setRole("ADMIN");
-        userRepository.save(admin);
-        System.out.println("✅ Created admin user with username 'admin' and password 'adminPassword'");
+        if (userRepository.findByUsername("bob").isEmpty()) {
+            userService.createUser("bob", "hashedPassword");
+            System.out.println("✅ Created user bob");
+        }
+        if (userRepository.findByUsername("charlie").isEmpty()) {
+            userService.createUser("charlie", "hashedPassword");
+            System.out.println("✅ Created user charlie");
+        }
+
+        // Shared project for alice and bob
+        var alice = userRepository.findByUsername("alice").get();
+
+        // Only create the shared project if neither has any projects
+        if ((alice.getProjects() == null || alice.getProjects().isEmpty())) {
+            // Create project for alice
+            createTestProjectForUser("alice", projectService, userRepository);
+        }
+
+        // Admin user
+        if (userRepository.findByUsername("admin").isEmpty()) {
+            var admin = userService.createUser("admin", "adminPassword");
+            admin.setRole("ADMIN");
+            userRepository.save(admin);
+            System.out.println("✅ Created admin user with username 'admin' and password 'adminPassword'");
+        } else {
+            System.out.println("ℹ️ Admin user already exists, skipping creation.");
+        }
     };
 } 
+
+private void createTestProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
+    int epicCount = 5;
+    int featurePerEpic = 4;
+
+    var userOpt = userRepository.findByUsername(username);
+    if (userOpt.isEmpty()) {
+        System.out.println("❌ User " + username + " does not exist, skipping test project creation.");
+        return;
+    }
+    var user = userOpt.get();
+
+    // Only create if user has no projects
+    if (user.getProjects() == null || user.getProjects().isEmpty()) {
+        Project project = new Project();
+        project.setTitle("Test Project");
+        project.setDescription("A project with multiple epics and features for frontend testing.");
+        project.setDepth(0);
+        project.setCourseLevel(7);
+
+        // Add epics and features
+        List<Epic> epics = new ArrayList<>();
+        for (int i = 1; i <= epicCount; i++) {
+            Epic epic = new Epic();
+            epic.setTitle("Epic " + i);
+            List<Feature> features = new ArrayList<>();
+            for (int j = 1; j <= featurePerEpic; j++) {
+                Feature feature = new Feature();
+                feature.setTitle("Feature " + i + "." + j);
+                features.add(feature);
+            }
+            epic.setFeatures(features);
+            epics.add(epic);
+        }
+        project.setEpics(epics);
+
+        projectService.createProject(project, username);
+        System.out.println("✅ Created test project for " + username);
+    }
+}
 }
 

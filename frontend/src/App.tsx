@@ -33,24 +33,31 @@ const App: React.FC = () => {
           position: 'relative',
           width: '100%'
         }}>
-          <Beams
-            beamWidth={0.1}
-            beamHeight={25}
-            beamNumber={200}
-            lightColor="#022AFF"
-            speed={2}
-            noiseIntensity={1.75}
-            scale={0.5}
-            rotation={55}
-          />
+          <div style={{
+            position: 'fixed',
+            zIndex: 0, // Make sure this is 0
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            pointerEvents: 'none',
+          }}>
+            <Beams
+              beamWidth={0.1}
+              beamHeight={25}
+              beamNumber={200}
+              lightColor="#022AFF"
+              speed={2}
+              noiseIntensity={1.75}
+              scale={0.5}
+              rotation={55}
+            />
+          </div>
+          {/* Main content below */}
           <PageTitle />
           <Routes>
             <Route path="/" element={<LoginBox />} />
-            <Route path="/dashboard" element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/project" element={
               <PrivateRoute>
                 <Project />

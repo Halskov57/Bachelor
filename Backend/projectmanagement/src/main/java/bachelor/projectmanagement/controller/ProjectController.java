@@ -27,6 +27,11 @@ public class ProjectController {
         return projectService.getProjectsByUsername(username);
     }
 
+    @GetMapping("/{id}")
+    public Project getProjectById(@PathVariable String id) {
+        return projectService.getProjectById(id);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteProject(@PathVariable String id) {
         projectService.deleteProject(id);

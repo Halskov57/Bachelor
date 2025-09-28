@@ -106,4 +106,9 @@ public class ProjectService {
         throw new RuntimeException("Feature not found: " + featureId);
     }
     }
+
+    public Project getProjectById(String id) {
+        return projectRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Project not found: " + id));
+    }
 }

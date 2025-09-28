@@ -21,7 +21,6 @@ public class Project {
     @DBRef
     private User owner;
 
-    @DBRef
     private List<Epic> epics = new ArrayList<>();
 
     public Project() {}

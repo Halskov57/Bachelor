@@ -1,7 +1,6 @@
 package bachelor.projectmanagement.model;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -16,7 +15,6 @@ public class Feature {
     private String description;
     private int depth;
 
-    @DBRef
     @JsonIgnore
     private List<Task> tasks = new ArrayList<>();
 
