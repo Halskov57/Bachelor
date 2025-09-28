@@ -32,14 +32,10 @@ public class UserService {
     return userRepository.findByUsername(username)
             .map(user -> passwordEncoder.matches(rawPassword, user.getHashedPassword()))
             .orElse(false);
-}
-        User user = userRepository.findByUsername(username);
-        if (user == null) return false;
-
-        return passwordEncoder.matches(rawPassword, user.getHashedPassword());
     }
 
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsername(username)
+                .orElse(null);
     }
 }
