@@ -1,8 +1,5 @@
 package bachelor.projectmanagement.model;
-
 import org.springframework.data.annotation.Id;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +12,6 @@ public class Feature {
     private String description;
     private int depth;
 
-    @JsonIgnore
     private List<Task> tasks = new ArrayList<>();
 
     public Feature() {}

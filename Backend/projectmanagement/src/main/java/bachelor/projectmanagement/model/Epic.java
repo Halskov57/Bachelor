@@ -3,7 +3,6 @@ package bachelor.projectmanagement.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +18,6 @@ public class Epic {
     @DBRef
     private User owner;
 
-    @JsonIgnore
     private List<Feature> features = new ArrayList<>();
 
     public Epic() {}

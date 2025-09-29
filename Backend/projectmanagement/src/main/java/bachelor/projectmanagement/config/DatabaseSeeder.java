@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import bachelor.projectmanagement.model.Epic;
 import bachelor.projectmanagement.model.Feature;
+import bachelor.projectmanagement.model.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,7 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
 private void createTestProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
     int epicCount = 5;
     int featurePerEpic = 4;
+    int tasksPerFeature = 2; // <-- Add this
 
     var userOpt = userRepository.findByUsername(username);
     if (userOpt.isEmpty()) {
@@ -81,6 +83,16 @@ private void createTestProjectForUser(String username, ProjectService projectSer
             for (int j = 1; j <= featurePerEpic; j++) {
                 Feature feature = new Feature();
                 feature.setTitle("Feature " + i + "." + j);
+
+                // Add work tasks to each feature
+                List<Task> Tasks = new ArrayList<>();
+                for (int k = 1; k <= tasksPerFeature; k++) {
+                    Task task = new Task();
+                    task.setTitle("Task " + i + "." + j + "." + k);
+                    Tasks.add(task);
+                }
+                feature.setTasks(Tasks);
+
                 features.add(feature);
             }
             epic.setFeatures(features);

@@ -1,6 +1,6 @@
 .page-title {
   position: absolute;
-  top: 5%; /* I set this back to 25%, 7% is very high */
+  top: 1%; /* I set this back to 25%, 7% is very high */
   left: 50%;
   transform: translateX(-50%);
   color: white;
