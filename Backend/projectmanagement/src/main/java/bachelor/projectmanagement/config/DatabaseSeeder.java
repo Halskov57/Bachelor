@@ -23,23 +23,19 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
         if (userRepository.findByUsername("alice").isEmpty()) {
             userService.createUser("alice", "hashedPassword");
             System.out.println("✅ Created user alice");
+            // Create a test project for alice
+            createTestProjectForUser("alice", projectService, userRepository);
+
         }
         if (userRepository.findByUsername("bob").isEmpty()) {
             userService.createUser("bob", "hashedPassword");
             System.out.println("✅ Created user bob");
+            // Create a minimal project for bob
+            createMinimalProjectForUser("bob", projectService, userRepository);
         }
         if (userRepository.findByUsername("charlie").isEmpty()) {
             userService.createUser("charlie", "hashedPassword");
             System.out.println("✅ Created user charlie");
-        }
-
-        // Shared project for alice and bob
-        var alice = userRepository.findByUsername("alice").get();
-
-        // Only create the shared project if neither has any projects
-        if ((alice.getProjects() == null || alice.getProjects().isEmpty())) {
-            // Create project for alice
-            createTestProjectForUser("alice", projectService, userRepository);
         }
 
         // Admin user
@@ -103,6 +99,63 @@ private void createTestProjectForUser(String username, ProjectService projectSer
         projectService.createProject(project, username);
         System.out.println("✅ Created test project for " + username);
     }
+}
+
+private void createMinimalProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
+    var userOpt = userRepository.findByUsername(username);
+    if (userOpt.isEmpty()) {
+        System.out.println("❌ User " + username + " does not exist, skipping minimal project creation.");
+        return;
+    }
+    var user = userOpt.get();
+
+    // Only create if user has no projects named "Minimal Project"
+    boolean hasMinimal = user.getProjects() != null && user.getProjects().stream()
+        .anyMatch(p -> "Minimal Project".equals(p.getTitle()));
+    if (hasMinimal) {
+        System.out.println("ℹ️ Minimal project already exists for " + username);
+        return;
+    }
+
+    // Create Task
+    Task task = new Task();
+    task.setTitle("Research and knowledge gathering");
+    task.setDescription("Watch the video about the relay and calculate the required values for the resistors.");
+    task.setDepth(3);
+    task.setUsers(List.of(user.getUsername()));
+
+    // Create Feature
+    Feature feature = new Feature();
+    feature.setTitle("Create the electronics");
+    feature.setDescription("Create the required electronics for the car. To drive forward and backwards at different speeds.");
+    feature.setDepth(2);
+    List<Task> tasks = new ArrayList<>();
+    tasks.add(task);
+    feature.setTasks(tasks);
+
+    // Create Epic
+    Epic epic = new Epic();
+    epic.setTitle("Motor");
+    epic.setDescription("Creating the motor functionality for the car.");
+    epic.setDepth(1);
+    epic.setOwner(user);
+    List<Feature> features = new ArrayList<>();
+    features.add(feature);
+    epic.setFeatures(features);
+
+    // Create Project
+    Project project = new Project();
+    project.setTitle("1 semester project");
+    project.setDescription("This is the car project for 1 semester.");
+    project.setDepth(0);
+    project.setCourseLevel(1);
+    project.setOwner(user);
+    List<Epic> epics = new ArrayList<>();
+    epics.add(epic);
+    project.setEpics(epics);
+
+    projectService.createProject(project, username);
+    System.out.println("✅ Created minimal project for " + username);
 }
 }
 
