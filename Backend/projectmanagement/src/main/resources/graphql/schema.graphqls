@@ -1,0 +1,61 @@
+type User {
+    id: ID!
+    username: String!
+    projects: [Project!]!
+}
+
+type Project {
+    projectId: ID!
+    title: String!
+    description: String
+    courseLevel: Int
+    depth: Int
+    createdOn: String
+    owner: User!
+    epics: [Epic!]
+}
+
+type Epic {
+    id: ID!
+    title: String!
+    description: String
+    features: [Feature!]
+}
+
+type Feature {
+    id: ID!
+    title: String!
+    description: String
+    tasks: [Task!]
+}
+
+type Task {
+    id: ID!
+    title: String!
+    description: String
+    status: String!
+}
+
+
+type Query {
+    users: [User!]!
+    userByUsername(username: String!): User
+
+    projects: [Project!]!
+    projectsByUsername(username: String!): [Project!]!
+    projectById(id: ID!): Project
+}
+
+
+type Mutation {
+    updateUserUsername(id: ID!, newUsername: String!): User!
+    updateProjectTitle(projectId: ID!, newTitle: String!): Project!
+    updateProjectDescription(projectId: ID!, newDescription: String!): Project!
+    updateEpicTitle(epicId: ID!, newTitle: String!): Epic!
+    updateTaskTitle(taskId: ID!, newTitle: String!): Task!
+    updateTaskStatus(taskId: ID!, completed: Boolean!): Task!
+}
+
+type Subscription {
+    projectAdded: Project!
+}
