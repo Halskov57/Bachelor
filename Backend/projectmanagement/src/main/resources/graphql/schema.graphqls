@@ -5,7 +5,7 @@ type User {
 }
 
 type Project {
-    projectId: ID!
+    id: ID!
     title: String!
     description: String
     courseLevel: Int
@@ -36,24 +36,25 @@ type Task {
     status: String!
 }
 
-
 type Query {
     users: [User!]!
     userByUsername(username: String!): User
-
     projects: [Project!]!
     projectsByUsername(username: String!): [Project!]!
     projectById(id: ID!): Project
 }
 
-
 type Mutation {
     updateUserUsername(id: ID!, newUsername: String!): User!
     updateProjectTitle(projectId: ID!, newTitle: String!): Project!
     updateProjectDescription(projectId: ID!, newDescription: String!): Project!
-    updateEpicTitle(epicId: ID!, newTitle: String!): Epic!
-    updateTaskTitle(taskId: ID!, newTitle: String!): Task!
-    updateTaskStatus(taskId: ID!, completed: Boolean!): Task!
+    updateEpicTitle(projectId: ID!, epicId: ID!, newTitle: String!): Epic!
+    updateEpicDescription(projectId: ID!, epicId: ID!, newDescription: String!): Epic!
+    updateFeatureTitle(projectId: ID!, epicId: ID!, featureId: ID!, newTitle: String!): Feature!
+    updateFeatureDescription(projectId: ID!, epicId: ID!, featureId: ID!, newDescription: String!): Feature!
+    updateTaskTitle(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newTitle: String!): Task!
+    updateTaskDescription(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDescription: String!): Task!
+    updateTaskStatus(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newStatus: String!): Task!
 }
 
 type Subscription {

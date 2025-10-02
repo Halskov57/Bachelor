@@ -1,11 +1,16 @@
 package bachelor.projectmanagement.graphql;
 
-import bachelor.projectmanagement.model.*;
-import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.service.UserService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
+import bachelor.projectmanagement.model.User;
+import bachelor.projectmanagement.model.Project;
+import bachelor.projectmanagement.model.Epic;
+import bachelor.projectmanagement.model.Feature;
+import bachelor.projectmanagement.model.Task;
+import bachelor.projectmanagement.service.ProjectService;
 
 import java.util.List;
 
@@ -24,88 +29,120 @@ public class ProjectResolver {
     }
 
     @QueryMapping
-    public Project projectById(@Argument String projectId) {
-        return projectService.getProjectById(projectId);
+    public Project projectById(@Argument String id) {
+        return projectService.getProjectById(id);
     }
 
     @MutationMapping
-    public Project createProject(@Argument String username, @Argument String title, @Argument String description) {
-        Project project = new Project();
-        project.setTitle(title);
-        project.setDescription(description);
-        return projectService.createProject(project, username);
+    public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
+        Project project = projectService.getProjectById(projectId);
+        if (project == null) return null;
+        project.setTitle(newTitle);
+        Project result = projectService.save(project);
+        if (result.getProjectId() == null) result.setProjectId(projectId);
+        return result;
     }
 
     @MutationMapping
-    public Epic addEpicToProject(@Argument String projectId, @Argument String title, @Argument String description) {
-        Epic epic = new Epic();
-        epic.setTitle(title);
-        epic.setDescription(description);
-        return projectService.addEpicToProject(projectId, epic);
+    public Project updateProjectDescription(@Argument String projectId, @Argument String newDescription) {
+        Project project = projectService.getProjectById(projectId);
+        if (project == null) return null;
+        project.setDescription(newDescription);
+        Project result = projectService.save(project);
+        if (result.getProjectId() == null) result.setProjectId(projectId);
+        return result;
     }
 
     @MutationMapping
-    public Epic updateEpic(@Argument String projectId, @Argument String epicId, @Argument String title, @Argument String description) {
-        Epic epic = new Epic();
+    public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
+        Epic epic = new Epic(newTitle, null, 0, null);
         epic.setEpicId(epicId);
-        epic.setTitle(title);
-        epic.setDescription(description);
-        return projectService.updateEpic(projectId, epic);
+        Epic result = projectService.updateEpic(projectId, epic);
+        if (result.getEpicId() == null) result.setEpicId(epicId);
+        return result;
     }
 
     @MutationMapping
-    public Feature addFeatureToEpic(@Argument String projectId, @Argument String epicId, @Argument String title, @Argument String description) {
-        Feature feature = new Feature();
-        feature.setTitle(title);
-        feature.setDescription(description);
-        return projectService.addFeatureToEpic(projectId, epicId, feature);
+    public Epic updateEpicDescription(@Argument String projectId, @Argument String epicId, @Argument String newDescription) {
+        Epic epic = new Epic(null, newDescription, 0, null);
+        epic.setEpicId(epicId);
+        Epic result = projectService.updateEpic(projectId, epic);
+        if (result.getEpicId() == null) result.setEpicId(epicId);
+        return result;
     }
 
     @MutationMapping
-    public Feature updateFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String title, @Argument String description) {
-        Feature feature = new Feature();
+    public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
+        Feature feature = new Feature(newTitle, null, 0);
         feature.setFeatureId(featureId);
-        feature.setTitle(title);
-        feature.setDescription(description);
-        return projectService.updateFeature(projectId, epicId, feature);
+        Feature result = projectService.updateFeature(projectId, epicId, feature);
+        if (result.getFeatureId() == null) result.setFeatureId(featureId);
+        return result;
     }
 
     @MutationMapping
-    public Task addTaskToFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String title, @Argument String description, @Argument String status) {
-        Task task = new Task();
-        task.setTitle(title);
-        task.setDescription(description);
-        task.setStatus(status);
-        return projectService.addTaskToFeature(projectId, epicId, featureId, task);
+    public Feature updateFeatureDescription(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newDescription) {
+        Feature feature = new Feature(null, newDescription, 0);
+        feature.setFeatureId(featureId);
+        Feature result = projectService.updateFeature(projectId, epicId, feature);
+        if (result.getFeatureId() == null) result.setFeatureId(featureId);
+        return result;
     }
 
     @MutationMapping
-    public Task updateTask(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String taskId, @Argument String title, @Argument String description, @Argument String status) {
-        Task task = new Task();
-        task.setTaskId(taskId);
-        task.setTitle(title);
-        task.setDescription(description);
-        task.setStatus(status);
-        return projectService.updateTask(projectId, epicId, featureId, task);
+    public Task updateTaskTitle(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId,
+            @Argument String newTitle) {
+
+        Task updatedTask = new Task(newTitle, null, 0, null, null);
+        updatedTask.setTaskId(taskId);
+
+        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
+
+        if (result.getTaskId() == null) result.setTaskId(taskId);
+        if (result.getStatus() == null) result.setStatus("TODO");
+
+        return result;
     }
 
     @MutationMapping
-    public void deleteProject(@Argument String projectId) {
-        projectService.deleteProject(projectId);
+    public Task updateTaskDescription(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId,
+            @Argument String newDescription) {
+
+        Task updatedTask = new Task(null, newDescription, 0, null, null);
+        updatedTask.setTaskId(taskId);
+
+        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
+
+        if (result.getTaskId() == null) result.setTaskId(taskId);
+        if (result.getStatus() == null) result.setStatus("TODO");
+
+        return result;
     }
 
     @MutationMapping
-    public void deleteEpic(@Argument String projectId, @Argument String epicId) {
-        projectService.deleteEpicFromProject(projectId, epicId);
-    }
+    public Task updateTaskStatus(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId,
+            @Argument String newStatus) {
 
-    @MutationMapping
-    public void deleteFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId) {
-        projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
-    }
+        Task updatedTask = new Task(null, null, 0, null, newStatus);
+        updatedTask.setTaskId(taskId);
 
-    @MutationMapping
-    public void deleteTask(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String taskId) {
-        projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
+
+        if (result.getTaskId() == null) result.setTaskId(taskId);
+        if (result.getStatus() == null) result.setStatus(newStatus);
+
+        return result;
     }
 }

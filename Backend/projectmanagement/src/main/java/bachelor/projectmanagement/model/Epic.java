@@ -48,4 +48,8 @@ public class Epic {
 
     public List<Feature> getFeatures() { return features; }
     public void setFeatures(List<Feature> features) { this.features = features != null ? features : new ArrayList<>(); }
+
+    public String getId() {
+        return epicId;
+    }
 }

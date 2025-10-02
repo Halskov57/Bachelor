@@ -6,6 +6,7 @@ import bachelor.projectmanagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ProjectService {
@@ -23,6 +24,9 @@ public class ProjectService {
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         project.setOwner(owner);
+
+        assignIdsToEmbeddedObjects(project);
+
         Project savedProject = projectRepository.save(project);
 
         owner.getProjects().add(savedProject);
@@ -214,5 +218,29 @@ public class ProjectService {
 
     public Project save(Project project) {
         return projectRepository.save(project);
+    }
+
+    private void assignIdsToEmbeddedObjects(Project project) {
+        if (project.getEpics() != null) {
+            for (Epic epic : project.getEpics()) {
+                if (epic.getEpicId() == null) {
+                    epic.setEpicId(UUID.randomUUID().toString());
+                }
+                if (epic.getFeatures() != null) {
+                    for (Feature feature : epic.getFeatures()) {
+                        if (feature.getFeatureId() == null) {
+                            feature.setFeatureId(UUID.randomUUID().toString());
+                        }
+                        if (feature.getTasks() != null) {
+                            for (Task task : feature.getTasks()) {
+                                if (task.getTaskId() == null) {
+                                    task.setTaskId(UUID.randomUUID().toString());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
