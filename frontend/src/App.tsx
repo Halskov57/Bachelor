@@ -18,24 +18,18 @@ const PageTitle: React.FC = () => {
   return <h1 className="page-title">{title}</h1>;
 };
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const location = useLocation();
+
   return (
-    <BrowserRouter>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        width: '100vw'
-      }}>
-        <Header />
-        <main style={{
-          flex: 1,
-          position: 'relative',
-          width: '100%'
-        }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
+      <Header />
+      <main style={{ flex: 1, position: 'relative', width: '100%' }}>
+        {/* Only show Beams if not on /project */}
+        {location.pathname !== '/project' && (
           <div style={{
             position: 'fixed',
-            zIndex: 0, // Make sure this is 0
+            zIndex: 0,
             top: 0,
             left: 0,
             width: '100vw',
@@ -53,26 +47,34 @@ const App: React.FC = () => {
               rotation={55}
             />
           </div>
-          {/* Main content below */}
-          <PageTitle />
-          <Routes>
-            <Route path="/" element={<LoginBox />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/project" element={
-              <PrivateRoute>
-                <Project />
-              </PrivateRoute>
-            } />
-            <Route path="/admin" element={
-              <PrivateRoute requiredRole="ADMIN">
-                <Admin />
-              </PrivateRoute>
-            } />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+        )}
+        {/* Main content below */}
+        <PageTitle />
+        <Routes>
+          <Route path="/" element={<LoginBox />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/project" element={
+            <PrivateRoute>
+              <Project />
+            </PrivateRoute>
+          } />
+          <Route path="/admin" element={
+            <PrivateRoute requiredRole="ADMIN">
+              <Admin />
+            </PrivateRoute>
+          } />
+        </Routes>
+      </main>
+    </div>
   );
-}
+};
+
+const App: React.FC = () => (
+  <BrowserRouter>
+    <AppContent />
+  </BrowserRouter>
+);
+
+
 
 export default App;

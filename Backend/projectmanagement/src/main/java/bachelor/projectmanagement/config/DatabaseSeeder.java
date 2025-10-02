@@ -124,6 +124,12 @@ private void createMinimalProjectForUser(String username, ProjectService project
     task.setDepth(3);
     task.setUsers(List.of(user.getUsername()));
 
+    Task task1 = new Task();
+    task1.setTitle("Create the hardware design and schematic");
+    task1.setDescription("Use the component list to solder the schematic and PCB layout.");
+    task1.setDepth(3);
+    task1.setUsers(List.of(user.getUsername()));
+
     // Create Feature
     Feature feature = new Feature();
     feature.setTitle("Create the electronics");
@@ -131,6 +137,7 @@ private void createMinimalProjectForUser(String username, ProjectService project
     feature.setDepth(2);
     List<Task> tasks = new ArrayList<>();
     tasks.add(task);
+    tasks.add(task1);
     feature.setTasks(tasks);
 
     // Create Epic
@@ -143,6 +150,14 @@ private void createMinimalProjectForUser(String username, ProjectService project
     features.add(feature);
     epic.setFeatures(features);
 
+    Epic epic1 = new Epic();
+    epic1.setTitle("Light");
+    epic1.setDescription("Creating the light functionality for the car.");
+    epic1.setDepth(1);
+    epic1.setOwner(user);
+    List<Feature> features1 = new ArrayList<>();
+    features1.add(feature);
+
     // Create Project
     Project project = new Project();
     project.setTitle("1 semester project");
@@ -152,6 +167,7 @@ private void createMinimalProjectForUser(String username, ProjectService project
     project.setOwner(user);
     List<Epic> epics = new ArrayList<>();
     epics.add(epic);
+    epics.add(epic1);
     project.setEpics(epics);
 
     projectService.createProject(project, username);

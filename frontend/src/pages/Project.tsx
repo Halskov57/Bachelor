@@ -1,45 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import Tree from 'react-d3-tree';
 
-const TreeView = ({ project }: { project: any }) => (
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
-    <ul style={{ textAlign: 'left', color: '#fff', minWidth: 300, borderLeft: '2px solid #022AFF', paddingLeft: 20 }}>
-      <li>
-        <span style={{ fontWeight: 700, color: '#022AFF' }}>{project.title || project.name}</span>
-        <ul style={{ borderLeft: '2px solid #022AFF', marginLeft: 20, paddingLeft: 20 }}>
-          {project.epics && project.epics.map((epic: any) => (
-            <li key={epic.id || epic._id || epic.title}>
-              <span style={{ fontWeight: 600 }}>{epic.title}</span>
-              {epic.features && (
-                <ul style={{ borderLeft: '2px solid #022AFF', marginLeft: 20, paddingLeft: 20 }}>
-                  {epic.features.map((feature: any) => (
-                    <li key={feature.id || feature._id || feature.title}>
-                      <span style={{ fontWeight: 500 }}>{feature.title}</span>
-                      {feature.tasks && (
-                        <ul style={{ borderLeft: '2px solid #022AFF', marginLeft: 20, paddingLeft: 20 }}>
-                          {feature.tasks.map((task: any) => (
-                            <li key={task.id || task._id || task.title}>
-                              <span>{task.title}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </li>
-    </ul>
-  </div>
-);
+function toTreeData(project: any) {
+  if (!project || !(project.title || project.name)) return null;
+  return {
+    name: String(project.title || project.name),
+    type: 'project',
+    children: (project.epics || []).map((epic: any) => ({
+      name: String(epic.title),
+      type: 'epic',
+      children: (epic.features || []).map((feature: any) => ({
+        name: String(feature.title),
+        type: 'feature',
+        children: (feature.tasks || []).map((task: any) => ({
+          name: String(task.title),
+          type: 'task',
+        })),
+      })),
+    })),
+  };
+}
 
 const Project: React.FC = () => {
   const [project, setProject] = useState<any>(null);
+  const [view, setView] = useState<'list' | 'tree'>('list');
   const [expandedEpic, setExpandedEpic] = useState<string | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
-  const [view, setView] = useState<'list' | 'tree'>('list');
+  const treeContainerRef = useRef<HTMLDivElement>(null);
+  const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -50,16 +38,122 @@ const Project: React.FC = () => {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
-      .then(data => {
-        setProject(data);
-      });
+      .then(data => setProject(data));
   }, []);
+
+  const treeData = useMemo(() => {
+    const tree = toTreeData(project);
+    return tree ? [tree] : [];
+  }, [project]);
+
+  useEffect(() => {
+    if (treeContainerRef.current) {
+      const { width } = treeContainerRef.current.getBoundingClientRect();
+      setTranslate({ x: width / 2, y: 80 });
+    }
+  }, [view, project]);
+
+  // Color and style logic for both views
+  const getNodeStyle = (type: string) => {
+    switch (type) {
+      case 'project':
+        return {
+          background: '#022AFF',
+          color: '#fff',
+          border: 'none',
+          fontWeight: 500,
+        };
+      case 'epic':
+        return {
+          background: '#022AFF',
+          color: '#fff',
+          border: 'none',
+          fontWeight: 500,
+        };
+      case 'feature':
+        return {
+          background: '#fff',
+          color: '#022AFF',
+          border: '1.5px solid #022AFF',
+          fontWeight: 400,
+        };
+      case 'task':
+        return {
+          background: '#e6f0ff',
+          color: '#022AFF',
+          border: 'none',
+          fontWeight: 400,
+        };
+      default:
+        return {};
+    }
+  };
+
+  const renderCustomNode = ({ nodeDatum, hierarchyPointNode }: any) => {
+    const text = nodeDatum.name;
+    const padding = 24;
+    const fontSize = 16;
+    const width = Math.max(100, text.length * fontSize * 0.6 + padding);
+    const height = 44;
+    const type = nodeDatum.type || (
+      hierarchyPointNode.depth === 0 ? 'project' :
+      hierarchyPointNode.depth === 1 ? 'epic' :
+      hierarchyPointNode.depth === 2 ? 'feature' : 'task'
+    );
+    const style = getNodeStyle(type);
+
+    return (
+      <g>
+        <rect
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          rx={height / 2}
+          fill={style.background}
+          stroke={style.border ? '#022AFF' : style.background}
+          strokeWidth={style.border ? 2 : 0}
+        />
+        <text
+          fill={style.color}
+          fontSize={fontSize}
+          x={0}
+          y={5}
+          textAnchor="middle"
+          alignmentBaseline="middle"
+          style={{
+            fontWeight: style.fontWeight,
+            pointerEvents: 'none',
+            fontFamily: 'Arial, sans-serif',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {text}
+        </text>
+      </g>
+    );
+  };
 
   if (!project) return <div>Loading...</div>;
 
+  // List view with project as root node
   return (
     <>
-      <div style={{ textAlign: 'center', marginTop: '32px' }}>
+      <div
+        style={{
+          textAlign: 'center',
+          marginTop: '24px',
+          position: 'relative',
+          zIndex: 10,
+          background: 'rgba(230,230,240,0.96)',
+          padding: '16px 0',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(2,42,255,0.08)',
+          maxWidth: 400,
+          marginLeft: 'auto',
+          marginRight: 'auto'
+        }}
+      >
         <button
           onClick={() => setView('list')}
           style={{
@@ -107,81 +201,112 @@ const Project: React.FC = () => {
             textAlign: 'left',
             display: 'inline-block',
             marginTop: '20px',
-            color: '#fff',
-            minWidth: '300px'
+            minWidth: '300px',
+            padding: 0,
+            listStyle: 'none'
           }}>
-            {project.epics && project.epics.map((epic: any) => {
-              const epicId = epic.id || epic._id || epic.title;
-              const hasFeatures = Array.isArray(epic.features) && epic.features.length > 0;
-              const isEpicExpanded = expandedEpic === epicId;
-              return (
-                <li key={epicId} style={{ marginBottom: '16px' }}>
-                  {hasFeatures ? (
-                    <button
-                      onClick={() => setExpandedEpic(isEpicExpanded ? null : epicId)}
-                      style={{
-                        background: '#022AFF',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '8px 16px',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        marginBottom: '8px'
-                      }}
-                    >
-                      {epic.title} {isEpicExpanded ? '▲' : '▼'}
-                    </button>
-                  ) : (
-                    <span style={{ fontWeight: 600 }}>{epic.title}</span>
-                  )}
-                  {hasFeatures && isEpicExpanded && (
-                    <ul style={{ marginLeft: '24px', marginTop: '8px' }}>
-                      {epic.features.map((feature: any) => {
-                        const featureId = feature.id || feature._id || feature.title;
-                        const hasTasks = Array.isArray(feature.tasks) && feature.tasks.length > 0;
-                        const isFeatureExpanded = expandedFeature === featureId;
-                        return (
-                          <li key={featureId} style={{ marginBottom: '10px' }}>
-                            {hasTasks ? (
-                              <button
-                                onClick={() => setExpandedFeature(isFeatureExpanded ? null : featureId)}
-                                style={{
-                                  background: '#fff',
-                                  color: '#022AFF',
-                                  border: '1.5px solid #022AFF',
-                                  borderRadius: '6px',
-                                  padding: '6px 14px',
-                                  cursor: 'pointer',
-                                  fontWeight: 500,
-                                  marginBottom: '6px'
-                                }}
-                              >
-                                {feature.title} {isFeatureExpanded ? '▲' : '▼'}
-                              </button>
-                            ) : (
-                              <span style={{ fontWeight: 500, color: '#fff' }}>{feature.title}</span>
-                            )}
-                            {hasTasks && isFeatureExpanded && (
-                              <ul style={{ marginLeft: '20px', marginTop: '6px' }}>
-                                {feature.tasks.map((task: any) => (
-                                  <li key={task.id || task._id || task.title} style={{ color: '#fff' }}>
-                                    {task.title}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
+            {/* Project node */}
+            <li style={{
+              ...getNodeStyle('project'),
+              borderRadius: '22px',
+              padding: '10px 24px',
+              marginBottom: '16px',
+              fontSize: '1.2rem'
+            }}>
+              {project.title || project.name}
+              <ul style={{ marginLeft: '24px', marginTop: '8px', padding: 0, listStyle: 'none' }}>
+                {project.epics && project.epics.map((epic: any) => {
+                  const epicId = epic.id || epic._id || epic.title;
+                  const hasFeatures = Array.isArray(epic.features) && epic.features.length > 0;
+                  const isEpicExpanded = expandedEpic === epicId;
+                  return (
+                    <li key={epicId} style={{ marginBottom: '16px' }}>
+                      {hasFeatures ? (
+                        <button
+                          onClick={() => setExpandedEpic(isEpicExpanded ? null : epicId)}
+                          style={{
+                            ...getNodeStyle('epic'),
+                            borderRadius: '18px',
+                            padding: '8px 16px',
+                            cursor: 'pointer',
+                            marginBottom: '8px',
+                            fontSize: '1rem'
+                          }}
+                        >
+                          {epic.title} {isEpicExpanded ? '▲' : '▼'}
+                        </button>
+                      ) : (
+                        <span style={{ ...getNodeStyle('epic'), borderRadius: '18px', padding: '8px 16px' }}>{epic.title}</span>
+                      )}
+                      {hasFeatures && isEpicExpanded && (
+                        <ul style={{ marginLeft: '24px', marginTop: '8px', padding: 0, listStyle: 'none' }}>
+                          {epic.features.map((feature: any) => {
+                            const featureId = feature.id || feature._id || feature.title;
+                            const hasTasks = Array.isArray(feature.tasks) && feature.tasks.length > 0;
+                            const isFeatureExpanded = expandedFeature === featureId;
+                            return (
+                              <li key={featureId} style={{ marginBottom: '10px' }}>
+                                {hasTasks ? (
+                                  <button
+                                    onClick={() => setExpandedFeature(isFeatureExpanded ? null : featureId)}
+                                    style={{
+                                      ...getNodeStyle('feature'),
+                                      borderRadius: '12px',
+                                      padding: '6px 14px',
+                                      cursor: 'pointer',
+                                      marginBottom: '6px',
+                                      fontSize: '1rem'
+                                    }}
+                                  >
+                                    {feature.title} {isFeatureExpanded ? '▲' : '▼'}
+                                  </button>
+                                ) : (
+                                  <span style={{ ...getNodeStyle('feature'), borderRadius: '12px', padding: '6px 14px' }}>{feature.title}</span>
+                                )}
+                                {hasTasks && isFeatureExpanded && (
+                                  <ul style={{ marginLeft: '20px', marginTop: '6px', padding: 0, listStyle: 'none' }}>
+                                    {feature.tasks.map((task: any) => (
+                                      <li
+                                        key={task.id || task._id || task.title}
+                                        style={{
+                                          ...getNodeStyle('task'),
+                                          borderRadius: '8px',
+                                          padding: '4px 12px',
+                                          marginBottom: '4px',
+                                          fontSize: '1rem'
+                                        }}
+                                      >
+                                        {task.title}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
           </ul>
         ) : (
-          <TreeView project={project} />
+          <div
+            ref={treeContainerRef}
+            style={{ width: '100%', height: '700px', background: 'rgba(230,230,240,0.96)', borderRadius: 12 }}
+          >
+            <Tree
+              data={treeData}
+              orientation="vertical"
+              translate={translate}
+              renderCustomNodeElement={renderCustomNode}
+              separation={{ siblings: 2.5, nonSiblings: 3.5 }}
+              nodeSize={{ x: 220, y: 90 }}
+              zoomable={true}
+            />
+          </div>
         )}
       </div>
     </>
