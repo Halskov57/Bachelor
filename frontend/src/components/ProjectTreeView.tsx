@@ -2,6 +2,15 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
 
+function measureTextWidth(text: string, font: string): number {
+  const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
+  const canvas = fn.canvas || (fn.canvas = document.createElement("canvas"));
+  const context = canvas.getContext("2d");
+  if (!context) return 100;
+  context.font = font;
+  return context.measureText(text).width;
+}
+
 const getNodeStyle = (type: string) => {
   switch (type) {
     case 'project':
@@ -48,14 +57,17 @@ const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
   };
 
   const renderCustomNode = ({ nodeDatum, toggleNode }: any) => {
+    const style = getNodeStyle(nodeDatum.type);
     const fontSize = 20;
-    const padding = 10;
-    const iconArea = 40; // or try 32 for a smaller icon area
-    const textWidth = nodeDatum.name.length * fontSize * 0.60;
-    const width = Math.max(50, textWidth + padding + iconArea);
+    const fontWeight = style.fontWeight || 400;
+    const fontFamily = 'Arial, sans-serif';
+    const font = `normal ${fontWeight} ${fontSize}px ${fontFamily}`;
+    const textWidth = measureTextWidth(nodeDatum.name, font)+10;
+    const padding = 24;
+    const iconArea = 44;
+    const width = Math.max(80, textWidth + padding + iconArea);
     const height = 44;
     const iconSize = 44;
-    const style = getNodeStyle(nodeDatum.type);
 
     const isFeature = nodeDatum.type === 'feature';
     const featureKey = nodeDatum.__rd3t?.id || nodeDatum.name;
@@ -194,11 +206,6 @@ const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
                   fontSize={14}
                   textAnchor="middle"
                   alignmentBaseline="middle"
-                  style={{
-                    fontWeight: 400,
-                    fontFamily: 'Arial, sans-serif',
-                    pointerEvents: 'none'
-                  }}
                 >
                   {task.name}
                 </text>
