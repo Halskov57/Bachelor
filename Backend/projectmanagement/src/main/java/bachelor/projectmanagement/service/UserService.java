@@ -38,4 +38,15 @@ public class UserService {
         return userRepository.findByUsername(username)
                 .orElse(null);
     }
+
+        public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    public User updatePassword(User user, String newPassword) {
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        user.setHashedPassword(hashedPassword);
+        return userRepository.save(user);
+    }
+
 }
