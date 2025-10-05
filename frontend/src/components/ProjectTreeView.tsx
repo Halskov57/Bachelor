@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
+import ThreeDotsMenu from './ThreeDotsMenu';
 
 function measureTextWidth(text: string, font: string): number {
   const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
@@ -26,7 +27,7 @@ const getNodeStyle = (type: string) => {
   }
 };
 
-const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
+const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }> = ({ treeData, fetchProjectById }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -99,7 +100,12 @@ const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
           style={{ cursor: 'pointer' }}
           onClick={e => {
             e.stopPropagation();
-            setEditNode(nodeDatum);
+            setEditNode({
+              ...nodeDatum,
+              type: nodeDatum.type,
+              // Add projectId, epicId, featureId here if available in nodeDatum or its ancestors
+              // For now, remove them to fix the error
+            });
           }}
         />
         {/* Title text (no onClick needed) */}
@@ -213,6 +219,30 @@ const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
             ))}
           </g>
         )}
+        {/* Three dots menu for editing */}
+        <foreignObject
+          x={width / 2 + 8}
+          y={-height / 2}
+          width={40}
+          height={40}
+          style={{ overflow: 'visible' }}
+        >
+          <ThreeDotsMenu
+            onEdit={() => setEditNode({
+              ...nodeDatum,
+              type: nodeDatum.type,
+              id: nodeDatum.id,
+              // Spread parent IDs here
+              projectId: nodeDatum.projectId,
+              epicId: nodeDatum.epicId,
+              featureId: nodeDatum.featureId,
+            })}
+            onAddChild={() => {/* your add child logic */}}
+            onDelete={() => {/* your delete logic */}}
+            iconColor="#fff"
+            size={22}
+          />
+        </foreignObject>
       </g>
     );
   };
@@ -252,10 +282,14 @@ const ProjectTreeView: React.FC<{ treeData: any }> = ({ treeData }) => {
       {editNode && (
         <EditFanout
           node={editNode}
-          onClose={() => setEditNode(null)}
-          onSave={data => {
-            // handle save logic here
+          mode="edit"
+          onClose={() => {
             setEditNode(null);
+            fetchProjectById(); // <-- refreshes the current project data
+          }}
+          onSave={(data: any) => {
+            setEditNode(null);
+            fetchProjectById(); // Optionally refresh after save
           }}
         />
       )}

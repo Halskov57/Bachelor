@@ -34,57 +34,60 @@ public class ProjectResolver {
     @MutationMapping
     public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
         Project project = projectService.getProjectById(projectId);
-        if (project == null) return null;
+        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setTitle(newTitle);
-        Project result = projectService.save(project);
-        if (result.getProjectId() == null) result.setProjectId(projectId);
-        return result;
+        return projectService.save(project);
     }
 
     @MutationMapping
     public Project updateProjectDescription(@Argument String projectId, @Argument String newDescription) {
         Project project = projectService.getProjectById(projectId);
-        if (project == null) return null;
+        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setDescription(newDescription);
-        Project result = projectService.save(project);
-        if (result.getProjectId() == null) result.setProjectId(projectId);
-        return result;
+        return projectService.save(project);
     }
 
     @MutationMapping
     public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
-        Epic epic = new Epic(newTitle, null, 0, null);
-        epic.setEpicId(epicId);
-        Epic result = projectService.updateEpic(projectId, epic);
-        if (result.getEpicId() == null) result.setEpicId(epicId);
-        return result;
+        Epic epic = projectService.getEpicById(projectId, epicId);
+        if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
+        epic.setTitle(newTitle);
+        return projectService.saveEpic(projectId, epic);
     }
 
     @MutationMapping
     public Epic updateEpicDescription(@Argument String projectId, @Argument String epicId, @Argument String newDescription) {
-        Epic epic = new Epic(null, newDescription, 0, null);
-        epic.setEpicId(epicId);
-        Epic result = projectService.updateEpic(projectId, epic);
-        if (result.getEpicId() == null) result.setEpicId(epicId);
-        return result;
+        Epic epic = projectService.getEpicById(projectId, epicId);
+        if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
+        epic.setDescription(newDescription);
+        return projectService.saveEpic(projectId, epic);
     }
 
     @MutationMapping
     public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
-        Feature feature = new Feature(newTitle, null, 0);
-        feature.setFeatureId(featureId);
-        Feature result = projectService.updateFeature(projectId, epicId, feature);
-        if (result.getFeatureId() == null) result.setFeatureId(featureId);
-        return result;
+        System.out.println("updateFeatureTitle called with:");
+        System.out.println("projectId: " + projectId + ", epicId: " + epicId + ", featureId: " + featureId + ", newTitle: " + newTitle);
+
+        Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
+        if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
+
+        System.out.println("Before update: " + feature.getTitle());
+
+        feature.setTitle(newTitle);
+
+        Feature updated = projectService.saveFeature(projectId, epicId, feature);
+
+        System.out.println("After update: " + updated.getTitle());
+
+        return updated;
     }
 
     @MutationMapping
     public Feature updateFeatureDescription(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newDescription) {
-        Feature feature = new Feature(null, newDescription, 0);
-        feature.setFeatureId(featureId);
-        Feature result = projectService.updateFeature(projectId, epicId, feature);
-        if (result.getFeatureId() == null) result.setFeatureId(featureId);
-        return result;
+        Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
+        if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
+        feature.setDescription(newDescription);
+        return projectService.saveFeature(projectId, epicId, feature);
     }
 
     @MutationMapping
@@ -95,15 +98,10 @@ public class ProjectResolver {
             @Argument String taskId,
             @Argument String newTitle) {
 
-        Task updatedTask = new Task(newTitle, null, 0, null, null);
-        updatedTask.setTaskId(taskId);
-
-        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
-
-        if (result.getTaskId() == null) result.setTaskId(taskId);
-        if (result.getStatus() == null) result.setStatus("TODO");
-
-        return result;
+        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
+        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+        task.setTitle(newTitle);
+        return projectService.saveTask(projectId, epicId, featureId, task);
     }
 
     @MutationMapping
@@ -114,15 +112,10 @@ public class ProjectResolver {
             @Argument String taskId,
             @Argument String newDescription) {
 
-        Task updatedTask = new Task(null, newDescription, 0, null, null);
-        updatedTask.setTaskId(taskId);
-
-        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
-
-        if (result.getTaskId() == null) result.setTaskId(taskId);
-        if (result.getStatus() == null) result.setStatus("TODO");
-
-        return result;
+        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
+        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+        task.setDescription(newDescription);
+        return projectService.saveTask(projectId, epicId, featureId, task);
     }
 
     @MutationMapping
@@ -133,14 +126,9 @@ public class ProjectResolver {
             @Argument String taskId,
             @Argument String newStatus) {
 
-        Task updatedTask = new Task(null, null, 0, null, newStatus);
-        updatedTask.setTaskId(taskId);
-
-        Task result = projectService.updateTask(projectId, epicId, featureId, updatedTask);
-
-        if (result.getTaskId() == null) result.setTaskId(taskId);
-        if (result.getStatus() == null) result.setStatus(newStatus);
-
-        return result;
+        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
+        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+        task.setStatus(newStatus);
+        return projectService.saveTask(projectId, epicId, featureId, task);
     }
 }

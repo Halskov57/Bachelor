@@ -45,6 +45,9 @@ public class ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
 
+        if (epic.getEpicId() == null) {
+            epic.setEpicId(UUID.randomUUID().toString());
+        }
         epic.setOwner(project.getOwner());
         project.getEpics().add(epic);
         projectRepository.save(project);
@@ -61,8 +64,15 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Epic not found: " + updatedEpic.getEpicId()));
 
-        epic.setTitle(updatedEpic.getTitle());
-        epic.setDescription(updatedEpic.getDescription());
+        // Only update fields that are not null
+        if (updatedEpic.getTitle() != null) {
+            epic.setTitle(updatedEpic.getTitle());
+        }
+        if (updatedEpic.getDescription() != null) {
+            epic.setDescription(updatedEpic.getDescription());
+        }
+        // Add more fields as needed
+
         projectRepository.save(project);
         return epic;
     }
@@ -76,6 +86,9 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Epic not found: " + epicId));
 
+        if (feature.getFeatureId() == null) {
+            feature.setFeatureId(UUID.randomUUID().toString());
+        }
         epic.getFeatures().add(feature);
         projectRepository.save(project);
 
@@ -96,8 +109,14 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Feature not found: " + updatedFeature.getFeatureId()));
 
-        feature.setTitle(updatedFeature.getTitle());
-        feature.setDescription(updatedFeature.getDescription());
+        if (updatedFeature.getTitle() != null) {
+            feature.setTitle(updatedFeature.getTitle());
+        }
+        if (updatedFeature.getDescription() != null) {
+            feature.setDescription(updatedFeature.getDescription());
+        }
+        // Add more fields as needed
+
         projectRepository.save(project);
         return feature;
     }
@@ -116,6 +135,9 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Feature not found: " + featureId));
 
+        if (task.getTaskId() == null) {
+            task.setTaskId(UUID.randomUUID().toString());
+        }
         feature.getTasks().add(task);
         projectRepository.save(project);
         return task;
@@ -140,9 +162,17 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Task not found: " + updatedTask.getTaskId()));
 
-        task.setTitle(updatedTask.getTitle());
-        task.setDescription(updatedTask.getDescription());
-        task.setStatus(updatedTask.getStatus());
+        if (updatedTask.getTitle() != null) {
+            task.setTitle(updatedTask.getTitle());
+        }
+        if (updatedTask.getDescription() != null) {
+            task.setDescription(updatedTask.getDescription());
+        }
+        if (updatedTask.getStatus() != null) {
+            task.setStatus(updatedTask.getStatus());
+        }
+        // Add more fields as needed
+
         projectRepository.save(project);
         return task;
     }
@@ -216,8 +246,102 @@ public class ProjectService {
                 .orElseThrow(() -> new RuntimeException("Project not found: " + id));
     }
 
+    public Epic getEpicById(String projectId, String epicId) {
+        Project project = getProjectById(projectId);
+        return project.getEpics().stream()
+            .filter(e -> e.getEpicId().equals(epicId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    public Feature getFeatureById(String projectId, String epicId, String featureId) {
+        Epic epic = getEpicById(projectId, epicId);
+        if (epic == null) return null;
+        return epic.getFeatures().stream()
+            .filter(f -> f.getFeatureId().equals(featureId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    public Task getTaskById(String projectId, String epicId, String featureId, String taskId) {
+        Feature feature = getFeatureById(projectId, epicId, featureId);
+        if (feature == null) return null;
+        return feature.getTasks().stream()
+            .filter(t -> t.getTaskId().equals(taskId))
+            .findFirst()
+            .orElse(null);
+    }
+
     public Project save(Project project) {
         return projectRepository.save(project);
+    }
+
+    public Epic saveEpic(String projectId, Epic epic) {
+        Project project = getProjectById(projectId);
+        for (int i = 0; i < project.getEpics().size(); i++) {
+            if (project.getEpics().get(i).getEpicId().equals(epic.getEpicId())) {
+                project.getEpics().set(i, epic);
+                break;
+            }
+        }
+        projectRepository.save(project);
+        return epic;
+    }
+
+    public Feature saveFeature(String projectId, String epicId, Feature updatedFeature) {
+        Project project = getProjectById(projectId);
+        if (project == null) return null;
+
+        for (Epic epic : project.getEpics()) {
+            if (epic.getEpicId().equals(epicId)) {
+                for (Feature feature : epic.getFeatures()) {
+                    if (feature.getFeatureId().equals(updatedFeature.getFeatureId())) {
+                        // Update fields in-place
+                        if (updatedFeature.getTitle() != null) {
+                            feature.setTitle(updatedFeature.getTitle());
+                        }
+                        if (updatedFeature.getDescription() != null) {
+                            feature.setDescription(updatedFeature.getDescription());
+                        }
+                        // Save the whole project
+                        projectRepository.save(project);
+                        return feature;
+                    }
+                }
+            }
+        }
+            return null;
+        }
+
+    public Task saveTask(String projectId, String epicId, String featureId, Task updatedTask) {
+        Project project = getProjectById(projectId);
+        if (project == null) return null;
+        for (Epic epic : project.getEpics()) {
+            if (epic.getEpicId().equals(epicId)) {
+                for (Feature feature : epic.getFeatures()) {
+                    if (feature.getFeatureId().equals(featureId)) {
+                        for (Task task : feature.getTasks()) {
+                            if (task.getTaskId().equals(updatedTask.getTaskId())) {
+                                // Only update fields that are not null
+                                if (updatedTask.getTitle() != null) {
+                                    task.setTitle(updatedTask.getTitle());
+                            }
+                            if (updatedTask.getDescription() != null) {
+                                task.setDescription(updatedTask.getDescription());
+                            }
+                            if (updatedTask.getStatus() != null) {
+                                task.setStatus(updatedTask.getStatus());
+                            }
+                            // Add more fields as needed
+                            projectRepository.save(project);
+                            return task;
+                        }
+                    }
+                }
+            }
+        }
+    }
+        return null;
     }
 
     private void assignIdsToEmbeddedObjects(Project project) {

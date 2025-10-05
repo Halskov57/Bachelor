@@ -5,19 +5,33 @@ import ProjectListView from '../components/ProjectListView';
 function toTreeData(project: any) {
   if (!project || !(project.title || project.name)) return null;
   return {
+    id: project.projectId || project.id,
     name: String(project.title || project.name),
     type: 'project',
+    description: project.description,
+    // Add other project fields as needed
     children: (project.epics || []).map((epic: any) => ({
+      id: epic.epicId || epic.id,
       name: String(epic.title),
       type: 'epic',
+      description: epic.description,
+      // Add other epic fields as needed
       children: (epic.features || []).map((feature: any) => ({
+        id: feature.featureId || feature.id,
         name: String(feature.title),
         type: 'feature',
-        tasks: (feature.tasks || []).map((task: any) => ({
+        description: feature.description,
+        // Add other feature fields as needed
+        children: (feature.tasks || []).map((task: any) => ({
+          id: task.taskId || task.id,
           name: String(task.title),
           type: 'task',
+          description: task.description,
+          depth: task.depth,
+          users: task.users,
+          status: task.status,
+          // Add other task fields as needed
         })),
-        // No children for tasks!
       })),
     })),
   };
@@ -119,10 +133,33 @@ const Project: React.FC = () => {
       </h1>
       <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
         {view === 'list' ? (
-          <ProjectListView project={project} />
+          <ProjectListView project={project} fetchProjectById={() => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (!id) return;
+            const token = localStorage.getItem('token');
+            fetch(`http://localhost:8081/projects/${id}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(data => setProject(data));
+          }} />
         ) : (
-          // ✅ ADD A STABLE KEY HERE
-          <ProjectTreeView key={project.id || project._id || project.title} treeData={treeData} />
+          <ProjectTreeView
+            key={project.id || project._id || project.title}
+            treeData={treeData}
+            fetchProjectById={() => {
+              const params = new URLSearchParams(window.location.search);
+              const id = params.get('id');
+              if (!id) return;
+              const token = localStorage.getItem('token');
+              fetch(`http://localhost:8081/projects/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+                .then(res => res.json())
+                .then(data => setProject(data));
+            }}
+          />
         )}
       </div>
     </>
