@@ -14,6 +14,7 @@ public class Epic {
     private String title;
     private String description;
     private int depth;
+    private EpicStatus status;
 
     @DBRef
     private User owner;
@@ -26,6 +27,7 @@ public class Epic {
         this.title = title;
         this.description = description;
         this.depth = depth;
+        this.status = EpicStatus.NOT_STARTED;
         this.owner = owner;
         this.features = new ArrayList<>();
     }
@@ -42,6 +44,9 @@ public class Epic {
 
     public int getDepth() { return depth; }
     public void setDepth(int depth) { this.depth = depth; }
+
+    public EpicStatus getStatus() { return status; }
+    public void setStatus(EpicStatus status) { this.status = status; }
 
     public User getOwner() { return owner; }
     public void setOwner(User owner) { this.owner = owner; }

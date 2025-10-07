@@ -276,16 +276,26 @@ public class ProjectService {
         return projectRepository.save(project);
     }
 
-    public Epic saveEpic(String projectId, Epic epic) {
+    public Epic saveEpic(String projectId, Epic updatedEpic) {
         Project project = getProjectById(projectId);
-        for (int i = 0; i < project.getEpics().size(); i++) {
-            if (project.getEpics().get(i).getEpicId().equals(epic.getEpicId())) {
-                project.getEpics().set(i, epic);
-                break;
+        for (Epic epic : project.getEpics()) {
+            if (epic.getEpicId().equals(updatedEpic.getEpicId())) {
+                // Update fields in-place (partial update)
+                if (updatedEpic.getTitle() != null) {
+                    epic.setTitle(updatedEpic.getTitle());
+                }
+                if (updatedEpic.getDescription() != null) {
+                    epic.setDescription(updatedEpic.getDescription());
+                }
+                if (updatedEpic.getStatus() != null) {
+                    epic.setStatus(updatedEpic.getStatus());
+                }
+                // Save the whole project
+                projectRepository.save(project);
+                return epic;
             }
         }
-        projectRepository.save(project);
-        return epic;
+        return null;
     }
 
     public Feature saveFeature(String projectId, String epicId, Feature updatedFeature) {

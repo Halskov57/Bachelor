@@ -8,6 +8,7 @@ import bachelor.projectmanagement.model.Project;
 import bachelor.projectmanagement.model.Epic;
 import bachelor.projectmanagement.model.Feature;
 import bachelor.projectmanagement.model.Task;
+import bachelor.projectmanagement.model.TaskStatus;
 import bachelor.projectmanagement.service.ProjectService;
 
 import java.util.List;
@@ -128,7 +129,10 @@ public class ProjectResolver {
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
-        task.setStatus(newStatus);
+        
+        // Convert String to TaskStatus enum
+        TaskStatus status = TaskStatus.valueOf(newStatus);
+        task.setStatus(status);
         return projectService.saveTask(projectId, epicId, featureId, task);
     }
 }

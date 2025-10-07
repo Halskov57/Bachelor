@@ -11,6 +11,7 @@ public class Feature {
     private String title;
     private String description;
     private int depth;
+    private FeatureStatus status;
 
     private List<Task> tasks = new ArrayList<>();
 
@@ -20,6 +21,7 @@ public class Feature {
         this.title = title;
         this.description = description;
         this.depth = depth;
+        this.status = FeatureStatus.NOT_STARTED;
         this.tasks = new ArrayList<>();
     }
 
@@ -35,6 +37,9 @@ public class Feature {
 
     public int getDepth() { return depth; }
     public void setDepth(int depth) { this.depth = depth; }
+
+    public FeatureStatus getStatus() { return status; }
+    public void setStatus(FeatureStatus status) { this.status = status; }
 
     public List<Task> getTasks() { return tasks; }
     public void setTasks(List<Task> tasks) { this.tasks = tasks != null ? tasks : new ArrayList<>(); }

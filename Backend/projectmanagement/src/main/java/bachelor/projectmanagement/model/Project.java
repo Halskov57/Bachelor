@@ -16,6 +16,7 @@ public class Project {
     private String description;
     private int depth;
     private int courseLevel;
+    private ProjectStatus status;
     private Instant createdOn = Instant.now();
 
     @DBRef
@@ -30,6 +31,7 @@ public class Project {
         this.description = description;
         this.depth = depth;
         this.courseLevel = courseLevel;
+        this.status = ProjectStatus.NOT_STARTED;
         this.owner = owner;
         this.epics = new ArrayList<>();
         this.createdOn = Instant.now();
@@ -50,6 +52,9 @@ public class Project {
 
     public int getCourseLevel() { return courseLevel; }
     public void setCourseLevel(int courseLevel) { this.courseLevel = courseLevel; }
+
+    public ProjectStatus getStatus() { return status; }
+    public void setStatus(ProjectStatus status) { this.status = status; }
 
     public Instant getCreatedOn() { return createdOn; }
     public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
