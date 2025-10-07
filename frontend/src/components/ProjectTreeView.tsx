@@ -96,15 +96,17 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
           width={width}
           height={height}
           fill="transparent"
-          stroke="transparent" // <-- add this line
+          stroke="transparent"
           style={{ cursor: 'pointer' }}
           onClick={e => {
             e.stopPropagation();
             setEditNode({
               ...nodeDatum,
               type: nodeDatum.type,
-              // Add projectId, epicId, featureId here if available in nodeDatum or its ancestors
-              // For now, remove them to fix the error
+              id: nodeDatum.id,
+              projectId: nodeDatum.projectId,
+              epicId: nodeDatum.epicId,
+              featureId: nodeDatum.featureId,
             });
           }}
         />
@@ -232,7 +234,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
               ...nodeDatum,
               type: nodeDatum.type,
               id: nodeDatum.id,
-              // Spread parent IDs here
               projectId: nodeDatum.projectId,
               epicId: nodeDatum.epicId,
               featureId: nodeDatum.featureId,

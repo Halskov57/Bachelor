@@ -9,19 +9,22 @@ function toTreeData(project: any) {
     name: String(project.title || project.name),
     type: 'project',
     description: project.description,
-    // Add other project fields as needed
+    projectId: project.projectId || project.id, // <-- add this
     children: (project.epics || []).map((epic: any) => ({
       id: epic.epicId || epic.id,
       name: String(epic.title),
       type: 'epic',
       description: epic.description,
-      // Add other epic fields as needed
+      projectId: project.projectId || project.id, // <-- add this
+      epicId: epic.epicId || epic.id,             // <-- add this
       children: (epic.features || []).map((feature: any) => ({
         id: feature.featureId || feature.id,
         name: String(feature.title),
         type: 'feature',
         description: feature.description,
-        // Add other feature fields as needed
+        projectId: project.projectId || project.id, // <-- add this
+        epicId: epic.epicId || epic.id,             // <-- add this
+        featureId: feature.featureId || feature.id, // <-- add this
         children: (feature.tasks || []).map((task: any) => ({
           id: task.taskId || task.id,
           name: String(task.title),
@@ -30,7 +33,10 @@ function toTreeData(project: any) {
           depth: task.depth,
           users: task.users,
           status: task.status,
-          // Add other task fields as needed
+          projectId: project.projectId || project.id,   // <-- add this
+          epicId: epic.epicId || epic.id,               // <-- add this
+          featureId: feature.featureId || feature.id,   // <-- add this
+          taskId: task.taskId || task.id,               // <-- add this
         })),
       })),
     })),
