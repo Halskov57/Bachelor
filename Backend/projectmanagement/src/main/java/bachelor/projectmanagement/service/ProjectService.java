@@ -138,6 +138,9 @@ public class ProjectService {
         if (task.getTaskId() == null) {
             task.setTaskId(UUID.randomUUID().toString());
         }
+        if (task.getStatus() == null) {
+            task.setStatus(TaskStatus.TODO);
+        }
         feature.getTasks().add(task);
         projectRepository.save(project);
         return task;

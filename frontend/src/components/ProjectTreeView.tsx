@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
 import ThreeDotsMenu from './ThreeDotsMenu';
+import { deleteNode, addNode } from '../utils/graphqlMutations';
 
 function measureTextWidth(text: string, font: string): number {
   const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
@@ -33,6 +34,11 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [expandedFeatures, setExpandedFeatures] = useState<{ [key: string]: boolean }>({});
   const [editNode, setEditNode] = useState<any>(null);
+  const [createNode, setCreateNode] = useState<{
+    type: string;
+    parentIds: any;
+    parentNode?: any;
+  } | null>(null);
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
 
   useEffect(() => {
@@ -55,6 +61,39 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
       ...prev,
       [nodeId]: !prev[nodeId]
     }));
+  };
+
+  const handleAddChild = (nodeDatum: any) => {
+    let nodeType = '';
+    let parentIds: any = {};
+
+    console.log('Tree handleAddChild called with:', nodeDatum);
+
+    if (nodeDatum.type === 'project') {
+      nodeType = 'epic';
+      parentIds = { projectId: nodeDatum.projectId || nodeDatum.id };
+    } else if (nodeDatum.type === 'epic') {
+      nodeType = 'feature';
+      parentIds = { 
+        projectId: nodeDatum.projectId, 
+        epicId: nodeDatum.epicId || nodeDatum.id 
+      };
+    } else if (nodeDatum.type === 'feature') {
+      nodeType = 'task';
+      parentIds = { 
+        projectId: nodeDatum.projectId,
+        epicId: nodeDatum.epicId,
+        featureId: nodeDatum.featureId || nodeDatum.id 
+      };
+    }
+
+    console.log('Tree setting createNode:', { nodeType, parentIds });
+    
+    setCreateNode({ 
+      type: nodeType, 
+      parentIds: parentIds,
+      parentNode: nodeDatum 
+    });
   };
 
   const renderCustomNode = ({ nodeDatum, toggleNode }: any) => {
@@ -238,8 +277,63 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
               epicId: nodeDatum.epicId,
               featureId: nodeDatum.featureId,
             })}
-            onAddChild={() => {/* your add child logic */}}
-            onDelete={() => {/* your delete logic */}}
+            onAddChild={() => {
+              try {
+                let nodeType = '';
+                
+                // Determine what type of child to add based on current node type
+                if (nodeDatum.type === 'project') {
+                  nodeType = 'epic';
+                } else if (nodeDatum.type === 'epic') {
+                  nodeType = 'feature';
+                } else if (nodeDatum.type === 'feature') {
+                  nodeType = 'task';
+                } else {
+                  alert('Cannot add children to tasks.');
+                  return;
+                }
+
+                setCreateNode({
+                  type: nodeType,
+                  parentIds: {
+                    projectId: nodeDatum.projectId,
+                    epicId: nodeDatum.epicId,
+                    featureId: nodeDatum.featureId,
+                  },
+                  parentNode: nodeDatum
+                });
+              } catch (error) {
+                console.error('Failed to prepare add operation:', error);
+              }
+            }}
+            addChildText={
+              nodeDatum.type === 'project' ? 'Add Epic' :
+              nodeDatum.type === 'epic' ? 'Add Feature' :
+              nodeDatum.type === 'feature' ? 'Add Task' : 
+              undefined
+            }
+            onDelete={async () => {
+              try {
+                // Don't allow deleting projects from tree view
+                if (nodeDatum.type === 'project') {
+                  alert('Project deletion is not available from tree view.');
+                  return;
+                }
+
+                const parentIds: any = { projectId: nodeDatum.projectId };
+                if (nodeDatum.epicId) parentIds.epicId = nodeDatum.epicId;
+                if (nodeDatum.featureId) parentIds.featureId = nodeDatum.featureId;
+
+                await deleteNode(
+                  { type: nodeDatum.type, id: nodeDatum.id },
+                  parentIds
+                );
+                fetchProjectById(); // refresh after delete
+              } catch (error) {
+                console.error(`Failed to delete ${nodeDatum.type}:`, error);
+                alert(`Failed to delete ${nodeDatum.type}. Please try again.`);
+              }
+            }}
             iconColor="#fff"
             size={22}
           />
@@ -290,6 +384,17 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
           }}
           onSave={(data: any) => {
             setEditNode(null);
+            fetchProjectById(); // Optionally refresh after save
+          }}
+        />
+      )}
+      {createNode && (
+        <EditFanout
+          createNode={createNode}
+          mode="create"
+          onClose={() => setCreateNode(null)}
+          onSave={async () => {
+            setCreateNode(null);
             fetchProjectById(); // Optionally refresh after save
           }}
         />

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import EditFanout from './EditFanout';
 import ThreeDotsMenu from './ThreeDotsMenu'; // Import the ThreeDotsMenu component
+import { deleteNode, addNode } from '../utils/graphqlMutations';
 
 const getNodeStyle = (type: string) => {
   switch (type) {
@@ -20,6 +21,41 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
   const [expandedEpic, setExpandedEpic] = useState<string | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
   const [editNode, setEditNode] = useState<any>(null);
+  const [createNode, setCreateNode] = useState<{
+    type: string;
+    parentIds: any;
+    parentNode?: any;
+  } | null>(null);
+
+  // Update the handleAddChild function to properly set parent IDs
+  const handleAddChild = (parentNode: any) => {
+    let nodeType = '';
+    let parentIds: any = {};
+
+    if (parentNode.type === 'project') {
+      nodeType = 'epic';
+      parentIds = { projectId: parentNode.id };
+    } else if (parentNode.type === 'epic') {
+      nodeType = 'feature';
+      parentIds = { 
+        projectId: parentNode.projectId || project?.id, 
+        epicId: parentNode.id 
+      };
+    } else if (parentNode.type === 'feature') {
+      nodeType = 'task';
+      parentIds = { 
+        projectId: parentNode.projectId || project?.id,
+        epicId: parentNode.epicId || parentNode.epic?.id,
+        featureId: parentNode.id 
+      };
+    }
+
+    setCreateNode({ 
+      type: nodeType, 
+      parentIds: parentIds,
+      parentNode: parentNode 
+    });
+  };
 
   return (
     <ul style={{
@@ -48,7 +84,14 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
             type: 'project',
             id: project.id || project.projectId, // <-- ensure this is present!
           })}
-          onAddChild={() => {/* handle add epic */}}
+          onAddChild={() => {
+            setCreateNode({
+              type: 'epic',
+              parentIds: { projectId: project.projectId || project.id },
+              parentNode: project,
+            });
+          }}
+          addChildText="Add Epic"
           onDelete={() => {/* handle delete project */}}
           iconColor="#fff"
           size={22}
@@ -91,8 +134,29 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                       projectId: project.projectId || project.id, // always use projectId for the project
                     });
                   }}
-                  onAddChild={() => {/* handle add feature */}}
-                  onDelete={() => {/* handle delete epic */}}
+                  onAddChild={() => {
+                    setCreateNode({
+                      type: 'feature',
+                      parentIds: {
+                        projectId: project.projectId || project.id,
+                        epicId: epic.epicId || epic.id
+                      },
+                      parentNode: epic
+                    });
+                  }}
+                  addChildText="Add Feature"
+                  onDelete={async () => {
+                    try {
+                      await deleteNode(
+                        { type: 'epic', id: epic.epicId || epic.id },
+                        { projectId: project.projectId || project.id }
+                      );
+                      fetchProjectById(); // refresh after delete
+                    } catch (error) {
+                      console.error('Failed to delete epic:', error);
+                      alert('Failed to delete epic. Please try again.');
+                    }
+                  }}
                   iconColor="#fff"
                   size={20}
                 />
@@ -130,8 +194,33 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                               projectId: project.projectId || project.id, // <-- add this!
                               epicId: epic.epicId || epic.id,             // <-- add this!
                             })}
-                            onAddChild={() => {/* handle add task */}}
-                            onDelete={() => {/* handle delete feature */}}
+                            onAddChild={() => {
+                              setCreateNode({
+                                type: 'task',
+                                parentIds: {
+                                  projectId: project.projectId || project.id,
+                                  epicId: epic.epicId || epic.id,
+                                  featureId: feature.featureId || feature.id
+                                },
+                                parentNode: feature
+                              });
+                            }}
+                            addChildText="Add Task"
+                            onDelete={async () => {
+                              try {
+                                await deleteNode(
+                                  { type: 'feature', id: feature.id },
+                                  { 
+                                    projectId: project.projectId || project.id,
+                                    epicId: epic.epicId || epic.id
+                                  }
+                                );
+                                fetchProjectById(); // refresh after delete
+                              } catch (error) {
+                                console.error('Failed to delete feature:', error);
+                                alert('Failed to delete feature. Please try again.');
+                              }
+                            }}
                             iconColor="rgba(252, 252, 252, 1)"
                             size={18}
                           />
@@ -161,7 +250,22 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                       epicId: epic.epicId || epic.id,               // <-- add this!
                                       featureId: feature.featureId || feature.id,   // <-- add this!
                                     })}
-                                    onDelete={() => {/* handle delete task */}}
+                                    onDelete={async () => {
+                                      try {
+                                        await deleteNode(
+                                          { type: 'task', id: task.id || task.taskId },
+                                          { 
+                                            projectId: project.projectId || project.id,
+                                            epicId: epic.epicId || epic.id,
+                                            featureId: feature.featureId || feature.id
+                                          }
+                                        );
+                                        fetchProjectById(); // refresh after delete
+                                      } catch (error) {
+                                        console.error('Failed to delete task:', error);
+                                        alert('Failed to delete task. Please try again.');
+                                      }
+                                    }}
                                     iconColor="#022AFF"
                                     size={16}
                                   />
@@ -189,6 +293,17 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
           onSave={data => {
             setEditNode(null);
             fetchProjectById(); // <-- refresh after saving
+          }}
+        />
+      )}
+      {createNode && (
+        <EditFanout
+          createNode={createNode}
+          mode="create"
+          onClose={() => setCreateNode(null)}
+          onSave={async () => {
+            await fetchProjectById();
+            setCreateNode(null);
           }}
         />
       )}

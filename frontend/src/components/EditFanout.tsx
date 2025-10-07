@@ -1,79 +1,120 @@
 import React, { useState } from 'react';
-import { updateNode } from '../utils/graphqlMutations';
+import { updateNode, addNode } from '../utils/graphqlMutations';
 
-const EditFanout: React.FC<{ node: any; onClose: () => void; onSave: (data: any) => void; mode?: 'edit' | 'create' }> = ({
+interface CreateNodeData {
+  type: string;
+  parentIds: {
+    projectId?: string;
+    epicId?: string;
+    featureId?: string;
+  };
+  parentNode?: any;
+}
+
+const EditFanout: React.FC<{ 
+  node?: any; 
+  createNode?: CreateNodeData;
+  onClose: () => void; 
+  onSave?: (data?: any) => void; 
+  mode?: 'edit' | 'create' 
+}> = ({
   node,
+  createNode,
   onClose,
   onSave,
   mode = 'edit'
 }) => {
+  // Use createNode data when in create mode, otherwise use node data
+  const activeNode = mode === 'create' ? createNode : node;
+  
   // Common fields
-  const [title, setTitle] = useState(node.title || node.name || '');
-  const [description, setDescription] = useState(node.description || '');
+  const [title, setTitle] = useState(mode === 'create' ? '' : (node?.title || node?.name || ''));
+  const [description, setDescription] = useState(mode === 'create' ? '' : (node?.description || ''));
 
   // Task-specific fields
-  const [status, setStatus] = useState(node.status || '');
-  const [depth, setDepth] = useState(node.depth ?? 0);
-  const [users, setUsers] = useState<string>(Array.isArray(node.users) ? node.users.join(', ') : '');
+  const [status, setStatus] = useState(node?.status || '');
+  const [depth, setDepth] = useState(node?.depth ?? 0);
+  const [users, setUsers] = useState<string>(Array.isArray(node?.users) ? node.users.join(', ') : '');
+  const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    if (mode === 'create' && node.type === 'project') {
-      // Call the REST endpoint for project creation
-      const token = localStorage.getItem('token');
-      const payload = token ? JSON.parse(atob(token.split('.')[1])) : {};
-      const username = payload?.sub;
-      await fetch(`http://localhost:8081/projects?username=${username}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+    try {
+      setLoading(true);
+      
+      if (mode === 'create' && createNode) {
+        console.log('Creating node:', {
+          type: createNode.type,
+          parentIds: createNode.parentIds,
           title,
-          description,
-        }),
-      });
-      onClose();
-      return;
+          description
+        });
+        
+        const result = await addNode(
+          createNode.type,
+          createNode.parentIds,
+          title,
+          description
+        );
+        
+        console.log('Create result:', result);
+        onSave?.();
+        onClose();
+      } else if (mode === 'edit' && node) {
+        // Existing edit logic
+        const changedTitle = title !== (node.title || node.name || '');
+        const changedDescription = description !== (node.description || '');
+
+        let data: any = {};
+        if (changedTitle) data.title = title;
+        if (changedDescription) data.description = description;
+
+        // Always include type and id!
+        data.type = node.type;
+        if (node.type === 'project') data.id = node.id || node.projectId;
+        if (node.type === 'epic') data.id = node.id || node.epicId;
+        if (node.type === 'feature') data.id = node.id || node.featureId;
+        if (node.type === 'task') data.id = node.id || node.taskId;
+
+        if (node.type === 'task') {
+          const changedStatus = status !== (node.status || '');
+          const changedDepth = depth !== (node.depth ?? 0);
+          const changedUsers = users !== (Array.isArray(node.users) ? node.users.join(', ') : '');
+
+          if (changedStatus) data.status = status;
+          if (changedDepth) data.depth = depth;
+          if (changedUsers) data.users = users.split(',').map((u: string) => u.trim());
+        }
+
+        const parentIds = {
+          projectId: node.projectId || node.id || node.parentProjectId,
+          epicId: node.epicId || node.parentEpicId,
+          featureId: node.featureId || node.parentFeatureId,
+        };
+
+        const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
+        if (changedKeys.length > 0) {
+          console.log('Calling updateNode with:', data, node, parentIds);
+          await updateNode(data, parentIds);
+        }
+
+        onClose();
+      }
+    } catch (error: any) {
+      console.error('Save error:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const changedTitle = title !== (node.title || node.name || '');
-    const changedDescription = description !== (node.description || '');
-
-    let data: any = {};
-    if (changedTitle) data.title = title;
-    if (changedDescription) data.description = description;
-
-    // Always include type and id!
-    data.type = node.type;
-    if (node.type === 'project') data.id = node.id || node.projectId;
-    if (node.type === 'epic') data.id = node.id || node.epicId;
-    if (node.type === 'feature') data.id = node.id || node.featureId;
-    if (node.type === 'task') data.id = node.id || node.taskId;
-
-    if (node.type === 'task') {
-      const changedStatus = status !== (node.status || '');
-      const changedDepth = depth !== (node.depth ?? 0);
-      const changedUsers = users !== (Array.isArray(node.users) ? node.users.join(', ') : '');
-
-      if (changedStatus) data.status = status;
-      if (changedDepth) data.depth = depth;
-      if (changedUsers) data.users = users.split(',').map((u: string) => u.trim());
+  const getDisplayType = () => {
+    if (mode === 'create' && createNode) {
+      return createNode.type.charAt(0).toUpperCase() + createNode.type.slice(1);
     }
-
-    const parentIds = {
-      projectId: node.projectId || node.id || node.parentProjectId,
-      epicId: node.epicId || node.parentEpicId,
-      featureId: node.featureId || node.parentFeatureId,
-    };
-
-    const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
-    if (changedKeys.length > 0) {
-      console.log('Calling updateNode with:', data, node, parentIds);
-      await updateNode(data, parentIds);
+    if (node?.type) {
+      return node.type.charAt(0).toUpperCase() + node.type.slice(1);
     }
-
-    onClose();
+    return 'Item';
   };
 
   return (
@@ -89,16 +130,14 @@ const EditFanout: React.FC<{ node: any; onClose: () => void; onSave: (data: any)
       zIndex: 100
     }}>
       <h3>
-        {mode === 'create'
-          ? `Create ${node.type ? node.type.charAt(0).toUpperCase() + node.type.slice(1) : 'Project'}`
-          : `Edit ${node.type ? node.type.charAt(0).toUpperCase() + node.type.slice(1) : 'Project'}`}
+        {mode === 'create' ? `Create ${getDisplayType()}` : `Edit ${getDisplayType()}`}
       </h3>
       <label>Title</label>
       <input value={title} onChange={e => setTitle(e.target.value)} style={{ width: '100%' }} />
       <label>Description</label>
       <textarea value={description} onChange={e => setDescription(e.target.value)} style={{ width: '100%' }} />
 
-      {(node.type === 'task' || node.taskId) && (
+      {(node?.type === 'task' || node?.taskId || (mode === 'create' && createNode?.type === 'task')) && (
         <>
           <label>Status</label>
           <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: '100%' }}>
@@ -126,7 +165,9 @@ const EditFanout: React.FC<{ node: any; onClose: () => void; onSave: (data: any)
 
       <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
         <button onClick={onClose}>Close</button>
-        <button onClick={handleSave}>{mode === 'create' ? 'Create' : 'Save'}</button>
+        <button onClick={handleSave} disabled={loading}>
+          {loading ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}
+        </button>
       </div>
     </div>
   );

@@ -55,6 +55,12 @@ type Mutation {
     updateTaskTitle(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newTitle: String!): Task!
     updateTaskDescription(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDescription: String!): Task!
     updateTaskStatus(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newStatus: String!): Task!
+    deleteEpic(projectId: ID!, epicId: ID!): Boolean!
+    deleteFeature(projectId: ID!, epicId: ID!, featureId: ID!): Boolean!
+    deleteTask(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!): Boolean!
+    addEpic(projectId: ID!, title: String!, description: String): Epic!
+    addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
+    addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
 }
 
 type Subscription {

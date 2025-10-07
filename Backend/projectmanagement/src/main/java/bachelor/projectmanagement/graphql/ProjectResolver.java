@@ -135,4 +135,74 @@ public class ProjectResolver {
         task.setStatus(status);
         return projectService.saveTask(projectId, epicId, featureId, task);
     }
+
+    @MutationMapping
+    public Boolean deleteEpic(@Argument String projectId, @Argument String epicId) {
+        try {
+            projectService.deleteEpicFromProject(projectId, epicId);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete epic: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public Boolean deleteFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId) {
+        try {
+            projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete feature: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public Boolean deleteTask(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId) {
+        try {
+            projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete task: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public Epic addEpic(@Argument String projectId, @Argument String title, @Argument String description) {
+        try {
+            Epic epic = new Epic();
+            epic.setTitle(title);
+            epic.setDescription(description);
+            return projectService.addEpicToProject(projectId, epic);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add epic: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public Feature addFeature(@Argument String projectId, @Argument String epicId, @Argument String title, @Argument String description) {
+        try {
+            Feature feature = new Feature();
+            feature.setTitle(title);
+            feature.setDescription(description);
+            return projectService.addFeatureToEpic(projectId, epicId, feature);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add feature: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public Task addTask(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String title, @Argument String description) {
+        try {
+            Task task = new Task();
+            task.setTitle(title);
+            task.setDescription(description);
+            return projectService.addTaskToFeature(projectId, epicId, featureId, task);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add task: " + e.getMessage());
+        }
+    }
 }

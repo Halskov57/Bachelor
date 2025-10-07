@@ -4,6 +4,7 @@ interface ThreeDotsMenuProps {
   onEdit?: () => void;
   onAddChild?: () => void;
   onDelete?: () => void;
+  addChildText?: string;
   menuItems?: { label: string; onClick: () => void; color?: string }[];
   iconColor?: string;
   size?: number;
@@ -13,6 +14,7 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({
   onEdit,
   onAddChild,
   onDelete,
+  addChildText = 'Add Child',
   menuItems,
   iconColor = '#022AFF',
   size = 22,
@@ -127,7 +129,7 @@ const ThreeDotsMenu: React.FC<ThreeDotsMenuProps> = ({
                     onAddChild();
                   }}
                 >
-                  Add Child
+                  {addChildText}
                 </button>
               )}
               {onDelete && (

@@ -14,7 +14,10 @@ public class Task {
     private TaskStatus status;
     private List<String> users = new ArrayList<>(); // usernames assigned
 
-    public Task() {}
+    public Task() {
+        this.status = TaskStatus.TODO;
+        this.users = new ArrayList<>();
+    }
 
     public Task(String title, String description, int depth, List<String> users, TaskStatus status) {
         this.title = title;

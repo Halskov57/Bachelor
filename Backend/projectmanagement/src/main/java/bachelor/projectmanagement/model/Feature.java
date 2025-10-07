@@ -15,7 +15,9 @@ public class Feature {
 
     private List<Task> tasks = new ArrayList<>();
 
-    public Feature() {}
+    public Feature() {
+        this.tasks = new ArrayList<>();
+    }
 
     public Feature(String title, String description, int depth) {
         this.title = title;

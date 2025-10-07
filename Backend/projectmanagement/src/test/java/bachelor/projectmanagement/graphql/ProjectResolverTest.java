@@ -329,4 +329,220 @@ class ProjectResolverTest {
         verify(projectService, times(3)).getTaskById(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), eq(testFeature.getFeatureId()), eq(testTask.getTaskId()));
         verify(projectService, times(3)).saveTask(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), eq(testFeature.getFeatureId()), any(Task.class));
     }
+
+    @Test
+    void deleteEpic_ShouldReturnTrueWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        
+        // When
+        Boolean result = projectResolver.deleteEpic(projectId, epicId);
+        
+        // Then
+        assertTrue(result);
+        verify(projectService).deleteEpicFromProject(projectId, epicId);
+    }
+
+    @Test
+    void deleteEpic_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        doThrow(new RuntimeException("Delete failed")).when(projectService).deleteEpicFromProject(projectId, epicId);
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.deleteEpic(projectId, epicId);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to delete epic"));
+        verify(projectService).deleteEpicFromProject(projectId, epicId);
+    }
+
+    @Test
+    void deleteFeature_ShouldReturnTrueWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        
+        // When
+        Boolean result = projectResolver.deleteFeature(projectId, epicId, featureId);
+        
+        // Then
+        assertTrue(result);
+        verify(projectService).deleteFeatureFromEpic(projectId, epicId, featureId);
+    }
+
+    @Test
+    void deleteFeature_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        doThrow(new RuntimeException("Delete failed")).when(projectService).deleteFeatureFromEpic(projectId, epicId, featureId);
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.deleteFeature(projectId, epicId, featureId);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to delete feature"));
+        verify(projectService).deleteFeatureFromEpic(projectId, epicId, featureId);
+    }
+
+    @Test
+    void deleteTask_ShouldReturnTrueWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        String taskId = testTask.getTaskId();
+        
+        // When
+        Boolean result = projectResolver.deleteTask(projectId, epicId, featureId, taskId);
+        
+        // Then
+        assertTrue(result);
+        verify(projectService).deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+    }
+
+    @Test
+    void deleteTask_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        String taskId = testTask.getTaskId();
+        doThrow(new RuntimeException("Delete failed")).when(projectService).deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.deleteTask(projectId, epicId, featureId, taskId);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to delete task"));
+        verify(projectService).deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+    }
+
+    @Test
+    void addEpic_ShouldReturnEpicWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String title = "New Epic";
+        String description = "New Epic Description";
+        Epic newEpic = TestDataBuilder.createTestEpic(title);
+        newEpic.setDescription(description);
+        when(projectService.addEpicToProject(eq(projectId), any(Epic.class))).thenReturn(newEpic);
+        
+        // When
+        Epic result = projectResolver.addEpic(projectId, title, description);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(title, result.getTitle());
+        assertEquals(description, result.getDescription());
+        verify(projectService).addEpicToProject(eq(projectId), any(Epic.class));
+    }
+
+    @Test
+    void addEpic_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String title = "New Epic";
+        String description = "New Epic Description";
+        when(projectService.addEpicToProject(eq(projectId), any(Epic.class)))
+                .thenThrow(new RuntimeException("Add failed"));
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.addEpic(projectId, title, description);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to add epic"));
+        verify(projectService).addEpicToProject(eq(projectId), any(Epic.class));
+    }
+
+    @Test
+    void addFeature_ShouldReturnFeatureWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String title = "New Feature";
+        String description = "New Feature Description";
+        Feature newFeature = TestDataBuilder.createTestFeature(title);
+        newFeature.setDescription(description);
+        when(projectService.addFeatureToEpic(eq(projectId), eq(epicId), any(Feature.class))).thenReturn(newFeature);
+        
+        // When
+        Feature result = projectResolver.addFeature(projectId, epicId, title, description);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(title, result.getTitle());
+        assertEquals(description, result.getDescription());
+        verify(projectService).addFeatureToEpic(eq(projectId), eq(epicId), any(Feature.class));
+    }
+
+    @Test
+    void addFeature_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String title = "New Feature";
+        String description = "New Feature Description";
+        when(projectService.addFeatureToEpic(eq(projectId), eq(epicId), any(Feature.class)))
+                .thenThrow(new RuntimeException("Add failed"));
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.addFeature(projectId, epicId, title, description);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to add feature"));
+        verify(projectService).addFeatureToEpic(eq(projectId), eq(epicId), any(Feature.class));
+    }
+
+    @Test
+    void addTask_ShouldReturnTaskWhenSuccessful() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        String title = "New Task";
+        String description = "New Task Description";
+        Task newTask = TestDataBuilder.createTestTask(title);
+        newTask.setDescription(description);
+        when(projectService.addTaskToFeature(eq(projectId), eq(epicId), eq(featureId), any(Task.class))).thenReturn(newTask);
+        
+        // When
+        Task result = projectResolver.addTask(projectId, epicId, featureId, title, description);
+        
+        // Then
+        assertNotNull(result);
+        assertEquals(title, result.getTitle());
+        assertEquals(description, result.getDescription());
+        verify(projectService).addTaskToFeature(eq(projectId), eq(epicId), eq(featureId), any(Task.class));
+    }
+
+    @Test
+    void addTask_ShouldThrowRuntimeExceptionWhenServiceFails() {
+        // Given
+        String projectId = testProject.getProjectId();
+        String epicId = testEpic.getEpicId();
+        String featureId = testFeature.getFeatureId();
+        String title = "New Task";
+        String description = "New Task Description";
+        when(projectService.addTaskToFeature(eq(projectId), eq(epicId), eq(featureId), any(Task.class)))
+                .thenThrow(new RuntimeException("Add failed"));
+        
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.addTask(projectId, epicId, featureId, title, description);
+        });
+        
+        assertTrue(exception.getMessage().contains("Failed to add task"));
+        verify(projectService).addTaskToFeature(eq(projectId), eq(epicId), eq(featureId), any(Task.class));
+    }
 }
