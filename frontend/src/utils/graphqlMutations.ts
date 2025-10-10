@@ -170,13 +170,22 @@ export async function updateNode(node: any, parentIds: any) {
 export async function deleteNode(node: any, parentIds: any) {
   // Helper to run a mutation
   async function runMutation(mutation: string, variables: any) {
+    console.log('=== DELETE NODE DEBUG ===');
+    console.log('Node:', node);
+    console.log('Parent IDs:', parentIds);
+    console.log('Variables being sent:', variables);
+    
     const res = await fetch('http://localhost:8081/graphql', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: mutation, variables }),
     });
     const json = await res.json();
+    
+    console.log('Response:', json);
+    
     if (json.errors) {
+      console.error('GraphQL errors:', json.errors);
       throw new Error(json.errors[0].message);
     }
     return json.data && Object.values(json.data)[0];
@@ -196,15 +205,35 @@ export async function deleteNode(node: any, parentIds: any) {
       epicId: node.id 
     };
   } else if (node.type === 'feature') {
+    const featureId = node.id;
+    const epicId = parentIds.epicId;
+    const projectId = parentIds.projectId;
+    
+    console.log('Feature deletion - extracted IDs:', {
+      featureId,
+      epicId, 
+      projectId
+    });
+    
+    if (!featureId) {
+      throw new Error(`Feature ID is null/undefined. Node: ${JSON.stringify(node)}`);
+    }
+    if (!epicId) {
+      throw new Error(`Epic ID is null/undefined. ParentIds: ${JSON.stringify(parentIds)}`);
+    }
+    if (!projectId) {
+      throw new Error(`Project ID is null/undefined. ParentIds: ${JSON.stringify(parentIds)}`);
+    }
+    
     mutation = `
       mutation($projectId: ID!, $epicId: ID!, $featureId: ID!) {
         deleteFeature(projectId: $projectId, epicId: $epicId, featureId: $featureId)
       }
     `;
     variables = { 
-      projectId: parentIds.projectId, 
-      epicId: parentIds.epicId, 
-      featureId: node.id 
+      projectId, 
+      epicId, 
+      featureId 
     };
   } else if (node.type === 'task') {
     mutation = `

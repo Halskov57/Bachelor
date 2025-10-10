@@ -27,7 +27,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
     parentNode?: any;
   } | null>(null);
 
-  // Update the handleAddChild function to properly set parent IDs
+  // Update the handleAdd child function to properly set parent IDs
   const handleAddChild = (parentNode: any) => {
     let nodeType = '';
     let parentIds: any = {};
@@ -55,6 +55,98 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       parentIds: parentIds,
       parentNode: parentNode 
     });
+  };
+
+  const handleDelete = async (item: any) => {
+    try {
+      console.log('=== LIST VIEW DELETE DEBUG ===');
+      console.log('Item to delete:', item);
+      console.log('Item type:', item.type);
+      console.log('Project structure:', project);
+
+      let parentIds: any = {
+        projectId: project?.id || project?.projectId
+      };
+
+      if (item.type === 'feature') {
+        // In list view, we need to find which epic contains this feature
+        let foundEpicId = null;
+        
+        // Search through project epics to find the parent epic
+        if (project?.epics) {
+          for (const epic of project.epics) {
+            if (epic.features) {
+              const foundFeature = epic.features.find((f: any) => 
+                (f.id || f.featureId) === (item.id || item.featureId) ||
+                f.title === item.title // fallback comparison
+              );
+              if (foundFeature) {
+                foundEpicId = epic.id || epic.epicId;
+                console.log('Found parent epic:', foundEpicId, 'for feature:', item.id || item.featureId);
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!foundEpicId) {
+          throw new Error(`Could not find parent epic for feature: ${item.title || item.id}`);
+        }
+        
+        parentIds.epicId = foundEpicId;
+        
+      } else if (item.type === 'task') {
+        // For tasks, find both epic and feature parents
+        let foundEpicId = null;
+        let foundFeatureId = null;
+        
+        if (project?.epics) {
+          outerLoop: for (const epic of project.epics) {
+            if (epic.features) {
+              for (const feature of epic.features) {
+                if (feature.tasks) {
+                  const foundTask = feature.tasks.find((t: any) =>
+                    (t.id || t.taskId) === (item.id || item.taskId) ||
+                    t.title === item.title // fallback comparison
+                  );
+                  if (foundTask) {
+                    foundEpicId = epic.id || epic.epicId;
+                    foundFeatureId = feature.id || feature.featureId;
+                    console.log('Found parents - Epic:', foundEpicId, 'Feature:', foundFeatureId, 'for task:', item.id || item.taskId);
+                    break outerLoop;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        if (!foundEpicId || !foundFeatureId) {
+          throw new Error(`Could not find parent epic/feature for task: ${item.title || item.id}`);
+        }
+        
+        parentIds.epicId = foundEpicId;
+        parentIds.featureId = foundFeatureId;
+      }
+
+      console.log('Final delete parameters:', {
+        item: {
+          type: item.type,
+          id: item.id,
+          featureId: item.featureId,
+          taskId: item.taskId,
+          title: item.title
+        },
+        parentIds
+      });
+
+      await deleteNode(item, parentIds);
+      await fetchProjectById(); // Refresh the data
+    
+    } catch (error: any) {
+      console.error('List view delete error:', error);
+      alert(`Error deleting ${item.type}: ${error.message}`);
+    }
   };
 
   return (
@@ -190,7 +282,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                             onEdit={() => setEditNode({
                               ...feature,
                               type: 'feature',
-                              id: feature.id,
+                              id: feature.id || feature.featureId,
                               projectId: project.projectId || project.id, // <-- add this!
                               epicId: epic.epicId || epic.id,             // <-- add this!
                             })}
@@ -209,7 +301,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                             onDelete={async () => {
                               try {
                                 await deleteNode(
-                                  { type: 'feature', id: feature.id },
+                                  { type: 'feature', id: feature.id || feature.featureId },
                                   { 
                                     projectId: project.projectId || project.id,
                                     epicId: epic.epicId || epic.id

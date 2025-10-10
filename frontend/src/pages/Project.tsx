@@ -43,19 +43,6 @@ function toTreeData(project: any) {
   };
 }
 
-// Example for toTreeData
-// children: (project.epics || []).map((epic: any) => ({
-//   name: String(epic.title),
-//   type: 'epic',
-//   children: (epic.features || []).map((feature: any) => ({
-//     name: String(feature.title),
-//     type: 'feature',
-//     // tasks are missing here!
-// })),
-    // Do NOT include children for tasks!
-  // })),
-  // })),
-
 const Project: React.FC = () => {
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree'>('list');

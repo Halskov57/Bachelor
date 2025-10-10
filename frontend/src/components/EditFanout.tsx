@@ -142,9 +142,12 @@ const EditFanout: React.FC<{
           <label>Status</label>
           <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: '100%' }}>
             <option value="">Select status</option>
-            <option value="TODO">TODO</option>
-            <option value="IN_PROGRESS">IN PROGRESS</option>
-            <option value="DONE">DONE</option>
+            <option value="TODO">To Do</option>
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="CANCELLED">Cancelled</option>
           </select>
           <label>Depth</label>
           <input
