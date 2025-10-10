@@ -5,6 +5,8 @@ import bachelor.projectmanagement.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
@@ -17,14 +19,26 @@ public class UserService {
     }
 
     public User createUser(String username, String rawPassword) {
-    if (userRepository.findByUsername(username).isPresent()) {
-        throw new RuntimeException("Username already exists");
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new RuntimeException("Username already exists");
         }
 
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
         User user = new User(username, hashedPassword);
         user.setRole("USER"); // <-- assign USER role here
+        return userRepository.save(user);
+    }
+
+    public User createAdminUser(String username, String rawPassword) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        String hashedPassword = passwordEncoder.encode(rawPassword);
+
+        User user = new User(username, hashedPassword);
+        user.setRole("ADMIN"); // <-- assign ADMIN role here
         return userRepository.save(user);
     }
 
@@ -47,6 +61,10 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(newPassword);
         user.setHashedPassword(hashedPassword);
         return userRepository.save(user);
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 
 }

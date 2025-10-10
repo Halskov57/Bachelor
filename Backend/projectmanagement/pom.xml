@@ -42,6 +42,12 @@
             <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
+        <!-- Spring Security Web for JWT authentication -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- Optional: Lombok for reducing boilerplate in models -->
         <dependency>
             <groupId>org.projectlombok</groupId>

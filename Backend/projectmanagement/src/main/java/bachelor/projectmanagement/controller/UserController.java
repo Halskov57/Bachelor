@@ -3,8 +3,10 @@ import bachelor.projectmanagement.model.User;
 import bachelor.projectmanagement.service.UserService;
 import bachelor.projectmanagement.security.JwtUtil;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -41,5 +43,12 @@ public class UserController {
         } else {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials"));
         }
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 }

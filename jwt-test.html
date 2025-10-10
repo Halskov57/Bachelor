@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JWT Authentication Test</title>
+</head>
+<body>
+    <h1>JWT Authentication Test</h1>
+    
+    <div>
+        <h2>1. Login as Admin</h2>
+        <p><strong>Note:</strong> Admin user is seeded automatically (username: admin, password: adminPassword)</p>
+        <button onclick="loginAdmin()">Login Admin</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div>
+        <h2>2. Test Admin Endpoint (Get All Users)</h2>
+        <button onclick="getAllUsers()">Get All Users (Admin Only)</button>
+        <div id="users-result"></div>
+    </div>
+    
+    <div>
+        <h2>3. Test GraphQL (Protected)</h2>
+        <button onclick="testGraphQL()">Test GraphQL</button>
+        <div id="graphql-result"></div>
+    </div>
+    
+    <div>
+        <h2>4. Test Without Token</h2>
+        <button onclick="testWithoutToken()">Test Get Users Without Token</button>
+        <div id="no-token-result"></div>
+    </div>
+
+    <script>
+        let token = null;
+        
+        async function loginAdmin() {
+            try {
+                const response = await fetch('http://localhost:8081/users/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'adminPassword' })
+                });
+                const result = await response.json();
+                token = result.token;
+                document.getElementById('login-result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                console.log('Token stored:', token);
+            } catch (error) {
+                document.getElementById('login-result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        async function getAllUsers() {
+            try {
+                const response = await fetch('http://localhost:8081/users/all', {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                document.getElementById('users-result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('users-result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testGraphQL() {
+            try {
+                const response = await fetch('http://localhost:8081/graphql', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: '{ __schema { types { name } } }'
+                    })
+                });
+                const result = await response.json();
+                document.getElementById('graphql-result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('graphql-result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        async function testWithoutToken() {
+            try {
+                const response = await fetch('http://localhost:8081/users/all', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                document.getElementById('no-token-result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('no-token-result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

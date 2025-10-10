@@ -21,28 +21,26 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
     return args -> {
         // Create users if they don't exist
         if (userRepository.findByUsername("alice").isEmpty()) {
-            userService.createUser("alice", "hashedPassword");
-            System.out.println("✅ Created user alice");
+            userService.createUser("alice", "alicePassword");
+            System.out.println("✅ Created user alice with password 'alicePassword'");
             // Create a test project for alice
             createTestProjectForUser("alice", projectService, userRepository);
 
         }
         if (userRepository.findByUsername("bob").isEmpty()) {
-            userService.createUser("bob", "hashedPassword");
-            System.out.println("✅ Created user bob");
+            userService.createUser("bob", "bobPassword");
+            System.out.println("✅ Created user bob with password 'bobPassword'");
             // Create a minimal project for bob
             createMinimalProjectForUser("bob", projectService, userRepository);
         }
         if (userRepository.findByUsername("charlie").isEmpty()) {
-            userService.createUser("charlie", "hashedPassword");
-            System.out.println("✅ Created user charlie");
+            userService.createUser("charlie", "charliePassword");
+            System.out.println("✅ Created user charlie with password 'charliePassword'");
         }
 
         // Admin user
         if (userRepository.findByUsername("admin").isEmpty()) {
-            var admin = userService.createUser("admin", "adminPassword");
-            admin.setRole("ADMIN");
-            userRepository.save(admin);
+            userService.createAdminUser("admin", "adminPassword");
             System.out.println("✅ Created admin user with username 'admin' and password 'adminPassword'");
         } else {
             System.out.println("ℹ️ Admin user already exists, skipping creation.");

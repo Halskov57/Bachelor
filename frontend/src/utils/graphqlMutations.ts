@@ -1,3 +1,12 @@
+// Helper function to get headers with JWT token
+function getGraphQLHeaders() {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+}
+
 export async function updateNode(node: any, parentIds: any) {
   let results = {};
 
@@ -5,7 +14,7 @@ export async function updateNode(node: any, parentIds: any) {
   async function runMutation(mutation: string, variables: any) {
     const res = await fetch('http://localhost:8081/graphql', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
     });
     const json = await res.json();
@@ -177,7 +186,7 @@ export async function deleteNode(node: any, parentIds: any) {
     
     const res = await fetch('http://localhost:8081/graphql', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
     });
     const json = await res.json();
@@ -265,7 +274,7 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
     
     const res = await fetch('http://localhost:8081/graphql', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
     });
     const json = await res.json();
