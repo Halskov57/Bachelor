@@ -5,6 +5,7 @@ import bachelor.projectmanagement.repository.ProjectRepository;
 import bachelor.projectmanagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,7 +24,10 @@ public class ProjectService {
         User owner = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        project.setOwner(owner);
+        if (project.getOwners() == null) {
+            project.setOwners(new ArrayList<>());
+        }
+        project.getOwners().add(owner);
 
         assignIdsToEmbeddedObjects(project);
 
@@ -36,9 +40,12 @@ public class ProjectService {
     }
 
     public List<Project> getProjectsByUsername(String username) {
+        // Fetch the user by username to get their String ID
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
-        return projectRepository.findByOwnerId(user.getId());
+
+        // Query projects by the user's String ID
+        return projectRepository.findByOwnersContaining(user.getId());
     }
 
     public Epic addEpicToProject(String projectId, Epic epic) {
@@ -48,7 +55,7 @@ public class ProjectService {
         if (epic.getEpicId() == null) {
             epic.setEpicId(UUID.randomUUID().toString());
         }
-        epic.setOwner(project.getOwner());
+
         project.getEpics().add(epic);
         projectRepository.save(project);
 
@@ -184,10 +191,11 @@ public class ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
 
-        User owner = project.getOwner();
-        if (owner != null) {
-            owner.getProjects().removeIf(p -> p.getProjectId().equals(projectId));
-            userRepository.save(owner);
+        if (project.getOwners() != null) {
+            for (User owner : project.getOwners()) {
+                owner.getProjects().removeIf(p -> p.getProjectId().equals(projectId));
+                userRepository.save(owner);
+            }
         }
 
         projectRepository.deleteById(projectId);
@@ -338,16 +346,20 @@ public class ProjectService {
                                 // Only update fields that are not null
                                 if (updatedTask.getTitle() != null) {
                                     task.setTitle(updatedTask.getTitle());
-                            }
-                            if (updatedTask.getDescription() != null) {
-                                task.setDescription(updatedTask.getDescription());
-                            }
-                            if (updatedTask.getStatus() != null) {
-                                task.setStatus(updatedTask.getStatus());
-                            }
-                            // Add more fields as needed
-                            projectRepository.save(project);
-                            return task;
+                                }
+                                if (updatedTask.getDescription() != null) {
+                                    task.setDescription(updatedTask.getDescription());
+                                }
+                                if (updatedTask.getStatus() != null) {
+                                    task.setStatus(updatedTask.getStatus());
+                                }
+                                if (updatedTask.getUsers() != null) {
+                                    System.out.println("Updating task users from: " + task.getUsers() + " to: " + updatedTask.getUsers());
+                                    task.setUsers(updatedTask.getUsers());
+                                }
+                                // Add more fields as needed
+                                projectRepository.save(project);
+                                return task;
                         }
                     }
                 }
@@ -379,5 +391,31 @@ public class ProjectService {
                 }
             }
         }
+    }
+
+    public void addUserToProject(String projectId, String username) {
+        // Fetch the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+
+        // Fetch the user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // Add the user to the project's owners list if not already present
+        if (!project.getOwners().contains(user)) {
+            project.getOwners().add(user);
+            projectRepository.save(project);
+        }
+
+        // Add the project to the user's projects list if not already present
+        if (!user.getProjects().contains(project)) {
+            user.getProjects().add(project);
+            userRepository.save(user);
+        }
+    }
+
+    public String getId(Project project) {
+        return project.getProjectId();
     }
 }

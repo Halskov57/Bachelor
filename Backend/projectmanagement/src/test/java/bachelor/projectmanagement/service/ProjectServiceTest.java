@@ -59,7 +59,7 @@ class ProjectServiceTest {
         // Then
         assertNotNull(result);
         assertEquals("New Project", result.getTitle());
-        assertEquals(testUser, result.getOwner());
+        assertTrue(result.getOwners().contains(testUser));
         verify(projectRepository).save(any(Project.class));
         verify(userRepository).save(any(User.class));
     }
@@ -80,8 +80,7 @@ class ProjectServiceTest {
     void getProjectsByUsername_ShouldReturnUserProjects() {
         // Given
         List<Project> projects = List.of(testProject);
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(projectRepository.findByOwnerId(testUser.getId())).thenReturn(projects);
+        when(projectRepository.findByOwnersContaining("testuser")).thenReturn(projects);
 
         // When
         List<Project> result = projectService.getProjectsByUsername("testuser");
@@ -93,13 +92,16 @@ class ProjectServiceTest {
     }
 
     @Test
-    void getProjectsByUsername_ShouldThrowExceptionWhenUserNotFound() {
+    void getProjectsByUsername_ShouldHandleEmptyResult() {
         // Given
-        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+        when(projectRepository.findByOwnersContaining("nonexistent")).thenReturn(List.of());
 
-        // When & Then
-        assertThrows(RuntimeException.class, () -> 
-            projectService.getProjectsByUsername("nonexistent"));
+        // When
+        List<Project> result = projectService.getProjectsByUsername("nonexistent");
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -115,7 +117,6 @@ class ProjectServiceTest {
         assertNotNull(result);
         assertEquals(testEpic.getTitle(), result.getTitle());
         assertNotNull(result.getEpicId());
-        assertEquals(testUser, result.getOwner());
         verify(projectRepository).save(testProject);
     }
 

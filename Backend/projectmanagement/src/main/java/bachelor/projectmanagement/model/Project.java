@@ -20,7 +20,7 @@ public class Project {
     private Instant createdOn = Instant.now();
 
     @DBRef
-    private User owner;
+    private List<User> owners = new ArrayList<>();
 
     private List<Epic> epics = new ArrayList<>();
 
@@ -32,7 +32,8 @@ public class Project {
         this.depth = depth;
         this.courseLevel = courseLevel;
         this.status = ProjectStatus.NOT_STARTED;
-        this.owner = owner;
+        this.owners = new ArrayList<>();
+        this.owners.add(owner);  // Add the initial owner to the list
         this.epics = new ArrayList<>();
         this.createdOn = Instant.now();
     }
@@ -59,9 +60,39 @@ public class Project {
     public Instant getCreatedOn() { return createdOn; }
     public void setCreatedOn(Instant createdOn) { this.createdOn = createdOn; }
 
-    public User getOwner() { return owner; }
-    public void setOwner(User owner) { this.owner = owner; }
+    public List<User> getOwners() { return owners; }
+    public void setOwners(List<User> owners) { this.owners = owners != null ? owners : new ArrayList<>(); }
+    
+    // Convenience method to get the first owner (for backward compatibility)
+    public User getOwner() { return owners != null && !owners.isEmpty() ? owners.get(0) : null; }
+    
+    // Convenience method to set a single owner (for backward compatibility)
+    public void setOwner(User owner) { 
+        if (owner != null) {
+            this.owners = new ArrayList<>();
+            this.owners.add(owner);
+        }
+    }
+    
+    // Method to add an owner
+    public void addOwner(User owner) {
+        if (owner != null && !owners.contains(owner)) {
+            owners.add(owner);
+        }
+    }
+    
+    // Method to remove an owner
+    public void removeOwner(User owner) {
+        if (owner != null) {
+            owners.remove(owner);
+        }
+    }
 
     public List<Epic> getEpics() { return epics; }
     public void setEpics(List<Epic> epics) { this.epics = epics != null ? epics : new ArrayList<>(); }
+    
+    // Convenience method to get the project ID
+    public String getId() {
+        return getProjectId();
+    }
 }

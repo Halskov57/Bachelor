@@ -12,12 +12,25 @@ export async function updateNode(node: any, parentIds: any) {
 
   // Helper to run a mutation
   async function runMutation(mutation: string, variables: any) {
+    console.log('runMutation called with:', { mutation, variables });
+    
     const res = await fetch('http://localhost:8081/graphql', {
       method: 'POST',
       headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
     });
+    
+    console.log('GraphQL response status:', res.status);
     const json = await res.json();
+    console.log('GraphQL response:', json);
+    console.log('GraphQL response data:', json.data);
+    console.log('GraphQL response data values:', json.data && Object.values(json.data));
+    
+    if (json.errors) {
+      console.error('GraphQL errors:', json.errors);
+      throw new Error(json.errors[0]?.message || 'GraphQL error');
+    }
+    
     return json.data && Object.values(json.data)[0];
   }
 
@@ -167,6 +180,30 @@ export async function updateNode(node: any, parentIds: any) {
         taskId: node.id,
         newStatus: node.status,
       };
+      results = await runMutation(mutation, variables);
+      didUpdate = true;
+    }
+    if (node.users !== undefined) {
+      console.log('updateTaskUsers - node.users:', node.users);
+      console.log('updateTaskUsers - parentIds:', parentIds);
+      
+      mutation = `
+        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $userIds: [ID!]!) {
+          updateTaskUsers(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, userIds: $userIds) {
+            id title description users {
+              id username
+            }
+          }
+        }
+      `;
+      variables = {
+        projectId: parentIds.projectId,
+        epicId: parentIds.epicId,
+        featureId: parentIds.featureId,
+        taskId: node.id,
+        userIds: node.users,
+      };
+      console.log('updateTaskUsers - variables:', variables);
       results = await runMutation(mutation, variables);
       didUpdate = true;
     }

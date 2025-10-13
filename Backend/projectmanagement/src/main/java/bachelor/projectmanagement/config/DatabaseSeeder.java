@@ -6,12 +6,7 @@ import bachelor.projectmanagement.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import bachelor.projectmanagement.model.Epic;
-import bachelor.projectmanagement.model.Feature;
-import bachelor.projectmanagement.model.Task;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Configuration
 public class DatabaseSeeder {
@@ -31,7 +26,8 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
             userService.createUser("bob", "bobPassword");
             System.out.println("✅ Created user bob with password 'bobPassword'");
             // Create a minimal project for bob
-            createMinimalProjectForUser("bob", projectService, userRepository);
+            var createdProject = createMinimalProjectForUser("bob", projectService, userRepository);
+            projectService.addUserToProject(createdProject.getId(), "alice");
         }
         if (userRepository.findByUsername("charlie").isEmpty()) {
             userService.createUser("charlie", "charliePassword");
@@ -48,128 +44,54 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
     };
 } 
 
-private void createTestProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
-    int epicCount = 5;
-    int featurePerEpic = 4;
-    int tasksPerFeature = 2; // <-- Add this
-
-    var userOpt = userRepository.findByUsername(username);
-    if (userOpt.isEmpty()) {
-        System.out.println("❌ User " + username + " does not exist, skipping test project creation.");
-        return;
+private Project createTestProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
+    // Check if the "Test Project" already exists in the database
+    boolean hasTestProject = projectService.getProjectsByUsername(username).stream()
+        .anyMatch(p -> "Test Project".equals(p.getTitle()));
+    if (hasTestProject) {
+        System.out.println("ℹ️ Test project already exists for " + username);
+        return projectService.getProjectsByUsername(username).stream()
+            .filter(p -> "Test Project".equals(p.getTitle()))
+            .findFirst()
+            .orElse(null);
     }
-    var user = userOpt.get();
 
-    // Only create if user has no projects
-    if (user.getProjects() == null || user.getProjects().isEmpty()) {
-        Project project = new Project();
-        project.setTitle("Test Project");
-        project.setDescription("A project with multiple epics and features for frontend testing.");
-        project.setDepth(0);
-        project.setCourseLevel(7);
+    // Create the "Test Project"
+    Project project = new Project();
+    project.setTitle("Test Project");
+    project.setDescription("A project with multiple epics and features for frontend testing.");
+    project.setDepth(0);
+    project.setCourseLevel(7);
 
-        // Add epics and features
-        List<Epic> epics = new ArrayList<>();
-        for (int i = 1; i <= epicCount; i++) {
-            Epic epic = new Epic();
-            epic.setTitle("Epic " + i);
-            List<Feature> features = new ArrayList<>();
-            for (int j = 1; j <= featurePerEpic; j++) {
-                Feature feature = new Feature();
-                feature.setTitle("Feature " + i + "." + j);
+    Project createdProject = projectService.createProject(project, username);
+    System.out.println("✅ Created test project for " + username + " with ID: " + createdProject.getId());
 
-                // Add work tasks to each feature
-                List<Task> Tasks = new ArrayList<>();
-                for (int k = 1; k <= tasksPerFeature; k++) {
-                    Task task = new Task();
-                    task.setTitle("Task " + i + "." + j + "." + k);
-                    Tasks.add(task);
-                }
-                feature.setTasks(Tasks);
-
-                features.add(feature);
-            }
-            epic.setFeatures(features);
-            epics.add(epic);
-        }
-        project.setEpics(epics);
-
-        projectService.createProject(project, username);
-        System.out.println("✅ Created test project for " + username);
-    }
+    return createdProject;
 }
 
-private void createMinimalProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
-    var userOpt = userRepository.findByUsername(username);
-    if (userOpt.isEmpty()) {
-        System.out.println("❌ User " + username + " does not exist, skipping minimal project creation.");
-        return;
-    }
-    var user = userOpt.get();
-
-    // Only create if user has no projects named "Minimal Project"
-    boolean hasMinimal = user.getProjects() != null && user.getProjects().stream()
+private Project createMinimalProjectForUser(String username, ProjectService projectService, UserRepository userRepository) {
+    // Check if the "Minimal Project" already exists in the database
+    boolean hasMinimalProject = projectService.getProjectsByUsername(username).stream()
         .anyMatch(p -> "Minimal Project".equals(p.getTitle()));
-    if (hasMinimal) {
+    if (hasMinimalProject) {
         System.out.println("ℹ️ Minimal project already exists for " + username);
-        return;
+        return projectService.getProjectsByUsername(username).stream()
+            .filter(p -> "Minimal Project".equals(p.getTitle()))
+            .findFirst()
+            .orElse(null);
     }
 
-    // Create Task
-    Task task = new Task();
-    task.setTitle("Research and knowledge gathering");
-    task.setDescription("Watch the video about the relay and calculate the required values for the resistors.");
-    task.setDepth(3);
-    task.setUsers(List.of(user.getUsername()));
-
-    Task task1 = new Task();
-    task1.setTitle("Create the hardware design and schematic");
-    task1.setDescription("Use the component list to solder the schematic and PCB layout.");
-    task1.setDepth(3);
-    task1.setUsers(List.of(user.getUsername()));
-
-    // Create Feature
-    Feature feature = new Feature();
-    feature.setTitle("Create the electronics");
-    feature.setDescription("Create the required electronics for the car. To drive forward and backwards at different speeds.");
-    feature.setDepth(2);
-    List<Task> tasks = new ArrayList<>();
-    tasks.add(task);
-    tasks.add(task1);
-    feature.setTasks(tasks);
-
-    // Create Epic
-    Epic epic = new Epic();
-    epic.setTitle("Motor");
-    epic.setDescription("Creating the motor functionality for the car.");
-    epic.setDepth(1);
-    epic.setOwner(user);
-    List<Feature> features = new ArrayList<>();
-    features.add(feature);
-    epic.setFeatures(features);
-
-    Epic epic1 = new Epic();
-    epic1.setTitle("Light");
-    epic1.setDescription("Creating the light functionality for the car.");
-    epic1.setDepth(1);
-    epic1.setOwner(user);
-    List<Feature> features1 = new ArrayList<>();
-    features1.add(feature);
-
-    // Create Project
+    // Create the "Minimal Project"
     Project project = new Project();
-    project.setTitle("1 semester project");
-    project.setDescription("This is the car project for 1 semester.");
+    project.setTitle("Minimal Project");
+    project.setDescription("This is a minimal project for testing.");
     project.setDepth(0);
     project.setCourseLevel(1);
-    project.setOwner(user);
-    List<Epic> epics = new ArrayList<>();
-    epics.add(epic);
-    epics.add(epic1);
-    project.setEpics(epics);
 
-    projectService.createProject(project, username);
-    System.out.println("✅ Created minimal project for " + username);
+    Project createdProject = projectService.createProject(project, username);
+    System.out.println("✅ Created minimal project for " + username + " with ID: " + createdProject.getId());
+
+    return createdProject;
 }
 }
 

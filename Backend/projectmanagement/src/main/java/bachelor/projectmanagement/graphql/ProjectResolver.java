@@ -10,16 +10,20 @@ import bachelor.projectmanagement.model.Feature;
 import bachelor.projectmanagement.model.Task;
 import bachelor.projectmanagement.model.TaskStatus;
 import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.repository.UserRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 public class ProjectResolver {
 
     private final ProjectService projectService;
+    private final UserRepository userRepository;
 
-    public ProjectResolver(ProjectService projectService) {
+    public ProjectResolver(ProjectService projectService, UserRepository userRepository) {
         this.projectService = projectService;
+        this.userRepository = userRepository;
     }
 
     @QueryMapping
@@ -133,6 +137,41 @@ public class ProjectResolver {
         // Convert String to TaskStatus enum
         TaskStatus status = TaskStatus.valueOf(newStatus);
         task.setStatus(status);
+        return projectService.saveTask(projectId, epicId, featureId, task);
+    }
+
+    @MutationMapping
+    public Task updateTaskUsers(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId,
+            @Argument List<String> userIds) {
+
+        System.out.println("updateTaskUsers called with:");
+        System.out.println("projectId: " + projectId);
+        System.out.println("epicId: " + epicId);
+        System.out.println("featureId: " + featureId);
+        System.out.println("taskId: " + taskId);
+        System.out.println("userIds: " + userIds);
+
+        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
+        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+
+        // Convert usernames to user IDs
+        List<String> resolvedUserIds = userIds.stream()
+            .map(username -> {
+                System.out.println("Resolving username: " + username);
+                return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username))
+                    .getId();
+            })
+            .collect(Collectors.toList());
+
+        System.out.println("Resolved user IDs: " + resolvedUserIds);
+
+        // Update the users assigned to the task
+        task.setUsers(resolvedUserIds);
         return projectService.saveTask(projectId, epicId, featureId, task);
     }
 

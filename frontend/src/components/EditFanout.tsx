@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { updateNode, addNode } from '../utils/graphqlMutations';
+import React, { useState, useEffect } from 'react';
+import { updateNode, addNode, deleteNode } from '../utils/graphqlMutations';
 
 interface CreateNodeData {
   type: string;
@@ -16,13 +16,15 @@ const EditFanout: React.FC<{
   createNode?: CreateNodeData;
   onClose: () => void; 
   onSave?: (data?: any) => void; 
-  mode?: 'edit' | 'create' 
+  mode?: 'edit' | 'create';
+  project?: any; // Add project data to access owners
 }> = ({
   node,
   createNode,
   onClose,
   onSave,
-  mode = 'edit'
+  mode = 'edit',
+  project
 }) => {
   // Use createNode data when in create mode, otherwise use node data
   const activeNode = mode === 'create' ? createNode : node;
@@ -34,12 +36,41 @@ const EditFanout: React.FC<{
   // Task-specific fields
   const [status, setStatus] = useState(node?.status || '');
   const [depth, setDepth] = useState(node?.depth ?? 0);
-  const [users, setUsers] = useState<string>(Array.isArray(node?.users) ? node.users.join(', ') : '');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(
+    Array.isArray(node?.users) 
+      ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
+      : []
+  );
   const [loading, setLoading] = useState(false);
+
+  // Update state when node changes
+  useEffect(() => {
+    if (mode === 'edit' && node) {
+      setTitle(node.title || node.name || '');
+      setDescription(node.description || '');
+      setStatus(node.status || '');
+      setDepth(node.depth ?? 0);
+      setSelectedUsers(
+        Array.isArray(node.users) 
+          ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
+          : []
+      );
+    } else if (mode === 'create') {
+      // Reset to empty values for create mode
+      setTitle('');
+      setDescription('');
+      setStatus('');
+      setDepth(0);
+      setSelectedUsers([]);
+    }
+  }, [node, mode]); // Re-run when node or mode changes
 
   const handleSave = async () => {
     try {
       setLoading(true);
+      
+      console.log('handleSave called with selectedUsers:', selectedUsers);
+      console.log('Node users:', node?.users);
       
       if (mode === 'create' && createNode) {
         console.log('Creating node:', {
@@ -78,11 +109,30 @@ const EditFanout: React.FC<{
         if (node.type === 'task') {
           const changedStatus = status !== (node.status || '');
           const changedDepth = depth !== (node.depth ?? 0);
-          const changedUsers = users !== (Array.isArray(node.users) ? node.users.join(', ') : '');
+          // Convert node.users to usernames for comparison
+          const nodeUsernames = (node.users || []).map((user: any) => 
+            typeof user === 'string' ? user : user.username
+          );
+          const changedUsers = JSON.stringify(selectedUsers.sort()) !== JSON.stringify(nodeUsernames.sort());
+
+          console.log('Task update debug:', {
+            selectedUsers,
+            nodeUsers: node.users,
+            nodeUsernames,
+            changedUsers,
+            selectedUsersSorted: selectedUsers.sort(),
+            nodeUsernamesSorted: nodeUsernames.sort()
+          });
 
           if (changedStatus) data.status = status;
           if (changedDepth) data.depth = depth;
-          if (changedUsers) data.users = users.split(',').map((u: string) => u.trim());
+          if (changedUsers) data.users = selectedUsers;
+          
+          // Always include users for now to debug
+          if (selectedUsers.length > 0) {
+            data.users = selectedUsers;
+            console.log('Force including users:', selectedUsers);
+          }
         }
 
         const parentIds = {
@@ -93,10 +143,13 @@ const EditFanout: React.FC<{
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
         if (changedKeys.length > 0) {
-          console.log('Calling updateNode with:', data, node, parentIds);
+          console.log('Calling updateNode with data:', data);
+          console.log('Original node:', node);
+          console.log('Parent IDs:', parentIds);
           await updateNode(data, parentIds);
         }
 
+        onSave?.(); // Refresh the project data
         onClose();
       }
     } catch (error: any) {
@@ -105,6 +158,82 @@ const EditFanout: React.FC<{
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!node) return;
+    
+    const confirmDelete = window.confirm(`Are you sure you want to delete this ${node.type}?`);
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      
+      // Determine parent IDs based on node type
+      let parentIds: any = {
+        projectId: node.projectId
+      };
+
+      if (node.type === 'feature') {
+        parentIds.epicId = node.epicId;
+      } else if (node.type === 'task') {
+        parentIds.epicId = node.epicId;
+        parentIds.featureId = node.featureId;
+      }
+
+      await deleteNode(node, parentIds);
+      onSave?.(); // Refresh data
+      onClose();
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      alert(`Error deleting ${node.type}: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddChild = () => {
+    if (!node) return;
+
+    let nodeType = '';
+    let parentIds: any = {};
+
+    if (node.type === 'project') {
+      nodeType = 'epic';
+      parentIds = { projectId: node.id || node.projectId };
+    } else if (node.type === 'epic') {
+      nodeType = 'feature';
+      parentIds = { 
+        projectId: node.projectId, 
+        epicId: node.id || node.epicId
+      };
+    } else if (node.type === 'feature') {
+      nodeType = 'task';
+      parentIds = { 
+        projectId: node.projectId,
+        epicId: node.epicId,
+        featureId: node.id || node.featureId
+      };
+    } else {
+      // Tasks can't have children
+      return;
+    }
+
+    // Close current edit and open create mode
+    onClose();
+    // You'll need to pass a callback to open create mode
+    // This will be handled by the parent component
+    setTimeout(() => {
+      // Trigger create mode in parent component
+      if (onSave) {
+        onSave({ 
+          action: 'create', 
+          nodeType, 
+          parentIds, 
+          parentNode: node 
+        });
+      }
+    }, 100);
   };
 
   const getDisplayType = () => {
@@ -117,12 +246,26 @@ const EditFanout: React.FC<{
     return 'Item';
   };
 
+  const getAddButtonText = () => {
+    if (!node) return '';
+    
+    switch (node.type) {
+      case 'project': return 'Add Epic';
+      case 'epic': return 'Add Feature';
+      case 'feature': return 'Add Task';
+      default: return '';
+    }
+  };
+
+  const showAddButton = node && ['project', 'epic', 'feature'].includes(node.type);
+  const showDeleteButton = node && ['epic', 'feature', 'task'].includes(node.type);
+
   return (
     <div style={{
       position: 'absolute',
       right: 0,
       top: 0,
-      width: 340,
+      width: 360,
       background: '#fff',
       boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
       borderRadius: 12,
@@ -132,45 +275,273 @@ const EditFanout: React.FC<{
       <h3>
         {mode === 'create' ? `Create ${getDisplayType()}` : `Edit ${getDisplayType()}`}
       </h3>
+      
+      {/* Existing form fields */}
       <label>Title</label>
-      <input value={title} onChange={e => setTitle(e.target.value)} style={{ width: '100%' }} />
+      <input 
+        value={title} 
+        onChange={e => setTitle(e.target.value)} 
+        style={{ width: '100%', marginBottom: '12px' }} 
+      />
+      
       <label>Description</label>
-      <textarea value={description} onChange={e => setDescription(e.target.value)} style={{ width: '100%' }} />
+      <textarea 
+        value={description} 
+        onChange={e => setDescription(e.target.value)} 
+        style={{ width: '100%', marginBottom: '12px' }} 
+      />
 
-      {(node?.type === 'task' || node?.taskId || (mode === 'create' && createNode?.type === 'task')) && (
+      {/* Project-specific fields */}
+      {(node?.type === 'project' && mode === 'edit') && (
+        <>
+          <label>Project Owners</label>
+          <div style={{
+            marginBottom: '12px',
+            padding: '8px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '4px',
+            border: '1px solid #e0e6ed'
+          }}>
+            {node.owners && node.owners.length > 0 ? (
+              <div>
+                {node.owners.map((owner: any, index: number) => (
+                  <span key={index} style={{
+                    display: 'inline-block',
+                    backgroundColor: '#022AFF',
+                    color: '#fff',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.9rem',
+                    margin: '2px 4px 2px 0'
+                  }}>
+                    {owner.username || owner.name || 'Unknown User'}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span style={{ color: '#666', fontStyle: 'italic' }}>
+                {node.owner ? `Single Owner: ${node.owner.username || node.owner.name}` : 'No owners assigned'}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Task-specific fields */}
+      {(node?.type === 'task' || (mode === 'create' && createNode?.type === 'task')) && (
         <>
           <label>Status</label>
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: '100%' }}>
+          <select 
+            value={status} 
+            onChange={e => setStatus(e.target.value)} 
+            style={{ width: '100%', marginBottom: '12px' }}
+          >
             <option value="">Select status</option>
-            <option value="TODO">To Do</option>
-            <option value="NOT_STARTED">Not Started</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="BLOCKED">Blocked</option>
-            <option value="CANCELLED">Cancelled</option>
+            <option value="TODO">TODO</option>
+            <option value="NOT_STARTED">NOT STARTED</option>
+            <option value="IN_PROGRESS">IN PROGRESS</option>
+            <option value="COMPLETED">COMPLETED</option>
+            <option value="BLOCKED">BLOCKED</option>
+            <option value="CANCELLED">CANCELLED</option>
           </select>
+          
           <label>Depth</label>
           <input
             type="number"
             value={depth}
             onChange={e => setDepth(Number(e.target.value))}
-            style={{ width: '100%' }}
+            style={{ width: '100%', marginBottom: '12px' }}
           />
-          <label>Users (comma separated)</label>
-          <input
-            value={users}
-            onChange={e => setUsers(e.target.value)}
-            placeholder="username1, username2"
-            style={{ width: '100%' }}
-          />
+          
+          <label>Assigned Users</label>
+          <div style={{ marginBottom: '12px' }}>
+            {/* Get project owners from the node's project context */}
+            {(() => {
+              // Try to get owners from various sources
+              const getProjectOwners = () => {
+                // If we have project prop passed directly
+                if (project?.owners) return project.owners;
+                
+                // Try to get from node context (works for all node types)
+                if (node?.projectOwners) return node.projectOwners;
+                
+                // For project nodes, get owners directly
+                if (node?.type === 'project' && node?.owners) return node.owners;
+                
+                // Fallback to single owner if available
+                if (node?.owner) return [node.owner];
+                if (project?.owner) return [project.owner];
+                
+                return [];
+              };
+
+              const projectOwners = getProjectOwners();
+              
+              if (projectOwners.length === 0) {
+                return (
+                  <div style={{ 
+                    padding: '8px', 
+                    backgroundColor: '#fff3cd', 
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px',
+                    color: '#856404'
+                  }}>
+                    No project owners available for assignment
+                  </div>
+                );
+              }
+
+              return (
+                <>
+                  {/* Selected users display */}
+                  <div style={{
+                    minHeight: '40px',
+                    padding: '8px',
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #e0e6ed',
+                    borderRadius: '4px',
+                    marginBottom: '8px'
+                  }}>
+                    {selectedUsers.length === 0 ? (
+                      <span style={{ color: '#666', fontStyle: 'italic' }}>No users assigned</span>
+                    ) : (
+                      selectedUsers.map((username, index) => (
+                        <span key={index} style={{
+                          display: 'inline-block',
+                          backgroundColor: '#022AFF',
+                          color: '#fff',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.9rem',
+                          margin: '2px 4px 2px 0',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          console.log('Removing user from task:', username);
+                          setSelectedUsers(prev => {
+                            const newUsers = prev.filter(u => u !== username);
+                            console.log('Updated selectedUsers after removal:', newUsers);
+                            return newUsers;
+                          });
+                        }}
+                        title="Click to remove"
+                        >
+                          {username} ×
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Available users dropdown */}
+                  <select
+                    onChange={e => {
+                      const username = e.target.value;
+                      if (username && !selectedUsers.includes(username)) {
+                        console.log('Adding user to task:', username);
+                        setSelectedUsers(prev => {
+                          const newUsers = [...prev, username];
+                          console.log('Updated selectedUsers:', newUsers);
+                          return newUsers;
+                        });
+                      }
+                      e.target.value = ''; // Reset dropdown
+                    }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #e0e6ed' }}
+                  >
+                    <option value="">Select user to assign...</option>
+                    {projectOwners
+                      .filter((owner: any) => !selectedUsers.includes(owner.username || owner.name))
+                      .map((owner: any, index: number) => (
+                        <option key={index} value={owner.username || owner.name}>
+                          {owner.username || owner.name}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </>
+              );
+            })()}
+          </div>
         </>
       )}
 
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <button onClick={onClose}>Close</button>
-        <button onClick={handleSave} disabled={loading}>
-          {loading ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}
-        </button>
+      {/* Action buttons */}
+      <div style={{ 
+        marginTop: 20, 
+        display: 'flex', 
+        gap: 8, 
+        flexWrap: 'wrap',
+        justifyContent: 'space-between'
+      }}>
+        {/* Left side - Close and Save */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button 
+            onClick={onClose}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#f5f5f5',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Close
+          </button>
+          
+          <button 
+            onClick={handleSave} 
+            disabled={loading}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            {loading ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}
+          </button>
+        </div>
+
+        {/* Right side - Add and Delete */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {showAddButton && (
+            <button 
+              onClick={handleAddChild}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#ffb800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              ✕ {getAddButtonText()}
+            </button>
+          )}
+          
+          {showDeleteButton && (
+            <button 
+              onClick={handleDelete}
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1
+              }}
+            >
+              🗑️ Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

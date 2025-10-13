@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import EditFanout from './EditFanout';
-import ThreeDotsMenu from './ThreeDotsMenu'; // Import the ThreeDotsMenu component
 import { deleteNode, addNode } from '../utils/graphqlMutations';
 
 const getNodeStyle = (type: string) => {
@@ -150,241 +149,251 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
   };
 
   return (
-    <ul style={{
-      textAlign: 'left',
-      display: 'inline-block',
-      marginTop: '20px',
-      minWidth: '300px',
-      padding: 0,
-      listStyle: 'none'
+    <div style={{
+      maxHeight: '70vh',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      padding: '20px 500px 10px 50px',
+      backgroundColor: '#f8f9fa',
+      borderRadius: '12px',
+      border: '1px solid #e0e6ed',
+      textAlign: 'left'
     }}>
-      {/* Project node */}
-      <li style={{
-        ...getNodeStyle('project'),
-        borderRadius: '22px',
-        padding: '10px 24px',
+      {/* Project Header */}
+      <div style={{
+        backgroundColor: '#022AFF',
+        color: '#fff',
+        padding: '20px 20px',
+        borderRadius: '8px',
         marginBottom: '16px',
-        fontSize: '1.2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <span>{project.title || project.name}</span>
-        <ThreeDotsMenu
-          onEdit={() => setEditNode({
-            ...project,
-            type: 'project',
-            id: project.id || project.projectId, // <-- ensure this is present!
-          })}
-          onAddChild={() => {
-            setCreateNode({
-              type: 'epic',
-              parentIds: { projectId: project.projectId || project.id },
-              parentNode: project,
-            });
-          }}
-          addChildText="Add Epic"
-          onDelete={() => {/* handle delete project */}}
-          iconColor="#fff"
-          size={22}
-        />
-        <ul style={{ marginLeft: '24px', marginTop: '8px', padding: 0, listStyle: 'none' }}>
-          {project.epics && project.epics.map((epic: any) => {
-            const epicId = epic.id || epic._id || epic.title;
-            const hasFeatures = Array.isArray(epic.features) && epic.features.length > 0;
-            const isEpicExpanded = expandedEpic === epicId;
-            return (
-              <li key={epicId} style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>
-                  {epic.title}
-                  {hasFeatures && (
-                    <button
-                      onClick={() => setExpandedEpic(isEpicExpanded ? null : epicId)}
-                      style={{
-                        marginLeft: 8,
-                        background: 'none',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: '1rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {isEpicExpanded ? '▲' : '▼'}
-                    </button>
-                  )}
-                </span>
-                <ThreeDotsMenu
-                  onEdit={() => {
-                    // Debug log (outside JSX if needed)
-                    console.log('project.id:', project.id, 'project.projectId:', project.projectId);
-                    console.log('epic.id:', epic.id, 'epic.epicId:', epic.epicId);
+        fontSize: '1.1rem',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+        textAlign: 'left'
+      }}
+      onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#001a66'}
+      onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#022AFF'}
+      onClick={() => setEditNode({...project, type: 'project'})}
+      >
+        📋 {project.title || project.name}
+      </div>
 
-                    setEditNode({
-                      ...epic,
-                      type: 'epic',
-                      id: epic.epicId || epic.id, // always use epicId for the epic
-                      projectId: project.projectId || project.id, // always use projectId for the project
-                    });
-                  }}
-                  onAddChild={() => {
-                    setCreateNode({
-                      type: 'feature',
-                      parentIds: {
-                        projectId: project.projectId || project.id,
-                        epicId: epic.epicId || epic.id
-                      },
-                      parentNode: epic
-                    });
-                  }}
-                  addChildText="Add Feature"
-                  onDelete={async () => {
-                    try {
-                      await deleteNode(
-                        { type: 'epic', id: epic.epicId || epic.id },
-                        { projectId: project.projectId || project.id }
-                      );
-                      fetchProjectById(); // refresh after delete
-                    } catch (error) {
-                      console.error('Failed to delete epic:', error);
-                      alert('Failed to delete epic. Please try again.');
-                    }
-                  }}
-                  iconColor="#fff"
-                  size={20}
-                />
-                {hasFeatures && isEpicExpanded && (
-                  <ul style={{ marginLeft: '24px', marginTop: '8px', padding: 0, listStyle: 'none' }}>
-                    {epic.features.map((feature: any) => {
-                      const featureId = feature.id || feature._id || feature.title;
-                      const hasTasks = Array.isArray(feature.tasks) && feature.tasks.length > 0;
-                      const isFeatureExpanded = expandedFeature === featureId;
-                      return (
-                        <li key={featureId} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span>
-                            {feature.title}
-                            {hasTasks && (
-                              <button
-                                onClick={() => setExpandedFeature(isFeatureExpanded ? null : featureId)}
-                                style={{
-                                  marginLeft: 8,
-                                  background: 'none',
-                                  border: 'none',
-                                  color: 'rgba(255, 255, 255, 1)',
-                                  fontSize: '1rem',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                {isFeatureExpanded ? '▲' : '▼'}
-                              </button>
-                            )}
-                          </span>
-                          <ThreeDotsMenu
-                            onEdit={() => setEditNode({
-                              ...feature,
-                              type: 'feature',
-                              id: feature.id || feature.featureId,
-                              projectId: project.projectId || project.id, // <-- add this!
-                              epicId: epic.epicId || epic.id,             // <-- add this!
+      {/* Epics Container */}
+      <div style={{ 
+        marginLeft: '30px',
+        width: '28%',
+        maxWidth: '350px',
+        minWidth: '260px'
+      }}>
+        {project.epics && project.epics.map((epic: any) => {
+          const epicId = epic.id || epic._id || epic.title;
+          const hasFeatures = Array.isArray(epic.features) && epic.features.length > 0;
+          const isEpicExpanded = expandedEpic === epicId;
+          
+          return (
+            <div key={epicId} style={{ marginBottom: '12px' }}>
+              {/* Epic Item */}
+              <div style={{
+                backgroundColor: '#2456e6',
+                color: '#fff',
+                padding: '10px 16px',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+                textAlign: 'left'
+              }}
+              onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#1e4acc'}
+              onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#2456e6'}
+              >
+                <span 
+                  onClick={() => setEditNode({
+                    ...epic, 
+                    type: 'epic',
+                    projectId: project.projectId || project.id
+                  })}
+                  style={{ flex: 1, fontSize: '1rem', fontWeight: '500', textAlign: 'left' }}
+                >
+                  📚 {epic.title}
+                </span>
+                
+                {hasFeatures && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedEpic(isEpicExpanded ? null : epicId);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '1.2rem',
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(255,255,255,0.2)'}
+                    onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = 'transparent'}
+                  >
+                    {isEpicExpanded ? '▲' : '▼'}
+                  </button>
+                )}
+              </div>
+
+              {/* Features Container (indented) */}
+              {hasFeatures && isEpicExpanded && (
+                <div style={{ marginLeft: '30px', marginTop: '8px' }}>
+                  {epic.features.map((feature: any) => {
+                    const featureId = feature.id || feature._id || feature.title;
+                    const hasTasks = Array.isArray(feature.tasks) && feature.tasks.length > 0;
+                    const isFeatureExpanded = expandedFeature === featureId;
+                    
+                    return (
+                      <div key={featureId} style={{ marginBottom: '8px' }}>
+                        {/* Feature Item */}
+                        <div style={{
+                          backgroundColor: '#fff',
+                          color: '#022AFF',
+                          border: '2px solid #022AFF',
+                          padding: '8px 14px',
+                          borderRadius: '5px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          textAlign: 'left'
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.target as HTMLElement).style.backgroundColor = '#f0f6ff';
+                          (e.target as HTMLElement).style.transform = 'translateX(4px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.target as HTMLElement).style.backgroundColor = '#fff';
+                          (e.target as HTMLElement).style.transform = 'translateX(0px)';
+                        }}
+                        >
+                          <span 
+                            onClick={() => setEditNode({
+                              ...feature, 
+                              type: 'feature', 
+                              projectId: project.projectId || project.id,
+                              epicId: epic.epicId || epic.id
                             })}
-                            onAddChild={() => {
-                              setCreateNode({
-                                type: 'task',
-                                parentIds: {
+                            style={{ flex: 1, fontSize: '0.9rem', fontWeight: '500', textAlign: 'left' }}
+                          >
+                            🎯 {feature.title}
+                          </span>
+                          
+                          {hasTasks && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedFeature(isFeatureExpanded ? null : featureId);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#022AFF',
+                                fontSize: '1rem',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                transition: 'background-color 0.2s'
+                              }}
+                              onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = 'rgba(2,42,255,0.1)'}
+                              onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = 'transparent'}
+                            >
+                              {isFeatureExpanded ? '▲' : '▼'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Tasks Container (further indented) */}
+                        {hasTasks && isFeatureExpanded && (
+                          <div style={{ marginLeft: '30px', marginTop: '6px' }}>
+                            {feature.tasks.map((task: any) => (
+                              <div
+                                key={task.id || task._id || task.title}
+                                style={{
+                                  backgroundColor: '#e6f0ff',
+                                  color: '#022AFF',
+                                  border: '1px solid #b3d1ff',
+                                  borderRadius: '4px',
+                                  padding: '6px 10px',
+                                  marginBottom: '4px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  fontSize: '0.85rem',
+                                  textAlign: 'left'
+                                }}
+                                onMouseEnter={(e) => {
+                                  (e.target as HTMLElement).style.backgroundColor = '#cce6ff';
+                                  (e.target as HTMLElement).style.transform = 'translateX(4px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  (e.target as HTMLElement).style.backgroundColor = '#e6f0ff';
+                                  (e.target as HTMLElement).style.transform = 'translateX(0px)';
+                                }}
+                                onClick={() => setEditNode({
+                                  ...task,
+                                  type: 'task',
+                                  id: task.id || task.taskId,
                                   projectId: project.projectId || project.id,
                                   epicId: epic.epicId || epic.id,
-                                  featureId: feature.featureId || feature.id
-                                },
-                                parentNode: feature
-                              });
-                            }}
-                            addChildText="Add Task"
-                            onDelete={async () => {
-                              try {
-                                await deleteNode(
-                                  { type: 'feature', id: feature.id || feature.featureId },
-                                  { 
-                                    projectId: project.projectId || project.id,
-                                    epicId: epic.epicId || epic.id
-                                  }
-                                );
-                                fetchProjectById(); // refresh after delete
-                              } catch (error) {
-                                console.error('Failed to delete feature:', error);
-                                alert('Failed to delete feature. Please try again.');
-                              }
-                            }}
-                            iconColor="rgba(252, 252, 252, 1)"
-                            size={18}
-                          />
-                          {hasTasks && isFeatureExpanded && (
-                            <ul style={{ marginLeft: '20px', marginTop: '6px', padding: 0, listStyle: 'none' }}>
-                              {feature.tasks.map((task: any) => (
-                                <li
-                                  key={task.id || task._id || task.title}
-                                  style={{
-                                    ...getNodeStyle('task'),
-                                    borderRadius: '8px',
-                                    padding: '4px 12px',
-                                    marginBottom: '4px',
-                                    fontSize: '1rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                  }}
-                                >
-                                  <span>{task.title}</span>
-                                  <ThreeDotsMenu
-                                    onEdit={() => setEditNode({
-                                      ...task,
-                                      type: 'task',
-                                      id: task.id || task.taskId,
-                                      projectId: project.projectId || project.id,   // <-- add this!
-                                      epicId: epic.epicId || epic.id,               // <-- add this!
-                                      featureId: feature.featureId || feature.id,   // <-- add this!
-                                    })}
-                                    onDelete={async () => {
-                                      try {
-                                        await deleteNode(
-                                          { type: 'task', id: task.id || task.taskId },
-                                          { 
-                                            projectId: project.projectId || project.id,
-                                            epicId: epic.epicId || epic.id,
-                                            featureId: feature.featureId || feature.id
-                                          }
-                                        );
-                                        fetchProjectById(); // refresh after delete
-                                      } catch (error) {
-                                        console.error('Failed to delete task:', error);
-                                        alert('Failed to delete task. Please try again.');
-                                      }
-                                    }}
-                                    iconColor="#022AFF"
-                                    size={16}
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </li>
+                                  featureId: feature.featureId || feature.id,
+                                })}
+                              >
+                                ✓ {task.title}
+                                {task.status && (
+                                  <span style={{
+                                    marginLeft: '8px',
+                                    fontSize: '0.75rem',
+                                    backgroundColor: '#022AFF',
+                                    color: '#fff',
+                                    padding: '2px 6px',
+                                    borderRadius: '3px'
+                                  }}>
+                                    {task.status}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      
       {editNode && (
         <EditFanout
           node={editNode}
-          onClose={() => {
+          mode="edit"
+          project={project}
+          onClose={() => setEditNode(null)}
+          onSave={async (data?: any) => {
+            if (data?.action === 'create') {
+              // Handle create mode trigger
+              setCreateNode({
+                type: data.nodeType,
+                parentIds: data.parentIds,
+                parentNode: data.parentNode
+              });
+            } else {
+              // Normal save - refresh data
+              await fetchProjectById();
+            }
             setEditNode(null);
-            fetchProjectById(); // <-- refresh after closing the fanout
-          }}
-          onSave={data => {
-            setEditNode(null);
-            fetchProjectById(); // <-- refresh after saving
           }}
         />
       )}
@@ -392,6 +401,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
         <EditFanout
           createNode={createNode}
           mode="create"
+          project={project}
           onClose={() => setCreateNode(null)}
           onSave={async () => {
             await fetchProjectById();
@@ -399,7 +409,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
           }}
         />
       )}
-    </ul>
+    </div>
   );
 };
 

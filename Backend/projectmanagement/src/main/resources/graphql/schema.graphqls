@@ -12,6 +12,7 @@ type Project {
     depth: Int
     createdOn: String
     owner: User!
+    owners: [User!]!
     epics: [Epic!]
 }
 
@@ -34,6 +35,7 @@ type Task {
     title: String!
     description: String
     status: String!
+    users: [User!]!
 }
 
 type Query {
@@ -55,6 +57,13 @@ type Mutation {
     updateTaskTitle(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newTitle: String!): Task!
     updateTaskDescription(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDescription: String!): Task!
     updateTaskStatus(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newStatus: String!): Task!
+    updateTaskUsers(
+        projectId: ID!,
+        epicId: ID!,
+        featureId: ID!,
+        taskId: ID!,
+        userIds: [ID!]!
+    ): Task!
     deleteEpic(projectId: ID!, epicId: ID!): Boolean!
     deleteFeature(projectId: ID!, epicId: ID!, featureId: ID!): Boolean!
     deleteTask(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!): Boolean!

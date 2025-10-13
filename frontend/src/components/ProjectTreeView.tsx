@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
-import ThreeDotsMenu from './ThreeDotsMenu';
 import { deleteNode, addNode } from '../utils/graphqlMutations';
 
 function measureTextWidth(text: string, font: string): number {
@@ -28,7 +27,7 @@ const getNodeStyle = (type: string) => {
   }
 };
 
-const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }> = ({ treeData, fetchProjectById }) => {
+const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -260,84 +259,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
             ))}
           </g>
         )}
-        {/* Three dots menu for editing */}
-        <foreignObject
-          x={width / 2 + 8}
-          y={-height / 2}
-          width={40}
-          height={40}
-          style={{ overflow: 'visible' }}
-        >
-          <ThreeDotsMenu
-            onEdit={() => setEditNode({
-              ...nodeDatum,
-              type: nodeDatum.type,
-              id: nodeDatum.id,
-              projectId: nodeDatum.projectId,
-              epicId: nodeDatum.epicId,
-              featureId: nodeDatum.featureId,
-            })}
-            onAddChild={() => {
-              try {
-                let nodeType = '';
-                
-                // Determine what type of child to add based on current node type
-                if (nodeDatum.type === 'project') {
-                  nodeType = 'epic';
-                } else if (nodeDatum.type === 'epic') {
-                  nodeType = 'feature';
-                } else if (nodeDatum.type === 'feature') {
-                  nodeType = 'task';
-                } else {
-                  alert('Cannot add children to tasks.');
-                  return;
-                }
-
-                setCreateNode({
-                  type: nodeType,
-                  parentIds: {
-                    projectId: nodeDatum.projectId,
-                    epicId: nodeDatum.epicId,
-                    featureId: nodeDatum.featureId,
-                  },
-                  parentNode: nodeDatum
-                });
-              } catch (error) {
-                console.error('Failed to prepare add operation:', error);
-              }
-            }}
-            addChildText={
-              nodeDatum.type === 'project' ? 'Add Epic' :
-              nodeDatum.type === 'epic' ? 'Add Feature' :
-              nodeDatum.type === 'feature' ? 'Add Task' : 
-              undefined
-            }
-            onDelete={async () => {
-              try {
-                // Don't allow deleting projects from tree view
-                if (nodeDatum.type === 'project') {
-                  alert('Project deletion is not available from tree view.');
-                  return;
-                }
-
-                const parentIds: any = { projectId: nodeDatum.projectId };
-                if (nodeDatum.epicId) parentIds.epicId = nodeDatum.epicId;
-                if (nodeDatum.featureId) parentIds.featureId = nodeDatum.featureId;
-
-                await deleteNode(
-                  { type: nodeDatum.type, id: nodeDatum.id },
-                  parentIds
-                );
-                fetchProjectById(); // refresh after delete
-              } catch (error) {
-                console.error(`Failed to delete ${nodeDatum.type}:`, error);
-                alert(`Failed to delete ${nodeDatum.type}. Please try again.`);
-              }
-            }}
-            iconColor="#fff"
-            size={22}
-          />
-        </foreignObject>
       </g>
     );
   };
@@ -378,6 +299,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
         <EditFanout
           node={editNode}
           mode="edit"
+          project={project}
           onClose={() => {
             setEditNode(null);
             fetchProjectById(); // <-- refreshes the current project data
@@ -392,6 +314,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void }>
         <EditFanout
           createNode={createNode}
           mode="create"
+          project={project}
           onClose={() => setCreateNode(null)}
           onSave={async () => {
             setCreateNode(null);

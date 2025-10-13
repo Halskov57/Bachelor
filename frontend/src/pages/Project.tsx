@@ -47,16 +47,63 @@ const Project: React.FC = () => {
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree'>('list');
 
-  useEffect(() => {
+  const fetchProjectById = async () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (!id) return;
+    
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:8081/projects/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => setProject(data));
+    const query = `
+      query($id: ID!) {
+        projectById(id: $id) {
+          id
+          title
+          description
+          owners {
+            id
+            username
+          }
+          epics {
+            id
+            title
+            description
+            features {
+              id
+              title
+              description
+              tasks {
+                id
+                title
+                description
+                status
+                users {
+                  id
+                  username
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    
+    const response = await fetch('http://localhost:8081/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ query, variables: { id } })
+    });
+    
+    const result = await response.json();
+    if (result.data?.projectById) {
+      setProject(result.data.projectById);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectById();
   }, []);
 
   const treeData = useMemo(() => {
@@ -126,32 +173,13 @@ const Project: React.FC = () => {
       </h1>
       <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
         {view === 'list' ? (
-          <ProjectListView project={project} fetchProjectById={() => {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            if (!id) return;
-            const token = localStorage.getItem('token');
-            fetch(`http://localhost:8081/projects/${id}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            })
-              .then(res => res.json())
-              .then(data => setProject(data));
-          }} />
+          <ProjectListView project={project} fetchProjectById={fetchProjectById} />
         ) : (
           <ProjectTreeView
             key={project.id || project._id || project.title}
             treeData={treeData}
-            fetchProjectById={() => {
-              const params = new URLSearchParams(window.location.search);
-              const id = params.get('id');
-              if (!id) return;
-              const token = localStorage.getItem('token');
-              fetch(`http://localhost:8081/projects/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              })
-                .then(res => res.json())
-                .then(data => setProject(data));
-            }}
+            project={project}
+            fetchProjectById={fetchProjectById}
           />
         )}
       </div>
