@@ -43,9 +43,9 @@ public class UserService {
     }
 
     public boolean verifyPassword(String username, String rawPassword) {
-    return userRepository.findByUsername(username)
-            .map(user -> passwordEncoder.matches(rawPassword, user.getHashedPassword()))
-            .orElse(false);
+        return userRepository.findByUsername(username)
+                .map(user -> passwordEncoder.matches(rawPassword, user.getHashedPassword()))
+                .orElse(false);
     }
 
     public User findByUsername(String username) {
@@ -53,7 +53,7 @@ public class UserService {
                 .orElse(null);
     }
 
-        public User save(User user) {
+    public User save(User user) {
         return userRepository.save(user);
     }
 
@@ -66,5 +66,4 @@ public class UserService {
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
-
 }
