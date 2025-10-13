@@ -91,6 +91,34 @@ private Project createMinimalProjectForUser(String username, ProjectService proj
     Project createdProject = projectService.createProject(project, username);
     System.out.println("✅ Created minimal project for " + username + " with ID: " + createdProject.getId());
 
+    // Add 1 epic, 1 feature, and 1 task to the minimal project
+    try {
+        // Create an epic
+        bachelor.projectmanagement.model.Epic epic = new bachelor.projectmanagement.model.Epic();
+        epic.setTitle("Sample Epic");
+        epic.setDescription("This is a sample epic for testing the project structure.");
+        bachelor.projectmanagement.model.Epic createdEpic = projectService.addEpicToProject(createdProject.getId(), epic);
+        System.out.println("✅ Added epic to minimal project: " + createdEpic.getTitle());
+
+        // Create a feature under the epic
+        bachelor.projectmanagement.model.Feature feature = new bachelor.projectmanagement.model.Feature();
+        feature.setTitle("Sample Feature");
+        feature.setDescription("This is a sample feature for testing the project hierarchy.");
+        bachelor.projectmanagement.model.Feature createdFeature = projectService.addFeatureToEpic(createdProject.getId(), createdEpic.getEpicId(), feature);
+        System.out.println("✅ Added feature to epic: " + createdFeature.getTitle());
+
+        // Create a task under the feature
+        bachelor.projectmanagement.model.Task task = new bachelor.projectmanagement.model.Task();
+        task.setTitle("Sample Task");
+        task.setDescription("This is a sample task for testing the complete project hierarchy.");
+        task.setStatus(bachelor.projectmanagement.model.TaskStatus.TODO);
+        bachelor.projectmanagement.model.Task createdTask = projectService.addTaskToFeature(createdProject.getId(), createdEpic.getEpicId(), createdFeature.getFeatureId(), task);
+        System.out.println("✅ Added task to feature: " + createdTask.getTitle());
+        
+    } catch (Exception e) {
+        System.err.println("❌ Error adding structure to minimal project: " + e.getMessage());
+    }
+
     return createdProject;
 }
 }

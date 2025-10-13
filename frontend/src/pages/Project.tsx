@@ -111,11 +111,81 @@ const Project: React.FC = () => {
     return tree ? [tree] : [];
   }, [project]);
 
+  const handleBackToDashboard = () => {
+    window.location.href = '/dashboard';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+
   if (!project) return <div>Loading...</div>;
 
   return (
     <>
+      {/* Top navigation bar */}
       <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: '#022AFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <button
+          onClick={handleBackToDashboard}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        <h2 style={{
+          color: '#fff',
+          margin: 0,
+          fontWeight: 700
+        }}>
+          {project.title || project.name}
+        </h2>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Add top margin to account for fixed header */}
+      <div style={{ marginTop: '80px' }}>
+        <div
         style={{
           textAlign: 'center',
           marginTop: '24px',
@@ -160,17 +230,7 @@ const Project: React.FC = () => {
           Tree View
         </button>
       </div>
-      <h1 style={{
-        textAlign: 'center',
-        marginTop: '40px',
-        color: '#022AFF',
-        fontWeight: 800,
-        fontSize: '2.5rem',
-        zIndex: 2,
-        position: 'relative'
-      }}>
-        {project.title || project.name}
-      </h1>
+      
       <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
         {view === 'list' ? (
           <ProjectListView project={project} fetchProjectById={fetchProjectById} />
@@ -183,6 +243,7 @@ const Project: React.FC = () => {
           />
         )}
       </div>
+      </div> {/* Close the marginTop div */}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const LoginBox: React.FC = () => {
@@ -7,7 +7,19 @@ const LoginBox: React.FC = () => {
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
   const [error, setError] = useState('');
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const navigate = useNavigate();
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldownSeconds > 0) {
+      const timer = setTimeout(() => {
+        setCooldownSeconds(cooldownSeconds - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldownSeconds]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,28 +47,40 @@ const LoginBox: React.FC = () => {
         setError('Network error');
       }
     } else {
+      // Check if user creation is on cooldown
+      if (cooldownSeconds > 0) {
+        setError(`Please wait ${cooldownSeconds} seconds before creating another user`);
+        return;
+      }
+
       if (password !== password2) {
         setError('Passwords do not match');
         return;
       }
-      // Registration logic here (similar to login)
+
+      // Registration logic with cooldown
       try {
+        setIsCreatingUser(true);
         const res = await fetch('http://localhost:8081/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
         });
         if (res.ok) {
-          setError('Account created');
+          setError('Account created successfully!');
           setMode('login');
           setPassword('');
           setPassword2('');
+          // Start 10-second cooldown
+          setCooldownSeconds(10);
         } else {
           const data = await res.json();
           setError(data.message || 'Account creation failed');
         }
       } catch (err) {
         setError('Network error');
+      } finally {
+        setIsCreatingUser(false);
       }
     }
   };
@@ -205,7 +229,7 @@ const LoginBox: React.FC = () => {
         {error && (
           <div
             style={{
-              color: error === 'Account created' ? '#388e3c' : '#d32f2f', // green for success, red for error
+              color: error.includes('Account created successfully') ? '#388e3c' : '#d32f2f', // green for success, red for error
               marginBottom: '12px',
               textAlign: 'center',
               fontWeight: 600,
@@ -216,21 +240,36 @@ const LoginBox: React.FC = () => {
         )}
         <button
           type="submit"
+          disabled={mode === 'create' && (cooldownSeconds > 0 || isCreatingUser)}
           style={{
             width: '100%',
             padding: '12px 0',
             borderRadius: '8px',
             border: 'none',
-            background: '#022AFF',
+            background: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
+              ? '#ccc' 
+              : '#022AFF',
             color: '#fff',
             fontWeight: 700,
             fontSize: '1.1rem',
             boxShadow: '0 2px 8px rgba(2,42,255,0.18)',
             marginTop: '8px',
-            cursor: 'pointer',
+            cursor: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
+              ? 'not-allowed' 
+              : 'pointer',
+            opacity: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
+              ? 0.6 
+              : 1,
           }}
         >
-          {mode === 'login' ? 'Login' : 'Create Account'}
+          {mode === 'login' 
+            ? 'Login' 
+            : isCreatingUser 
+              ? 'Creating...'
+              : cooldownSeconds > 0 
+                ? `Wait ${cooldownSeconds}s`
+                : 'Create Account'
+          }
         </button>
       </form>
     </div>
