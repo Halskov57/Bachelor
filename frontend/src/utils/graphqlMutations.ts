@@ -7,6 +7,101 @@ function getGraphQLHeaders() {
   };
 }
 
+// Course Level Config mutations
+export async function updateCourseLevelConfig(courseLevel: number, taskUserAssignment: boolean) {
+  const mutation = `
+    mutation($courseLevel: Int!, $taskUserAssignment: Boolean!) {
+      updateCourseLevelConfig(courseLevel: $courseLevel, taskUserAssignment: $taskUserAssignment) {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const variables = { courseLevel, taskUserAssignment };
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.updateCourseLevelConfig;
+}
+
+export async function getCourseLevelConfig(courseLevel: number) {
+  const query = `
+    query($courseLevel: Int!) {
+      courseLevelConfig(courseLevel: $courseLevel) {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const variables = { courseLevel };
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query, variables }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.courseLevelConfig;
+}
+
+export async function getAllCourseLevelConfigs() {
+  const query = `
+    query {
+      allCourseLevelConfigs {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.allCourseLevelConfigs;
+}
+
 export async function updateNode(node: any, parentIds: any) {
   let results = {};
 

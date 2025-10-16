@@ -38,12 +38,25 @@ type Task {
     users: [User!]!
 }
 
+type CourseLevelConfig {
+    id: ID!
+    courseLevel: Int!
+    features: [FeatureConfig!]!
+}
+
+type FeatureConfig {
+    key: String!
+    enabled: Boolean!
+}
+
 type Query {
     users: [User!]!
     userByUsername(username: String!): User
     projects: [Project!]!
     projectsByUsername(username: String!): [Project!]!
     projectById(id: ID!): Project
+    courseLevelConfig(courseLevel: Int!): CourseLevelConfig
+    allCourseLevelConfigs: [CourseLevelConfig!]!
 }
 
 type Mutation {
@@ -70,6 +83,7 @@ type Mutation {
     addEpic(projectId: ID!, title: String!, description: String): Epic!
     addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
     addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
+    updateCourseLevelConfig(courseLevel: Int!, taskUserAssignment: Boolean!): CourseLevelConfig!
 }
 
 type Subscription {
