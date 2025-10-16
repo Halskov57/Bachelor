@@ -10,6 +10,5 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=docker
 EXPOSE 8080
-# RECOMMENDED FIX: Use the MONGO_URL variable directly as a system property.
-# This relies on the MONGO_URL variable being injected by Railway.
-ENTRYPOINT ["java", "-Dspring.data.mongodb.uri=${MONGO_URL}", "-jar", "app.jar"]
+# FIX: Inject both the MONGO_URL and the required database name (projectmanagement)
+ENTRYPOINT ["java", "-Dspring.data.mongodb.uri=${MONGO_URL}", "-Dspring.data.mongodb.database=projectmanagement", "-jar", "app.jar"]
