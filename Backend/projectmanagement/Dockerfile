@@ -10,4 +10,8 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=docker
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# TEMPORARY DIAGNOSTIC ENTRYPOINT:
+# This will print the value of the environment variable (or an empty line if unset)
+# before running the application.
+ENTRYPOINT ["/bin/bash", "-c", "echo '--- DEBUG MONGO URI START ---' && echo SPRING_DATA_MONGODB_URI: $SPRING_DATA_MONGODB_URI && echo '--- DEBUG MONGO URI END ---' && java -jar app.jar"]
