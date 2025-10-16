@@ -10,8 +10,6 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=docker
 EXPOSE 8080
-
-# TEMPORARY DIAGNOSTIC ENTRYPOINT:
-# This will print the value of the environment variable (or an empty line if unset)
-# before running the application.
-ENTRYPOINT ["/bin/bash", "-c", "echo '--- DEBUG MONGO URI START ---' && echo SPRING_DATA_MONGODB_URI: $SPRING_DATA_MONGODB_URI && echo '--- DEBUG MONGO URI END ---' && java -jar app.jar"]
+# RECOMMENDED FIX: Use the MONGO_URL variable directly as a system property.
+# This relies on the MONGO_URL variable being injected by Railway.
+ENTRYPOINT ["java", "-Dspring.data.mongodb.uri=${MONGO_URL}", "-jar", "app.jar"]
