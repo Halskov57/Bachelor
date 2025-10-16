@@ -1,17 +1,15 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:21-jdk-slim
-
-# Set the working directory
+# Stage 1: Build the app
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
 
-# Copy the built jar file (adjust the jar name as needed)
-COPY target/projectmanagement-0.0.1-SNAPSHOT.jar app.jar
+# Stage 2: Run the app
+FROM eclipse-temurin:21-jdk-slim
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 
-# Set the Spring profile to 'docker'
 ENV SPRING_PROFILES_ACTIVE=docker
-
-# Expose the port your app runs on
 EXPOSE 8081
 
-# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
