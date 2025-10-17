@@ -47,7 +47,7 @@ public class SecurityConfig {
                 // .requestMatchers("/users/**").authenticated()
                 // .requestMatchers("/projects/**").authenticated()
                 // .anyRequest().authenticated()
-                .anyRequest().permitAll() // TEMPORARILY OPEN ALL PATHS
+                .anyRequest().authenticated() // TEMPORARILY OPEN ALL PATHS
                 
                 // The rest of the authorization block remains the same, but the final .anyRequest().authenticated() 
                 // is replaced by the temporary .permitAll() to rule out authorization logic.
