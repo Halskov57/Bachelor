@@ -26,7 +26,7 @@ const Dashboard: React.FC = () => {
     const username = payload?.sub;
     if (!username) return;
 
-    fetch(process.env.REACT_APP_API_URL || `http://localhost:8081/projects/user/${username}`, {
+    fetch(`api/projects/user/${username}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
   const handleDelete = (projectId: string) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     const token = localStorage.getItem('token');
-    fetch(process.env.REACT_APP_API_URL || `http://localhost:8081/projects/${projectId}`, {
+    fetch(`api/projects/${projectId}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
     const token = localStorage.getItem('token');
     const payload = parseJwt(token!);
     const username = payload?.sub;
-    fetch(process.env.REACT_APP_API_URL || `http://localhost:8081/projects?username=${username}`, {
+    fetch(`api/projects?username=${username}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
