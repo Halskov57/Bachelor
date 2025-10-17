@@ -2,6 +2,7 @@ package bachelor.projectmanagement.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // Added import for HttpMethod
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,19 +33,27 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
+                
+                // 1. CRITICAL FIX: Allow OPTIONS pre-flight requests globally
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
+                
                 // Public endpoints (no authentication required)
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
                 
+                // 2. TEMPORARY FIX: Permit all authenticated endpoints to check if any of them are the issue
+                // Remove these temporary lines once the 403 is gone.
+                // .requestMatchers("/graphql").authenticated()
+                // .requestMatchers("/users/**").authenticated()
+                // .requestMatchers("/projects/**").authenticated()
+                // .anyRequest().authenticated()
+                .anyRequest().permitAll() // TEMPORARILY OPEN ALL PATHS
+                
+                // The rest of the authorization block remains the same, but the final .anyRequest().authenticated() 
+                // is replaced by the temporary .permitAll() to rule out authorization logic.
                 // Admin-only endpoints
-                .requestMatchers("/users/all").hasRole("ADMIN")
-                
-                // All other endpoints require authentication
-                .requestMatchers("/graphql").authenticated()
-                .requestMatchers("/users/**").authenticated()
-                .requestMatchers("/projects/**").authenticated()
-                
-                .anyRequest().authenticated()
+                // .requestMatchers("/users/all").hasRole("ADMIN") 
+                // This line will be removed if you use .anyRequest().permitAll()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -54,6 +63,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Uses the corrected specific origin
         configuration.setAllowedOrigins(Arrays.asList("https://frontend-production-ded6.up.railway.app"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
