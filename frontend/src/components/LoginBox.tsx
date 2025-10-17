@@ -26,7 +26,7 @@ const LoginBox: React.FC = () => {
     setError('');
     if (mode === 'login') {
       try {
-        const res = await fetch('api/users/verify', {
+        const res = await fetch('/api/users/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -61,7 +61,7 @@ const LoginBox: React.FC = () => {
       // Registration logic with cooldown
       try {
         setIsCreatingUser(true);
-        const res = await fetch('api/users/create', {
+        const res = await fetch('/api/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),

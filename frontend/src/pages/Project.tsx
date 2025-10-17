@@ -87,7 +87,7 @@ const Project: React.FC = () => {
       }
     `;
     
-    const response = await fetch('api/graphql', {
+    const response = await fetch('/api/graphql', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
