@@ -19,5 +19,35 @@ export function isAdmin(): boolean {
   if (!token) return false;
   
   const payload = parseJwt(token);
-  return payload?.role === 'ADMIN';
+  return payload?.role === 'ADMIN' || payload?.role === 'SUPERADMIN';
+}
+
+export function isSuperAdmin(): boolean {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  const payload = parseJwt(token);
+  return payload?.role === 'SUPERADMIN';
+}
+
+export function getUserRole(): string | null {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  
+  const payload = parseJwt(token);
+  return payload?.role || null;
+}
+
+export function debugToken(): void {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    console.log('No token found in localStorage');
+    return;
+  }
+  
+  console.log('Token exists:', token.substring(0, 50) + '...');
+  const payload = parseJwt(token);
+  console.log('Token payload:', payload);
+  console.log('User role:', payload?.role);
+  console.log('Token expiry:', payload?.exp ? new Date(payload.exp * 1000) : 'No expiry');
 }

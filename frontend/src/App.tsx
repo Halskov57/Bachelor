@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
 import Admin from './pages/Admin';
+import DebugAuth from './pages/DebugAuth';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -53,6 +54,7 @@ const AppContent: React.FC = () => {
               <Admin />
             </PrivateRoute>
           } />
+          <Route path="/debug" element={<DebugAuth />} />
         </Routes>
       </main>
     </div>

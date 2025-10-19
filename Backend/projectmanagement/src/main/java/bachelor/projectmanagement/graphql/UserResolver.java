@@ -8,6 +8,8 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
+
 
 @Controller
 public class UserResolver {
@@ -41,5 +43,15 @@ public class UserResolver {
         }
         userService.updatePassword(user, newPassword); 
         return user;
+    }
+
+    @QueryMapping
+    public List<User> nonSuperAdminUsers() {
+        return userService.getAllNonSuperAdminUsers();
+    }
+
+    @MutationMapping
+    public User updateUserRole(@Argument String username, @Argument String newRole) {
+        return userService.updateUserRole(username, newRole);
     }
 }

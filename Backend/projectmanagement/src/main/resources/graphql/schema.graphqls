@@ -1,6 +1,7 @@
 type User {
     id: ID!
     username: String!
+    role: String!
     projects: [Project!]!
 }
 
@@ -57,6 +58,7 @@ type Query {
     projectById(id: ID!): Project
     courseLevelConfig(courseLevel: Int!): CourseLevelConfig
     allCourseLevelConfigs: [CourseLevelConfig!]!
+    nonSuperAdminUsers: [User!]!
 }
 
 type Mutation {
@@ -85,6 +87,7 @@ type Mutation {
     addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
     addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
     updateCourseLevelConfig(courseLevel: Int!, taskUserAssignment: Boolean!): CourseLevelConfig!
+    updateUserRole(username: String!, newRole: String!): User!
 }
 
 type Subscription {

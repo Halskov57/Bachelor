@@ -507,3 +507,60 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
 
   return await runMutation(mutation, variables);
 }
+
+// User management functions
+export async function getAllNonSuperAdminUsers() {
+  const query = `
+    query {
+      nonSuperAdminUsers {
+        id
+        username
+        role
+      }
+    }
+  `;
+
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.nonSuperAdminUsers;
+}
+
+export async function updateUserRole(username: string, newRole: string) {
+  const mutation = `
+    mutation($username: String!, $newRole: String!) {
+      updateUserRole(username: $username, newRole: $newRole) {
+        id
+        username
+        role
+      }
+    }
+  `;
+
+  const variables = { username, newRole };
+
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.updateUserRole;
+}

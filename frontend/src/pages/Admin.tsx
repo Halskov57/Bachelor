@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getCourseLevelConfig, updateCourseLevelConfig } from '../utils/graphqlMutations';
+import { getCourseLevelConfig, updateCourseLevelConfig, getAllNonSuperAdminUsers, updateUserRole } from '../utils/graphqlMutations';
+import { isSuperAdmin } from '../utils/jwt';
 
 interface FeatureConfig {
   key: string;
@@ -12,17 +13,36 @@ interface CourseLevelConfig {
   features: FeatureConfig[];
 }
 
+interface User {
+  id: string;
+  username: string;
+  role: string;
+}
+
 const Admin: React.FC = () => {
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<number>(1);
   const [config, setConfig] = useState<CourseLevelConfig | null>(null);
   const [taskUserAssignmentEnabled, setTaskUserAssignmentEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
+  
+  // User management state
+  const [users, setUsers] = useState<User[]>([]);
+  const [userLoading, setUserLoading] = useState<boolean>(false);
+  const [userMessage, setUserMessage] = useState<string>('');
+  const [isUserSuperAdmin] = useState<boolean>(isSuperAdmin());
 
   // Load configuration when course level changes
   useEffect(() => {
     loadConfig();
   }, [selectedCourseLevel]);
+
+  // Load users for SuperAdmin
+  useEffect(() => {
+    if (isUserSuperAdmin) {
+      loadUsers();
+    }
+  }, [isUserSuperAdmin]);
 
   const loadConfig = async () => {
     try {
@@ -80,6 +100,40 @@ const Admin: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/';
+  };
+
+  const loadUsers = async () => {
+    try {
+      setUserLoading(true);
+      setUserMessage('');
+      const usersData = await getAllNonSuperAdminUsers();
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      setUserMessage('Failed to load users');
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (username: string, newRole: string) => {
+    try {
+      setUserLoading(true);
+      setUserMessage('');
+      await updateUserRole(username, newRole);
+      setUserMessage(`Successfully updated ${username}'s role to ${newRole}`);
+      
+      // Refresh the users list
+      await loadUsers();
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setUserMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to update user role:', error);
+      setUserMessage(`Failed to update ${username}'s role`);
+    } finally {
+      setUserLoading(false);
+    }
   };
 
   return (
@@ -146,16 +200,175 @@ const Admin: React.FC = () => {
       {/* Main content */}
       <div style={{ 
         padding: '20px', 
-        maxWidth: '600px', 
+        maxWidth: '800px', // Increased width to accommodate more content
         margin: '0 auto',
         position: 'relative',
         zIndex: 20,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
         borderRadius: '8px',
-        marginTop: '100px', // Increased to account for fixed header
-        minHeight: '500px'
+        marginTop: '80px', // Space for fixed header
+        marginBottom: '20px', // Space at bottom
+        maxHeight: 'calc(100vh - 120px)', // Maximum height based on viewport
+        overflowY: 'auto', // Make it scrollable
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)' // Add subtle shadow
       }}>
-      <h1 style={{ color: '#333', marginTop: '0' }}>Admin - Course Level Configuration</h1>
+      <h1 style={{ color: '#333', marginTop: '0' }}>
+        Admin Panel - {isUserSuperAdmin ? 'User Management & Course Configuration' : 'Course Level Configuration'}
+      </h1>
+      
+      {/* User Management Section - Only for SuperAdmin */}
+      {isUserSuperAdmin && (
+        <div style={{ 
+          marginBottom: '40px', 
+          padding: '20px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6'
+        }}>
+          <h2 style={{ color: '#333', marginTop: '0', marginBottom: '20px' }}>User Management</h2>
+          
+          {userMessage && (
+            <div style={{
+              padding: '10px',
+              borderRadius: '4px',
+              backgroundColor: userMessage.includes('Failed') ? '#f8d7da' : '#d4edda',
+              color: userMessage.includes('Failed') ? '#721c24' : '#155724',
+              border: `1px solid ${userMessage.includes('Failed') ? '#f5c6cb' : '#c3e6cb'}`,
+              marginBottom: '15px'
+            }}>
+              {userMessage}
+            </div>
+          )}
+          
+          {userLoading ? (
+            <div style={{ textAlign: 'center', fontSize: '16px', color: '#666' }}>
+              Loading users...
+            </div>
+          ) : (
+            <div>
+              <p style={{ marginBottom: '15px', color: '#666' }}>
+                Manage user roles. You can promote users to Admin or demote them back to regular users.
+              </p>
+              
+              <div style={{ 
+                maxHeight: '250px', // Reduced height
+                overflowY: 'auto',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}> {/* Smaller font */}
+                  <thead>
+                    <tr style={{ backgroundColor: '#e9ecef' }}>
+                      <th style={{ 
+                        padding: '8px', // Reduced padding
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #ddd',
+                        fontWeight: 'bold'
+                      }}>Username</th>
+                      <th style={{ 
+                        padding: '8px', // Reduced padding
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #ddd',
+                        fontWeight: 'bold'
+                      }}>Current Role</th>
+                      <th style={{ 
+                        padding: '8px', // Reduced padding
+                        textAlign: 'left', 
+                        borderBottom: '1px solid #ddd',
+                        fontWeight: 'bold'
+                      }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user, index) => (
+                      <tr key={user.id} style={{ 
+                        backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
+                      }}>
+                        <td style={{ 
+                          padding: '8px', // Reduced padding
+                          borderBottom: '1px solid #ddd'
+                        }}>
+                          {user.username}
+                        </td>
+                        <td style={{ 
+                          padding: '8px', // Reduced padding
+                          borderBottom: '1px solid #ddd'
+                        }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            backgroundColor: user.role === 'ADMIN' ? '#007bff' : '#6c757d',
+                            color: 'white'
+                          }}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td style={{ 
+                          padding: '8px', // Reduced padding
+                          borderBottom: '1px solid #ddd'
+                        }}>
+                          {user.role === 'USER' ? (
+                            <button
+                              onClick={() => handleRoleChange(user.username, 'ADMIN')}
+                              disabled={userLoading}
+                              style={{
+                                backgroundColor: '#28a745',
+                                color: 'white',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: userLoading ? 'not-allowed' : 'pointer',
+                                opacity: userLoading ? 0.6 : 1
+                              }}
+                            >
+                              Promote to Admin
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleRoleChange(user.username, 'USER')}
+                              disabled={userLoading}
+                              style={{
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                cursor: userLoading ? 'not-allowed' : 'pointer',
+                                opacity: userLoading ? 0.6 : 1
+                              }}
+                            >
+                              Demote to User
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {users.length === 0 && (
+                <p style={{ textAlign: 'center', color: '#666', margin: '20px 0' }}>
+                  No users found.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Course Level Configuration Section */}
+      <div style={{ 
+        padding: '20px',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px',
+        border: '1px solid #dee2e6'
+      }}>
+        <h2 style={{ color: '#333', marginTop: '0', marginBottom: '20px' }}>Course Level Configuration</h2>
       
       <div style={{ marginBottom: '30px' }}>
         <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#333' }}>
@@ -231,6 +444,7 @@ const Admin: React.FC = () => {
           </div>
         </div>
       )}
+      </div> {/* Close course level configuration section */}
 
       {message && (
         <div style={{
