@@ -80,7 +80,8 @@ class ProjectServiceTest {
     void getProjectsByUsername_ShouldReturnUserProjects() {
         // Given
         List<Project> projects = List.of(testProject);
-        when(projectRepository.findByOwnersContaining("testuser")).thenReturn(projects);
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(projectRepository.findByOwnersContaining(testUser.getId())).thenReturn(projects);
 
         // When
         List<Project> result = projectService.getProjectsByUsername("testuser");
@@ -93,8 +94,8 @@ class ProjectServiceTest {
 
     @Test
     void getProjectsByUsername_ShouldHandleEmptyResult() {
-        // Given
-        when(projectRepository.findByOwnersContaining("nonexistent")).thenReturn(List.of());
+        // Given - Mock that user doesn't exist
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
         // When
         List<Project> result = projectService.getProjectsByUsername("nonexistent");

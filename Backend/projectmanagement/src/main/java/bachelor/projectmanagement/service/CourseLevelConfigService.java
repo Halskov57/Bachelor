@@ -26,8 +26,28 @@ public class CourseLevelConfigService {
      * Get configuration for a specific course level, creating default if not exists
      */
     public CourseLevelConfig getConfigOrDefault(int courseLevel) {
-        return configRepository.findByCourseLevel(courseLevel)
-                .orElse(createDefaultConfig(courseLevel));
+        try {
+            System.out.println("DEBUG: Looking for config with course level " + courseLevel);
+            Optional<CourseLevelConfig> existing = configRepository.findByCourseLevel(courseLevel);
+            if (existing.isPresent()) {
+                System.out.println("DEBUG: Found existing config: " + existing.get());
+                return existing.get();
+            }
+            
+            System.out.println("DEBUG: No existing config found, creating default");
+            // Create and save default config if it doesn't exist
+            CourseLevelConfig defaultConfig = createDefaultConfig(courseLevel);
+            System.out.println("DEBUG: Created default config: " + defaultConfig);
+            
+            CourseLevelConfig saved = configRepository.save(defaultConfig);
+            System.out.println("DEBUG: Saved default config: " + saved);
+            return saved;
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to get or create config for course level " + courseLevel);
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
@@ -41,16 +61,42 @@ public class CourseLevelConfigService {
      * Update a specific feature for a course level
      */
     public CourseLevelConfig updateFeature(int courseLevel, String featureKey, boolean enabled) {
-        CourseLevelConfig config = getConfigOrDefault(courseLevel);
-        config.setFeature(featureKey, enabled);
-        return configRepository.save(config);
+        try {
+            System.out.println("DEBUG: Getting config for course level " + courseLevel);
+            CourseLevelConfig config = getConfigOrDefault(courseLevel);
+            System.out.println("DEBUG: Got config: " + config);
+            
+            System.out.println("DEBUG: Setting feature " + featureKey + " to " + enabled);
+            config.setFeature(featureKey, enabled);
+            
+            System.out.println("DEBUG: Saving config to database");
+            CourseLevelConfig saved = configRepository.save(config);
+            System.out.println("DEBUG: Successfully saved config: " + saved);
+            
+            return saved;
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to update feature " + featureKey + " for course level " + courseLevel);
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
      * Update task user assignment feature for a course level
      */
     public CourseLevelConfig updateTaskUserAssignment(int courseLevel, boolean enabled) {
-        return updateFeature(courseLevel, CourseLevelConfig.TASK_USER_ASSIGNMENT, enabled);
+        try {
+            System.out.println("DEBUG: Updating task user assignment for course level " + courseLevel + " to " + enabled);
+            CourseLevelConfig result = updateFeature(courseLevel, CourseLevelConfig.TASK_USER_ASSIGNMENT, enabled);
+            System.out.println("DEBUG: Successfully updated configuration: " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to update task user assignment for course level " + courseLevel);
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
@@ -79,13 +125,32 @@ public class CourseLevelConfigService {
      * Create default configuration for a course level
      */
     private CourseLevelConfig createDefaultConfig(int courseLevel) {
-        Map<String, Boolean> defaultFeatures = new HashMap<>();
-        // By default, all features are enabled
-        defaultFeatures.put(CourseLevelConfig.TASK_USER_ASSIGNMENT, true);
-        
-        CourseLevelConfig config = new CourseLevelConfig();
-        config.setCourseLevel(courseLevel);
-        config.setFeatures(defaultFeatures);
-        return config;
+        try {
+            System.out.println("DEBUG: Creating default config for course level " + courseLevel);
+            
+            Map<String, Boolean> defaultFeatures = new HashMap<>();
+            // By default, all features are enabled
+            defaultFeatures.put(CourseLevelConfig.TASK_USER_ASSIGNMENT, true);
+            
+            CourseLevelConfig config = new CourseLevelConfig();
+            config.setCourseLevel(courseLevel);
+            config.setFeatures(defaultFeatures);
+            
+            // Ensure timestamps are set
+            if (config.getCreatedAt() == null) {
+                config.setCreatedAt(java.time.Instant.now());
+            }
+            if (config.getUpdatedAt() == null) {
+                config.setUpdatedAt(java.time.Instant.now());
+            }
+            
+            System.out.println("DEBUG: Created default config: " + config);
+            return config;
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to create default config for course level " + courseLevel);
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

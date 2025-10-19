@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import ProjectTreeView from '../components/ProjectTreeView';
 import ProjectListView from '../components/ProjectListView';
+import { isAdmin } from '../utils/jwt';
 
 function toTreeData(project: any) {
   if (!project || !(project.title || project.name)) return null;
@@ -59,6 +60,7 @@ const Project: React.FC = () => {
           id
           title
           description
+          courseLevel
           owners {
             id
             username
@@ -115,6 +117,10 @@ const Project: React.FC = () => {
     window.location.href = '/dashboard';
   };
 
+  const handleAdminPage = () => {
+    window.location.href = '/admin';
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/';
@@ -141,26 +147,48 @@ const Project: React.FC = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}
       >
-        <button
-          onClick={handleBackToDashboard}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          ← Back to Dashboard
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={handleBackToDashboard}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            ← Back to Dashboard
+          </button>
+
+          {isAdmin() && (
+            <button
+              onClick={handleAdminPage}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              ⚙️ Admin
+            </button>
+          )}
+        </div>
 
         <h2 style={{
-          color: '#fff',
+          color: '#ffffffff',
           margin: 0,
           fontWeight: 700
         }}>

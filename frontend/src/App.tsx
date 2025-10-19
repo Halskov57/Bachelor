@@ -9,15 +9,6 @@ import Admin from './pages/Admin';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
-const PageTitle: React.FC = () => {
-  const location = useLocation();
-  let title = "Welcome to Aarhus university's project management system";
-  if (location.pathname === '/dashboard') title = 'Select a project';
-  else if (location.pathname === '/project') title = 'Projects';
-  else if (location.pathname === '/admin') title = 'Admin';
-  return <h1 className="page-title">{title}</h1>;
-};
-
 const AppContent: React.FC = () => {
   const location = useLocation();
 
@@ -48,8 +39,7 @@ const AppContent: React.FC = () => {
             />
           </div>
         )}
-        {/* Main content below */}
-        <PageTitle />
+        {/* Remove the PageTitle component usage - line 48 */}
         <Routes>
           <Route path="/" element={<LoginBox />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -74,7 +64,5 @@ const App: React.FC = () => (
     <AppContent />
   </BrowserRouter>
 );
-
-
 
 export default App;

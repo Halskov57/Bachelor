@@ -34,7 +34,17 @@ public class CourseLevelConfigResolver {
     // Mutation resolvers
     @MutationMapping
     public CourseLevelConfig updateCourseLevelConfig(@Argument int courseLevel, @Argument boolean taskUserAssignment) {
-        return configService.updateTaskUserAssignment(courseLevel, taskUserAssignment);
+        try {
+            System.out.println("DEBUG: GraphQL updateCourseLevelConfig called with courseLevel=" + courseLevel + ", taskUserAssignment=" + taskUserAssignment);
+            CourseLevelConfig result = configService.updateTaskUserAssignment(courseLevel, taskUserAssignment);
+            System.out.println("DEBUG: GraphQL updateCourseLevelConfig returning: " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("ERROR: GraphQL updateCourseLevelConfig failed");
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update course level config: " + e.getMessage(), e);
+        }
     }
 
     // Field resolvers for CourseLevelConfig

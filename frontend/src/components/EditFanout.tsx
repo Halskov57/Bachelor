@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { updateNode, addNode, deleteNode } from '../utils/graphqlMutations';
+import { updateNode, addNode, deleteNode, getCourseLevelConfig } from '../utils/graphqlMutations';
 
 interface CreateNodeData {
   type: string;
@@ -36,12 +36,17 @@ const EditFanout: React.FC<{
   // Task-specific fields
   const [status, setStatus] = useState(node?.status || '');
   const [depth, setDepth] = useState(node?.depth ?? 0);
+  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 1);
   const [selectedUsers, setSelectedUsers] = useState<string[]>(
     Array.isArray(node?.users) 
       ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
       : []
   );
   const [loading, setLoading] = useState(false);
+  
+  // Course level configuration state
+  const [isTaskUserAssignmentEnabled, setIsTaskUserAssignmentEnabled] = useState<boolean>(true);
+  const [configLoading, setConfigLoading] = useState<boolean>(false);
 
   // Update state when node changes
   useEffect(() => {
@@ -50,6 +55,7 @@ const EditFanout: React.FC<{
       setDescription(node.description || '');
       setStatus(node.status || '');
       setDepth(node.depth ?? 0);
+      setCourseLevel(node.courseLevel ?? 1);
       setSelectedUsers(
         Array.isArray(node.users) 
           ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
@@ -61,9 +67,43 @@ const EditFanout: React.FC<{
       setDescription('');
       setStatus('');
       setDepth(0);
+      setCourseLevel(1);
       setSelectedUsers([]);
     }
   }, [node, mode]); // Re-run when node or mode changes
+
+  // Load course level configuration to check feature availability
+  useEffect(() => {
+    const loadCourseLevelConfig = async () => {
+      let projectCourseLevel = null;
+      
+      // Determine the course level to check
+      if (project?.courseLevel) {
+        projectCourseLevel = project.courseLevel;
+      } else if (node?.courseLevel) {
+        projectCourseLevel = node.courseLevel;
+      } else if (mode === 'create' && createNode?.type === 'project') {
+        projectCourseLevel = courseLevel; // Use the selected course level for new projects
+      }
+      
+      if (projectCourseLevel) {
+        try {
+          setConfigLoading(true);
+          const config = await getCourseLevelConfig(projectCourseLevel);
+          const taskUserFeature = config.features.find((f: any) => f.key === 'TASK_USER_ASSIGNMENT');
+          setIsTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
+        } catch (error) {
+          console.error('Failed to load course level config:', error);
+          // Default to enabled if config loading fails
+          setIsTaskUserAssignmentEnabled(true);
+        } finally {
+          setConfigLoading(false);
+        }
+      }
+    };
+    
+    loadCourseLevelConfig();
+  }, [project, node, mode, createNode, courseLevel]);
 
   const handleSave = async () => {
     try {
@@ -84,7 +124,8 @@ const EditFanout: React.FC<{
           createNode.type,
           createNode.parentIds,
           title,
-          description
+          description,
+          createNode.type === 'project' ? courseLevel : undefined
         );
         
         console.log('Create result:', result);
@@ -94,10 +135,12 @@ const EditFanout: React.FC<{
         // Existing edit logic
         const changedTitle = title !== (node.title || node.name || '');
         const changedDescription = description !== (node.description || '');
+        const changedCourseLevel = node.type === 'project' && courseLevel !== (node.courseLevel ?? 1);
 
         let data: any = {};
         if (changedTitle) data.title = title;
         if (changedDescription) data.description = description;
+        if (changedCourseLevel) data.courseLevel = courseLevel;
 
         // Always include type and id!
         data.type = node.type;
@@ -272,9 +315,53 @@ const EditFanout: React.FC<{
       padding: 24,
       zIndex: 100
     }}>
-      <h3>
-        {mode === 'create' ? `Create ${getDisplayType()}` : `Edit ${getDisplayType()}`}
-      </h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0 }}>
+          {mode === 'create' ? `Create ${getDisplayType()}` : `Edit ${getDisplayType()}`}
+        </h3>
+        
+        {/* Info icon only when task user assignment is disabled */}
+        {(node?.type === 'task' || (mode === 'create' && createNode?.type === 'task')) && !isTaskUserAssignmentEnabled && (
+          <div
+            style={{
+              position: 'relative',
+              display: 'inline-block',
+              marginLeft: '8px'
+            }}
+          >
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '18px',
+                height: '18px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(130, 130, 130, 1)',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'help',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+              }}
+              title="⚠️ User Assignment Disabled"
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.transform = 'scale(1.1)';
+                target.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLElement;
+                target.style.transform = 'scale(1)';
+                target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+              }}
+            >
+              i
+            </span>
+          </div>
+        )}
+      </div>
       
       {/* Existing form fields */}
       <label>Title</label>
@@ -292,44 +379,62 @@ const EditFanout: React.FC<{
       />
 
       {/* Project-specific fields */}
-      {(node?.type === 'project' && mode === 'edit') && (
+      {(node?.type === 'project' || (mode === 'create' && createNode?.type === 'project')) && (
         <>
-          <label>Project Owners</label>
-          <div style={{
-            marginBottom: '12px',
-            padding: '8px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '4px',
-            border: '1px solid #e0e6ed'
-          }}>
-            {node.owners && node.owners.length > 0 ? (
-              <div>
-                {node.owners.map((owner: any, index: number) => (
-                  <span key={index} style={{
-                    display: 'inline-block',
-                    backgroundColor: '#022AFF',
-                    color: '#fff',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontSize: '0.9rem',
-                    margin: '2px 4px 2px 0'
-                  }}>
-                    {owner.username || owner.name || 'Unknown User'}
+          <label>Course Level</label>
+          <select
+            value={courseLevel}
+            onChange={e => setCourseLevel(Number(e.target.value))}
+            style={{ width: '100%', marginBottom: '12px' }}
+          >
+            {[1, 2, 3, 4, 5, 6].map(level => (
+              <option key={level} value={level}>
+                Course Level {level}
+              </option>
+            ))}
+          </select>
+
+          {/* Only show owners for edit mode */}
+          {mode === 'edit' && (
+            <>
+              <label>Project Owners</label>
+              <div style={{
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+                border: '1px solid #e0e6ed'
+              }}>
+                {node.owners && node.owners.length > 0 ? (
+                  <div>
+                    {node.owners.map((owner: any, index: number) => (
+                      <span key={index} style={{
+                        display: 'inline-block',
+                        backgroundColor: '#022AFF',
+                        color: '#fff',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        margin: '2px 4px 2px 0'
+                      }}>
+                        {owner.username || owner.name || 'Unknown User'}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ color: '#666', fontStyle: 'italic' }}>
+                    {node.owner ? `Single Owner: ${node.owner.username || node.owner.name}` : 'No owners assigned'}
                   </span>
-                ))}
+                )}
               </div>
-            ) : (
-              <span style={{ color: '#666', fontStyle: 'italic' }}>
-                {node.owner ? `Single Owner: ${node.owner.username || node.owner.name}` : 'No owners assigned'}
-              </span>
-            )}
-          </div>
+            </>
+          )}
         </>
       )}
 
       {/* Task-specific fields */}
       {(node?.type === 'task' || (mode === 'create' && createNode?.type === 'task')) && (
-        <>
+        <React.Fragment>
           <label>Status</label>
           <select 
             value={status} 
@@ -353,29 +458,32 @@ const EditFanout: React.FC<{
             style={{ width: '100%', marginBottom: '12px' }}
           />
           
-          <label>Assigned Users</label>
-          <div style={{ marginBottom: '12px' }}>
-            {/* Get project owners from the node's project context */}
-            {(() => {
-              // Try to get owners from various sources
-              const getProjectOwners = () => {
-                // If we have project prop passed directly
-                if (project?.owners) return project.owners;
-                
-                // Try to get from node context (works for all node types)
-                if (node?.projectOwners) return node.projectOwners;
-                
-                // For project nodes, get owners directly
-                if (node?.type === 'project' && node?.owners) return node.owners;
-                
-                // Fallback to single owner if available
-                if (node?.owner) return [node.owner];
-                if (project?.owner) return [project.owner];
-                
-                return [];
-              };
+          {/* Only show user assignment if enabled for this course level */}
+          {isTaskUserAssignmentEnabled && (
+            <React.Fragment>
+              <label>Assigned Users</label>
+              <div style={{ marginBottom: '12px' }}>
+                {/* Get project owners from the node's project context */}
+                {(() => {
+                  // Try to get owners from various sources
+                  const getProjectOwners = () => {
+                    // If we have project prop passed directly
+                    if (project?.owners) return project.owners;
+                    
+                    // Try to get from node context (works for all node types)
+                    if (node?.projectOwners) return node.projectOwners;
+                    
+                    // For project nodes, get owners directly
+                    if (node?.type === 'project' && node?.owners) return node.owners;
+                    
+                    // Fallback to single owner if available
+                    if (node?.owner) return [node.owner];
+                    if (project?.owner) return [project.owner];
+                    
+                    return [];
+                  };
 
-              const projectOwners = getProjectOwners();
+                  const projectOwners = getProjectOwners();
               
               if (projectOwners.length === 0) {
                 return (
@@ -392,7 +500,7 @@ const EditFanout: React.FC<{
               }
 
               return (
-                <>
+                <React.Fragment>
                   {/* Selected users display */}
                   <div style={{
                     minHeight: '40px',
@@ -458,14 +566,14 @@ const EditFanout: React.FC<{
                       ))
                     }
                   </select>
-                </>
+                </React.Fragment>
               );
             })()}
           </div>
-        </>
+          </React.Fragment>
+        )}
+        </React.Fragment>
       )}
-
-      {/* Action buttons */}
       <div style={{ 
         marginTop: 20, 
         display: 'flex', 

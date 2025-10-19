@@ -13,3 +13,11 @@ export function parseJwt(token: string) {
     return null;
   }
 }
+
+export function isAdmin(): boolean {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  const payload = parseJwt(token);
+  return payload?.role === 'ADMIN';
+}

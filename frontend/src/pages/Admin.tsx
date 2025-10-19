@@ -27,6 +27,7 @@ const Admin: React.FC = () => {
   const loadConfig = async () => {
     try {
       setLoading(true);
+      setMessage(''); // Clear any previous messages
       const configData = await getCourseLevelConfig(selectedCourseLevel);
       setConfig(configData);
       
@@ -35,7 +36,19 @@ const Admin: React.FC = () => {
       setTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
     } catch (error) {
       console.error('Failed to load config:', error);
-      setMessage('Failed to load configuration');
+      
+      // Create a default configuration if loading fails
+      const defaultConfig: CourseLevelConfig = {
+        id: `default-${selectedCourseLevel}`,
+        courseLevel: selectedCourseLevel,
+        features: [
+          { key: 'TASK_USER_ASSIGNMENT', enabled: true }
+        ]
+      };
+      
+      setConfig(defaultConfig);
+      setTaskUserAssignmentEnabled(true);
+      setMessage(`Using default configuration for Course Level ${selectedCourseLevel}. Configuration will be created when you save.`);
     } finally {
       setLoading(false);
     }
@@ -60,12 +73,92 @@ const Admin: React.FC = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    window.location.href = '/dashboard';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+
   return (
-    <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1>Admin - Course Level Configuration</h1>
+    <>
+      {/* Top navigation bar */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: '#022AFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <button
+          onClick={handleBackToDashboard}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          ← Back to Dashboard
+        </button>
+
+        <h2 style={{
+          color: '#fff',
+          margin: 0,
+          fontWeight: 700
+        }}>
+          Admin Panel
+        </h2>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Main content */}
+      <div style={{ 
+        padding: '20px', 
+        maxWidth: '600px', 
+        margin: '0 auto',
+        position: 'relative',
+        zIndex: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: '8px',
+        marginTop: '100px', // Increased to account for fixed header
+        minHeight: '500px'
+      }}>
+      <h1 style={{ color: '#333', marginTop: '0' }}>Admin - Course Level Configuration</h1>
       
       <div style={{ marginBottom: '30px' }}>
-        <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>
+        <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: '#333' }}>
           Select Course Level:
         </label>
         <select
@@ -76,7 +169,9 @@ const Admin: React.FC = () => {
             fontSize: '16px',
             border: '1px solid #ccc',
             borderRadius: '4px',
-            minWidth: '100px'
+            minWidth: '100px',
+            backgroundColor: 'white',
+            color: '#333'
           }}
         >
           {[1, 2, 3, 4, 5, 6].map(level => (
@@ -89,16 +184,17 @@ const Admin: React.FC = () => {
 
       {config && (
         <div style={{ marginBottom: '30px' }}>
-          <h2>Configuration for Course Level {selectedCourseLevel}</h2>
+          <h2 style={{ color: '#333' }}>Configuration for Course Level {selectedCourseLevel}</h2>
           
           <div style={{ 
             border: '1px solid #ddd',
             borderRadius: '8px',
             padding: '20px',
-            backgroundColor: '#f9f9f9'
+            backgroundColor: '#f9f9f9',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
                 <input
                   type="checkbox"
                   checked={taskUserAssignmentEnabled}
@@ -140,9 +236,12 @@ const Admin: React.FC = () => {
         <div style={{
           padding: '10px',
           borderRadius: '4px',
-          backgroundColor: message.includes('Failed') ? '#f8d7da' : '#d4edda',
-          color: message.includes('Failed') ? '#721c24' : '#155724',
-          border: `1px solid ${message.includes('Failed') ? '#f5c6cb' : '#c3e6cb'}`
+          backgroundColor: message.includes('Failed') ? '#f8d7da' : 
+                          message.includes('default') ? '#fff3cd' : '#d4edda',
+          color: message.includes('Failed') ? '#721c24' : 
+                message.includes('default') ? '#856404' : '#155724',
+          border: `1px solid ${message.includes('Failed') ? '#f5c6cb' : 
+                   message.includes('default') ? '#ffeaa7' : '#c3e6cb'}`
         }}>
           {message}
         </div>
@@ -153,7 +252,8 @@ const Admin: React.FC = () => {
           Loading...
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

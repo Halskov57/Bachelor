@@ -1,6 +1,6 @@
 .page-title {
   position: absolute;
-  top: 1%; /* I set this back to 25%, 7% is very high */
+  top: 1%;
   left: 50%;
   transform: translateX(-50%);
   color: white;
@@ -8,5 +8,6 @@
   font-weight: bold;
   text-align: center;
   width: 100%;
-  z-index: 10;
+  z-index: 15;
+  pointer-events: none; /* Prevent title from blocking clicks */
 }
