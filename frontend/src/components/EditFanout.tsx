@@ -26,9 +26,6 @@ const EditFanout: React.FC<{
   mode = 'edit',
   project
 }) => {
-  // Use createNode data when in create mode, otherwise use node data
-  const activeNode = mode === 'create' ? createNode : node;
-  
   // Common fields
   const [title, setTitle] = useState(mode === 'create' ? '' : (node?.title || node?.name || ''));
   const [description, setDescription] = useState(mode === 'create' ? '' : (node?.description || ''));
@@ -49,7 +46,6 @@ const EditFanout: React.FC<{
   const [isEpicCreateDeleteEnabled, setIsEpicCreateDeleteEnabled] = useState<boolean>(true);
   const [isFeatureCreateDeleteEnabled, setIsFeatureCreateDeleteEnabled] = useState<boolean>(true);
   const [isTaskCreateDeleteEnabled, setIsTaskCreateDeleteEnabled] = useState<boolean>(true);
-  const [configLoading, setConfigLoading] = useState<boolean>(false);
 
   // Update state when node changes
   useEffect(() => {
@@ -91,7 +87,6 @@ const EditFanout: React.FC<{
       
       if (projectCourseLevel) {
         try {
-          setConfigLoading(true);
           const config = await getCourseLevelConfig(projectCourseLevel);
           console.log('DEBUG: Loaded config for course level', projectCourseLevel, ':', config);
           
@@ -117,8 +112,6 @@ const EditFanout: React.FC<{
           setIsEpicCreateDeleteEnabled(true);
           setIsFeatureCreateDeleteEnabled(true);
           setIsTaskCreateDeleteEnabled(true);
-        } finally {
-          setConfigLoading(false);
         }
       }
     };

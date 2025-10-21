@@ -2,6 +2,7 @@ package bachelor.projectmanagement.graphql;
 
 import bachelor.projectmanagement.model.*;
 import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.util.TestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,9 @@ class ProjectResolverTest {
 
     @Mock
     private ProjectService projectService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private ProjectResolver projectResolver;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { parseJwt, isAdmin } from '../utils/jwt';
 import EditFanout from '../components/EditFanout'; // Import your fanout component
+import { getApiUrl, getGraphQLUrl } from '../config/environment';
 
 interface Project {
   id: string;
@@ -12,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProjects();
@@ -20,19 +21,38 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const fetchProjects = () => {
+    console.log('🔍 Fetching projects from:', getApiUrl('/projects'));
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setError('No authentication token found');
+      setLoading(false);
+      return;
+    }
+    
     const payload = parseJwt(token);
     const username = payload?.sub;
-    if (!username) return;
+    if (!username) {
+      setError('Invalid token payload');
+      setLoading(false);
+      return;
+    }
 
-    fetch(`/api/projects/user/${username}`, {
+    console.log('👤 Fetching projects for user:', username);
+
+    fetch(getApiUrl(`/projects/user/${username}`), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-      .then(res => res.json())
+      .then(res => {
+        console.log('📡 API Response status:', res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('📦 Projects data received:', data);
         const mappedProjects = Array.isArray(data)
           ? data.map((p: any) => ({
               id: p.projectId || p.id,
@@ -40,6 +60,12 @@ const Dashboard: React.FC = () => {
             }))
           : [];
         setProjects(mappedProjects);
+        setError(null);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('❌ Error fetching projects:', err);
+        setError(err.message);
         setLoading(false);
       });
   };
@@ -47,7 +73,7 @@ const Dashboard: React.FC = () => {
   const handleDelete = (projectId: string) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     const token = localStorage.getItem('token');
-    fetch(`/api/projects/${projectId}`, {
+    fetch(getApiUrl(`/projects/${projectId}`), {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -66,31 +92,52 @@ const Dashboard: React.FC = () => {
     window.location.href = '/';
   };
 
-  const handleCreate = (data: { title: string; description: string }) => {
-    setCreating(true);
-    const token = localStorage.getItem('token');
-    const payload = parseJwt(token!);
-    const username = payload?.sub;
-    fetch(`/api/projects?username=${username}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title: data.title,
-        description: data.description,
-      }),
-    })
-      .then(res => res.json())
-      .then(() => {
-        setShowCreate(false);
-        setCreating(false);
-        fetchProjects();
-      });
-  };
+  if (loading) return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      fontSize: '1.2rem',
+      color: '#022AFF'
+    }}>
+      Loading projects...
+    </div>
+  );
 
-  if (loading) return <div>Loading projects...</div>;
+  if (error) return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      fontSize: '1.2rem',
+      color: '#d11a2a',
+      textAlign: 'center'
+    }}>
+      <h2>Error loading projects</h2>
+      <p>{error}</p>
+      <button 
+        onClick={() => {
+          setError(null);
+          setLoading(true);
+          fetchProjects();
+        }}
+        style={{
+          padding: '10px 20px',
+          background: '#022AFF',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          marginTop: '10px'
+        }}
+      >
+        Retry
+      </button>
+    </div>
+  );
 
   return (
     <>

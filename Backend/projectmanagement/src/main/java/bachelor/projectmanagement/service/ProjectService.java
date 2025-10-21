@@ -50,7 +50,6 @@ public class ProjectService {
         }
         
         User user = userOptional.get();
-        // Query projects by the user's String ID
         return projectRepository.findByOwnersContaining(user.getId());
     }
 

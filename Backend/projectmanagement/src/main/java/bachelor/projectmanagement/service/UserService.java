@@ -27,7 +27,7 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
         User user = new User(username, hashedPassword);
-        user.setRole(UserRole.USER); // <-- assign USER role here
+        user.setRole(UserRole.USER);
         return userRepository.save(user);
     }
 
@@ -39,7 +39,7 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
         User user = new User(username, hashedPassword);
-        user.setRole(UserRole.ADMIN); // <-- assign ADMIN role here
+        user.setRole(UserRole.ADMIN);
         return userRepository.save(user);
     }
 

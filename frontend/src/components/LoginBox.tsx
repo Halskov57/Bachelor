@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config/environment';
 
 const LoginBox: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
@@ -26,7 +27,7 @@ const LoginBox: React.FC = () => {
     setError('');
     if (mode === 'login') {
       try {
-        const res = await fetch('/api/users/verify', {
+        const res = await fetch(getApiUrl('/users/verify'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -61,7 +62,7 @@ const LoginBox: React.FC = () => {
       // Registration logic with cooldown
       try {
         setIsCreatingUser(true);
-        const res = await fetch('/api/users/create', {
+        const res = await fetch(getApiUrl('/users/create'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),

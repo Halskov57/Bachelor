@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getCourseLevelConfig, updateCourseLevelConfig, getAllNonSuperAdminUsers, updateUserRole } from '../utils/graphqlMutations';
 import { isSuperAdmin } from '../utils/jwt';
 
@@ -35,19 +35,7 @@ const Admin: React.FC = () => {
   const [userMessage, setUserMessage] = useState<string>('');
   const [isUserSuperAdmin] = useState<boolean>(isSuperAdmin());
 
-  // Load configuration when course level changes
-  useEffect(() => {
-    loadConfig();
-  }, [selectedCourseLevel]);
-
-  // Load users for SuperAdmin
-  useEffect(() => {
-    if (isUserSuperAdmin) {
-      loadUsers();
-    }
-  }, [isUserSuperAdmin]);
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
       setMessage(''); // Clear any previous messages
@@ -93,7 +81,19 @@ const Admin: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCourseLevel]);
+
+  // Load configuration when course level changes
+  useEffect(() => {
+    loadConfig();
+  }, [selectedCourseLevel, loadConfig]);
+
+  // Load users for SuperAdmin
+  useEffect(() => {
+    if (isUserSuperAdmin) {
+      loadUsers();
+    }
+  }, [isUserSuperAdmin]);
 
   const handleSaveConfig = async () => {
     try {

@@ -1,3 +1,5 @@
+import { getGraphQLUrl, getApiUrl } from '../config/environment';
+
 // Helper function to get headers with JWT token
 function getGraphQLHeaders() {
   const token = localStorage.getItem('token');
@@ -27,7 +29,7 @@ export async function updateCourseLevelConfig(
   
   const variables = { courseLevel, features };
   
-  const res = await fetch('http://localhost:8081/graphql', {
+  const res = await fetch(getGraphQLUrl(), {
     method: 'POST',
     headers: getGraphQLHeaders(),
     body: JSON.stringify({ query: mutation, variables }),
@@ -59,7 +61,7 @@ export async function getCourseLevelConfig(courseLevel: number) {
   
   const variables = { courseLevel };
   
-  const res = await fetch('http://localhost:8081/graphql', {
+  const res = await fetch(getGraphQLUrl(), {
     method: 'POST',
     headers: getGraphQLHeaders(),
     body: JSON.stringify({ query, variables }),
@@ -89,7 +91,7 @@ export async function getAllCourseLevelConfigs() {
     }
   `;
   
-  const res = await fetch('http://localhost:8081/graphql', {
+  const res = await fetch(getGraphQLUrl(), {
     method: 'POST',
     headers: getGraphQLHeaders(),
     body: JSON.stringify({ query }),
@@ -112,7 +114,7 @@ export async function updateNode(node: any, parentIds: any) {
   async function runMutation(mutation: string, variables: any) {
     console.log('runMutation called with:', { mutation, variables });
     
-    const res = await fetch('http://localhost:8081/graphql', {
+    const res = await fetch(getGraphQLUrl(), {
       method: 'POST',
       headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
@@ -332,7 +334,7 @@ export async function deleteNode(node: any, parentIds: any) {
     console.log('Parent IDs:', parentIds);
     console.log('Variables being sent:', variables);
     
-    const res = await fetch('http://localhost:8081/graphql', {
+    const res = await fetch(getGraphQLUrl(), {
       method: 'POST',
       headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
@@ -444,7 +446,7 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
     const payload = JSON.parse(atob(token!.split('.')[1])); // Parse JWT token
     const username = payload?.sub;
     
-    const res = await fetch(`http://localhost:8081/projects?username=${username}`, {
+        const res = await fetch(`${getApiUrl('/projects')}?username=${username}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -44,7 +44,6 @@ public class UserResolver {
         userService.updatePassword(user, newPassword); 
         return user;
     }
-
     @QueryMapping
     public List<User> nonSuperAdminUsers() {
         return userService.getAllNonSuperAdminUsers();
@@ -54,4 +53,5 @@ public class UserResolver {
     public User updateUserRole(@Argument String username, @Argument String newRole) {
         return userService.updateUserRole(username, newRole);
     }
+
 }
