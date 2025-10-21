@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,9 +42,14 @@ public class ProjectService {
 
     public List<Project> getProjectsByUsername(String username) {
         // Fetch the user by username to get their String ID
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        
+        // If user doesn't exist, return empty list instead of throwing exception
+        if (userOptional.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        User user = userOptional.get();
         // Query projects by the user's String ID
         return projectRepository.findByOwnersContaining(user.getId());
     }

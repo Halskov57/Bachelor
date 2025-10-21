@@ -53,6 +53,14 @@ public class ProjectResolver {
     }
 
     @MutationMapping
+    public Project updateProjectCourseLevel(@Argument String projectId, @Argument int newCourseLevel) {
+        Project project = projectService.getProjectById(projectId);
+        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
+        project.setCourseLevel(newCourseLevel);
+        return projectService.save(project);
+    }
+
+    @MutationMapping
     public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
         Epic epic = projectService.getEpicById(projectId, epicId);
         if (epic == null) throw new RuntimeException("Epic not found: " + epicId);

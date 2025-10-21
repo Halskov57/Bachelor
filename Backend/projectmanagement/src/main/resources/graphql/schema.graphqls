@@ -1,6 +1,7 @@
 type User {
     id: ID!
     username: String!
+    role: String!
     projects: [Project!]!
 }
 
@@ -38,18 +39,38 @@ type Task {
     users: [User!]!
 }
 
+type CourseLevelConfig {
+    id: ID!
+    courseLevel: Int!
+    features: [FeatureConfig!]!
+}
+
+type FeatureConfig {
+    key: String!
+    enabled: Boolean!
+}
+
+input FeatureConfigInput {
+    key: String!
+    enabled: Boolean!
+}
+
 type Query {
     users: [User!]!
     userByUsername(username: String!): User
     projects: [Project!]!
     projectsByUsername(username: String!): [Project!]!
     projectById(id: ID!): Project
+    courseLevelConfig(courseLevel: Int!): CourseLevelConfig
+    allCourseLevelConfigs: [CourseLevelConfig!]!
+    nonSuperAdminUsers: [User!]!
 }
 
 type Mutation {
     updateUserUsername(id: ID!, newUsername: String!): User!
     updateProjectTitle(projectId: ID!, newTitle: String!): Project!
     updateProjectDescription(projectId: ID!, newDescription: String!): Project!
+    updateProjectCourseLevel(projectId: ID!, newCourseLevel: Int!): Project!
     updateEpicTitle(projectId: ID!, epicId: ID!, newTitle: String!): Epic!
     updateEpicDescription(projectId: ID!, epicId: ID!, newDescription: String!): Epic!
     updateFeatureTitle(projectId: ID!, epicId: ID!, featureId: ID!, newTitle: String!): Feature!
@@ -70,6 +91,11 @@ type Mutation {
     addEpic(projectId: ID!, title: String!, description: String): Epic!
     addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
     addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
+    updateCourseLevelConfig(
+        courseLevel: Int!,
+        features: [FeatureConfigInput!]!
+    ): CourseLevelConfig!
+    updateUserRole(username: String!, newRole: String!): User!
 }
 
 type Subscription {

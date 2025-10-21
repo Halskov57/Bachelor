@@ -22,7 +22,7 @@ public class User {
     @DBRef
     @JsonIgnore
     private List<Project> projects = new ArrayList<>(); // Initialized
-    private String role; // "USER" or "ADMIN"
+    private String role; // "USER", "ADMIN", or "SUPERADMIN"
 
     public User() {}
 

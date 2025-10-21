@@ -34,12 +34,12 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
             System.out.println("✅ Created user charlie with password 'charliePassword'");
         }
 
-        // Admin user
+        // SuperAdmin user (only one allowed)
         if (userRepository.findByUsername("admin").isEmpty()) {
-            userService.createAdminUser("admin", "adminPassword");
-            System.out.println("✅ Created admin user with username 'admin' and password 'adminPassword'");
+            userService.createSuperAdminUser("admin", "adminPassword");
+            System.out.println("✅ Created super admin user with username 'admin' and password 'adminPassword'");
         } else {
-            System.out.println("ℹ️ Admin user already exists, skipping creation.");
+            System.out.println("ℹ️ Super admin user already exists, skipping creation.");
         }
     };
 } 

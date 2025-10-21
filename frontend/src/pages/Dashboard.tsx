@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { parseJwt } from '../utils/jwt';
+import { parseJwt, isAdmin } from '../utils/jwt';
 import EditFanout from '../components/EditFanout'; // Import your fanout component
 
 interface Project {
@@ -57,6 +57,15 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  const handleAdminPage = () => {
+    window.location.href = '/admin';
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+
   const handleCreate = (data: { title: string; description: string }) => {
     setCreating(true);
     const token = localStorage.getItem('token');
@@ -84,20 +93,103 @@ const Dashboard: React.FC = () => {
   if (loading) return <div>Loading projects...</div>;
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 2,
-        margin: 'auto',
-        padding: '20px 20px 20px 20px',
-        maxWidth: '800px',
-        textAlign: 'center',
-        background: 'rgba(230,230,240,0.92)',
-        borderRadius: '18px',
-        boxShadow: '0 8px 32px 0 rgba(2,42,255,0.18), 0 0 32px 8px rgba(255,255,255,0.10)',
-        marginTop: '150px',
-      }}
-    >
+    <>
+      {/* Top navigation bar */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: '#022AFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          zIndex: 1000,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => window.location.href = '/'}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            ← Back to Login
+          </button>
+
+          {isAdmin() && (
+            <button
+              onClick={handleAdminPage}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: '#fff',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              ⚙️ Admin
+            </button>
+          )}
+        </div>
+
+        <h2 style={{
+          color: '#fff',
+          margin: 0,
+          fontWeight: 700
+        }}>
+          Dashboard
+        </h2>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 600
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Main content with top margin */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          margin: 'auto',
+          padding: '20px 20px 20px 20px',
+          maxWidth: '800px',
+          textAlign: 'center',
+          background: 'rgba(230,230,240,0.92)',
+          borderRadius: '18px',
+          boxShadow: '0 8px 32px 0 rgba(2,42,255,0.18), 0 0 32px 8px rgba(255,255,255,0.10)',
+          marginTop: '100px', // Increased margin to account for fixed header
+        }}
+      >
       <button
         style={{
           marginBottom: 24,
@@ -117,7 +209,10 @@ const Dashboard: React.FC = () => {
 
       {showCreate && (
         <EditFanout
-          node={{ type: 'project' }}
+          createNode={{
+            type: 'project',
+            parentIds: {}
+          }}
           mode="create"
           onClose={() => {
             setShowCreate(false);
@@ -189,7 +284,8 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

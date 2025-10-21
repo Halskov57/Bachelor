@@ -7,6 +7,104 @@ function getGraphQLHeaders() {
   };
 }
 
+// Course Level Config mutations
+export async function updateCourseLevelConfig(
+  courseLevel: number, 
+  features: { key: string; enabled: boolean }[]
+) {
+  const mutation = `
+    mutation($courseLevel: Int!, $features: [FeatureConfigInput!]!) {
+      updateCourseLevelConfig(courseLevel: $courseLevel, features: $features) {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const variables = { courseLevel, features };
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.updateCourseLevelConfig;
+}
+
+export async function getCourseLevelConfig(courseLevel: number) {
+  const query = `
+    query($courseLevel: Int!) {
+      courseLevelConfig(courseLevel: $courseLevel) {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const variables = { courseLevel };
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query, variables }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.courseLevelConfig;
+}
+
+export async function getAllCourseLevelConfigs() {
+  const query = `
+    query {
+      allCourseLevelConfigs {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+      }
+    }
+  `;
+  
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.allCourseLevelConfigs;
+}
+
 export async function updateNode(node: any, parentIds: any) {
   let results = {};
 
@@ -59,6 +157,19 @@ export async function updateNode(node: any, parentIds: any) {
         }
       `;
       const variables = { projectId: node.id, newDescription: node.description };
+      results = await runMutation(mutation, variables);
+      didUpdate = true;
+    }
+    // Update course level if changed
+    if (node.courseLevel !== undefined) {
+      const mutation = `
+        mutation($projectId: ID!, $newCourseLevel: Int!) {
+          updateProjectCourseLevel(projectId: $projectId, newCourseLevel: $newCourseLevel) {
+            id title description courseLevel
+          }
+        }
+      `;
+      const variables = { projectId: node.id, newCourseLevel: node.courseLevel };
       results = await runMutation(mutation, variables);
       didUpdate = true;
     }
@@ -302,8 +413,8 @@ export async function deleteNode(node: any, parentIds: any) {
 
 // Update addNode function with better logging
 
-export async function addNode(nodeType: string, parentIds: any, title: string, description?: string) {
-  console.log('addNode called with:', { nodeType, parentIds, title, description });
+export async function addNode(nodeType: string, parentIds: any, title: string, description?: string, courseLevel?: number) {
+  console.log('addNode called with:', { nodeType, parentIds, title, description, courseLevel });
   
   // Helper to run a mutation
   async function runMutation(mutation: string, variables: any) {
@@ -327,7 +438,31 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
   let mutation = '';
   let variables: any = {};
 
-  if (nodeType === 'epic') {
+  if (nodeType === 'project') {
+    // For project creation, use REST API for now since we don't have GraphQL mutation
+    const token = localStorage.getItem('token');
+    const payload = JSON.parse(atob(token!.split('.')[1])); // Parse JWT token
+    const username = payload?.sub;
+    
+    const res = await fetch(`http://localhost:8081/projects?username=${username}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title,
+        description: description || '',
+        courseLevel: courseLevel || 1
+      }),
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to create project');
+    }
+    
+    return await res.json();
+  } else if (nodeType === 'epic') {
     mutation = `
       mutation($projectId: ID!, $title: String!, $description: String) {
         addEpic(projectId: $projectId, title: $title, description: $description) {
@@ -374,4 +509,61 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
   }
 
   return await runMutation(mutation, variables);
+}
+
+// User management functions
+export async function getAllNonSuperAdminUsers() {
+  const query = `
+    query {
+      nonSuperAdminUsers {
+        id
+        username
+        role
+      }
+    }
+  `;
+
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.nonSuperAdminUsers;
+}
+
+export async function updateUserRole(username: string, newRole: string) {
+  const mutation = `
+    mutation($username: String!, $newRole: String!) {
+      updateUserRole(username: $username, newRole: $newRole) {
+        id
+        username
+        role
+      }
+    }
+  `;
+
+  const variables = { username, newRole };
+
+  const res = await fetch('http://localhost:8081/graphql', {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.updateUserRole;
 }
