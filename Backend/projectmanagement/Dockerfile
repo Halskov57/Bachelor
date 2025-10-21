@@ -1,17 +1,14 @@
-# Use an official OpenJDK runtime as a parent image
-FROM openjdk:21-jdk-slim
-
-# Set the working directory
+# Stage 1: Build the app
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
 
-# Copy the built jar file (adjust the jar name as needed)
-COPY target/projectmanagement-0.0.1-SNAPSHOT.jar app.jar
-
-# Set the Spring profile to 'docker'
+# Stage 2: Run the app
+FROM eclipse-temurin:21-jdk
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=docker
-
-# Expose the port your app runs on
-EXPOSE 8081
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 8080
+# FIX: Inject both the MONGO_URL and the required database name (projectmanagement)
+ENTRYPOINT ["java", "-Dspring.data.mongodb.uri=${MONGO_URL}", "-Dspring.data.mongodb.database=projectmanagement", "-jar", "app.jar"]
