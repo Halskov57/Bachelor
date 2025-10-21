@@ -23,6 +23,9 @@ const Admin: React.FC = () => {
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<number>(1);
   const [config, setConfig] = useState<CourseLevelConfig | null>(null);
   const [taskUserAssignmentEnabled, setTaskUserAssignmentEnabled] = useState<boolean>(true);
+  const [epicCreateDeleteEnabled, setEpicCreateDeleteEnabled] = useState<boolean>(true);
+  const [featureCreateDeleteEnabled, setFeatureCreateDeleteEnabled] = useState<boolean>(true);
+  const [taskCreateDeleteEnabled, setTaskCreateDeleteEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
   
@@ -54,6 +57,18 @@ const Admin: React.FC = () => {
       // Find task user assignment feature
       const taskUserFeature = configData.features.find((f: FeatureConfig) => f.key === 'TASK_USER_ASSIGNMENT');
       setTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
+      
+      // Find epic create/delete feature
+      const epicCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'EPIC_CREATE_DELETE');
+      setEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
+      
+      // Find feature create/delete feature
+      const featureCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'FEATURE_CREATE_DELETE');
+      setFeatureCreateDeleteEnabled(featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
+      
+      // Find task create/delete feature
+      const taskCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'TASK_CREATE_DELETE');
+      setTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
     } catch (error) {
       console.error('Failed to load config:', error);
       
@@ -62,12 +77,18 @@ const Admin: React.FC = () => {
         id: `default-${selectedCourseLevel}`,
         courseLevel: selectedCourseLevel,
         features: [
-          { key: 'TASK_USER_ASSIGNMENT', enabled: true }
+          { key: 'TASK_USER_ASSIGNMENT', enabled: true },
+          { key: 'EPIC_CREATE_DELETE', enabled: true },
+          { key: 'FEATURE_CREATE_DELETE', enabled: true },
+          { key: 'TASK_CREATE_DELETE', enabled: true }
         ]
       };
       
       setConfig(defaultConfig);
       setTaskUserAssignmentEnabled(true);
+      setEpicCreateDeleteEnabled(true);
+      setFeatureCreateDeleteEnabled(true);
+      setTaskCreateDeleteEnabled(true);
       setMessage(`Using default configuration for Course Level ${selectedCourseLevel}. Configuration will be created when you save.`);
     } finally {
       setLoading(false);
@@ -79,7 +100,12 @@ const Admin: React.FC = () => {
       setLoading(true);
       setMessage('');
       
-      const updatedConfig = await updateCourseLevelConfig(selectedCourseLevel, taskUserAssignmentEnabled);
+      const updatedConfig = await updateCourseLevelConfig(selectedCourseLevel, [
+        { key: 'TASK_USER_ASSIGNMENT', enabled: taskUserAssignmentEnabled },
+        { key: 'EPIC_CREATE_DELETE', enabled: epicCreateDeleteEnabled },
+        { key: 'FEATURE_CREATE_DELETE', enabled: featureCreateDeleteEnabled },
+        { key: 'TASK_CREATE_DELETE', enabled: taskCreateDeleteEnabled }
+      ]);
       setConfig(updatedConfig);
       setMessage('Configuration saved successfully!');
       
@@ -200,17 +226,17 @@ const Admin: React.FC = () => {
       {/* Main content */}
       <div style={{ 
         padding: '20px', 
-        maxWidth: '800px', // Increased width to accommodate more content
-        margin: '0 auto',
-        position: 'relative',
-        zIndex: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '8px',
-        marginTop: '80px', // Space for fixed header
-        marginBottom: '20px', // Space at bottom
-        maxHeight: 'calc(100vh - 120px)', // Maximum height based on viewport
-        overflowY: 'auto', // Make it scrollable
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)' // Add subtle shadow
+        maxWidth: '800px', 
+        margin: '0 auto', 
+        position: 'relative', 
+        zIndex: 20, 
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+        borderRadius: '8px', 
+        marginTop: '80px', 
+        marginBottom: '20px', 
+        maxHeight: 'calc(100vh - 120px)', // Restored scrollable area
+        overflowY: 'auto', // Enable scrolling
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
       }}>
       <h1 style={{ color: '#333', marginTop: '0' }}>
         Admin Panel - {isUserSuperAdmin ? 'User Management & Course Configuration' : 'Course Level Configuration'}
@@ -406,7 +432,11 @@ const Admin: React.FC = () => {
             backgroundColor: '#f9f9f9',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}>
+            {/* Task User Assignment Section */}
             <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#333', fontSize: '16px', marginBottom: '10px', marginTop: '0' }}>
+                Task Assignment
+              </h3>
               <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
                 <input
                   type="checkbox"
@@ -420,11 +450,91 @@ const Admin: React.FC = () => {
                 fontSize: '14px', 
                 color: '#666', 
                 marginLeft: '30px',
-                marginTop: '5px'
+                marginTop: '5px',
+                marginBottom: '0'
               }}>
                 When enabled, users can assign team members to specific tasks within projects.
               </p>
             </div>
+
+            {/* Divider */}
+            <hr style={{ border: 'none', borderTop: '1px solid #ddd', margin: '20px 0' }} />
+
+            {/* Create and Delete Rights Section */}
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#333', fontSize: '16px', marginBottom: '10px', marginTop: '0' }}>
+                Create and Delete Rights
+              </h3>
+              
+              {/* Epic Create/Delete */}
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={epicCreateDeleteEnabled}
+                    onChange={(e) => setEpicCreateDeleteEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Epic Create/Delete
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can create and delete epics in projects.
+                </p>
+              </div>
+
+              {/* Feature Create/Delete */}
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={featureCreateDeleteEnabled}
+                    onChange={(e) => setFeatureCreateDeleteEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Feature Create/Delete
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can create and delete features within epics.
+                </p>
+              </div>
+
+              {/* Task Create/Delete */}
+              <div style={{ marginBottom: '0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={taskCreateDeleteEnabled}
+                    onChange={(e) => setTaskCreateDeleteEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Task Create/Delete
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can create and delete tasks within features.
+                </p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <hr style={{ border: 'none', borderTop: '1px solid #ddd', margin: '20px 0' }} />
 
             <button
               onClick={handleSaveConfig}
@@ -446,16 +556,24 @@ const Admin: React.FC = () => {
       )}
       </div> {/* Close course level configuration section */}
 
+      {/* Added floating notification for confirmation/error messages */}
       {message && (
         <div style={{
-          padding: '10px',
-          borderRadius: '4px',
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          padding: '10px 20px',
+          borderRadius: '8px',
           backgroundColor: message.includes('Failed') ? '#f8d7da' : 
                           message.includes('default') ? '#fff3cd' : '#d4edda',
           color: message.includes('Failed') ? '#721c24' : 
                 message.includes('default') ? '#856404' : '#155724',
           border: `1px solid ${message.includes('Failed') ? '#f5c6cb' : 
-                   message.includes('default') ? '#ffeaa7' : '#c3e6cb'}`
+                   message.includes('default') ? '#ffeaa7' : '#c3e6cb'}`,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          zIndex: 1000,
+          fontSize: '14px',
+          fontWeight: '500'
         }}>
           {message}
         </div>

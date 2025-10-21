@@ -8,10 +8,13 @@ function getGraphQLHeaders() {
 }
 
 // Course Level Config mutations
-export async function updateCourseLevelConfig(courseLevel: number, taskUserAssignment: boolean) {
+export async function updateCourseLevelConfig(
+  courseLevel: number, 
+  features: { key: string; enabled: boolean }[]
+) {
   const mutation = `
-    mutation($courseLevel: Int!, $taskUserAssignment: Boolean!) {
-      updateCourseLevelConfig(courseLevel: $courseLevel, taskUserAssignment: $taskUserAssignment) {
+    mutation($courseLevel: Int!, $features: [FeatureConfigInput!]!) {
+      updateCourseLevelConfig(courseLevel: $courseLevel, features: $features) {
         id
         courseLevel
         features {
@@ -22,7 +25,7 @@ export async function updateCourseLevelConfig(courseLevel: number, taskUserAssig
     }
   `;
   
-  const variables = { courseLevel, taskUserAssignment };
+  const variables = { courseLevel, features };
   
   const res = await fetch('http://localhost:8081/graphql', {
     method: 'POST',

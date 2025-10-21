@@ -50,6 +50,11 @@ type FeatureConfig {
     enabled: Boolean!
 }
 
+input FeatureConfigInput {
+    key: String!
+    enabled: Boolean!
+}
+
 type Query {
     users: [User!]!
     userByUsername(username: String!): User
@@ -86,7 +91,10 @@ type Mutation {
     addEpic(projectId: ID!, title: String!, description: String): Epic!
     addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
     addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
-    updateCourseLevelConfig(courseLevel: Int!, taskUserAssignment: Boolean!): CourseLevelConfig!
+    updateCourseLevelConfig(
+        courseLevel: Int!,
+        features: [FeatureConfigInput!]!
+    ): CourseLevelConfig!
     updateUserRole(username: String!, newRole: String!): User!
 }
 

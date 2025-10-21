@@ -30,8 +30,34 @@ public class CourseLevelConfigService {
             System.out.println("DEBUG: Looking for config with course level " + courseLevel);
             Optional<CourseLevelConfig> existing = configRepository.findByCourseLevel(courseLevel);
             if (existing.isPresent()) {
-                System.out.println("DEBUG: Found existing config: " + existing.get());
-                return existing.get();
+                CourseLevelConfig config = existing.get();
+                System.out.println("DEBUG: Found existing config: " + config);
+                
+                // Migration: Check if the config has all required features
+                boolean needsUpdate = false;
+                Map<String, Boolean> features = config.getFeatures();
+                
+                if (!features.containsKey(CourseLevelConfig.EPIC_CREATE_DELETE)) {
+                    features.put(CourseLevelConfig.EPIC_CREATE_DELETE, true);
+                    needsUpdate = true;
+                }
+                if (!features.containsKey(CourseLevelConfig.FEATURE_CREATE_DELETE)) {
+                    features.put(CourseLevelConfig.FEATURE_CREATE_DELETE, true);
+                    needsUpdate = true;
+                }
+                if (!features.containsKey(CourseLevelConfig.TASK_CREATE_DELETE)) {
+                    features.put(CourseLevelConfig.TASK_CREATE_DELETE, true);
+                    needsUpdate = true;
+                }
+                
+                if (needsUpdate) {
+                    System.out.println("DEBUG: Migrating existing config to include new features");
+                    config.setFeatures(features);
+                    config = configRepository.save(config);
+                    System.out.println("DEBUG: Updated config: " + config);
+                }
+                
+                return config;
             }
             
             System.out.println("DEBUG: No existing config found, creating default");
@@ -131,6 +157,9 @@ public class CourseLevelConfigService {
             Map<String, Boolean> defaultFeatures = new HashMap<>();
             // By default, all features are enabled
             defaultFeatures.put(CourseLevelConfig.TASK_USER_ASSIGNMENT, true);
+            defaultFeatures.put(CourseLevelConfig.EPIC_CREATE_DELETE, true);
+            defaultFeatures.put(CourseLevelConfig.FEATURE_CREATE_DELETE, true);
+            defaultFeatures.put(CourseLevelConfig.TASK_CREATE_DELETE, true);
             
             CourseLevelConfig config = new CourseLevelConfig();
             config.setCourseLevel(courseLevel);
@@ -148,6 +177,23 @@ public class CourseLevelConfigService {
             return config;
         } catch (Exception e) {
             System.err.println("ERROR: Failed to create default config for course level " + courseLevel);
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    /**
+     * Update create/delete permissions for a course level
+     */
+    public CourseLevelConfig updateCreateDeletePermissions(int courseLevel, String permissionKey, boolean enabled) {
+        try {
+            System.out.println("DEBUG: Updating permission " + permissionKey + " for course level " + courseLevel + " to " + enabled);
+            CourseLevelConfig result = updateFeature(courseLevel, permissionKey, enabled);
+            System.out.println("DEBUG: Successfully updated permission: " + result);
+            return result;
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to update permission " + permissionKey + " for course level " + courseLevel);
             System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
             throw e;

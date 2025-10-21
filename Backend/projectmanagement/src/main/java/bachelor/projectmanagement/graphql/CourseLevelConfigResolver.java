@@ -33,12 +33,21 @@ public class CourseLevelConfigResolver {
 
     // Mutation resolvers
     @MutationMapping
-    public CourseLevelConfig updateCourseLevelConfig(@Argument int courseLevel, @Argument boolean taskUserAssignment) {
+    public CourseLevelConfig updateCourseLevelConfig(
+            @Argument int courseLevel,
+            @Argument List<FeatureConfigInput> features) {
         try {
-            System.out.println("DEBUG: GraphQL updateCourseLevelConfig called with courseLevel=" + courseLevel + ", taskUserAssignment=" + taskUserAssignment);
-            CourseLevelConfig result = configService.updateTaskUserAssignment(courseLevel, taskUserAssignment);
-            System.out.println("DEBUG: GraphQL updateCourseLevelConfig returning: " + result);
-            return result;
+            System.out.println("DEBUG: GraphQL updateCourseLevelConfig called with courseLevel=" + courseLevel + ", features=" + features);
+            CourseLevelConfig config = configService.getConfigOrDefault(courseLevel);
+
+            // Update features
+            for (FeatureConfigInput feature : features) {
+                config.getFeatures().put(feature.getKey(), feature.isEnabled());
+            }
+
+            CourseLevelConfig updatedConfig = configService.saveConfig(config);
+            System.out.println("DEBUG: GraphQL updateCourseLevelConfig returning: " + updatedConfig);
+            return updatedConfig;
         } catch (Exception e) {
             System.err.println("ERROR: GraphQL updateCourseLevelConfig failed");
             System.err.println("ERROR: " + e.getMessage());
@@ -86,6 +95,41 @@ public class CourseLevelConfigResolver {
 
         public void setEnabled(Boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    // Helper class for inputting feature configuration
+    public static class FeatureConfigInput {
+        private String key;
+        private boolean enabled;
+
+        // Default constructor required for GraphQL
+        public FeatureConfigInput() {}
+
+        public FeatureConfigInput(String key, boolean enabled) {
+            this.key = key;
+            this.enabled = enabled;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        @Override
+        public String toString() {
+            return "FeatureConfigInput{key='" + key + "', enabled=" + enabled + "}";
         }
     }
 }

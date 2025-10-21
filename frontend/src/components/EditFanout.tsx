@@ -46,6 +46,9 @@ const EditFanout: React.FC<{
   
   // Course level configuration state
   const [isTaskUserAssignmentEnabled, setIsTaskUserAssignmentEnabled] = useState<boolean>(true);
+  const [isEpicCreateDeleteEnabled, setIsEpicCreateDeleteEnabled] = useState<boolean>(true);
+  const [isFeatureCreateDeleteEnabled, setIsFeatureCreateDeleteEnabled] = useState<boolean>(true);
+  const [isTaskCreateDeleteEnabled, setIsTaskCreateDeleteEnabled] = useState<boolean>(true);
   const [configLoading, setConfigLoading] = useState<boolean>(false);
 
   // Update state when node changes
@@ -90,12 +93,30 @@ const EditFanout: React.FC<{
         try {
           setConfigLoading(true);
           const config = await getCourseLevelConfig(projectCourseLevel);
+          console.log('DEBUG: Loaded config for course level', projectCourseLevel, ':', config);
+          
+          // Load all feature configurations
           const taskUserFeature = config.features.find((f: any) => f.key === 'TASK_USER_ASSIGNMENT');
           setIsTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
+          
+          const epicCreateDeleteFeature = config.features.find((f: any) => f.key === 'EPIC_CREATE_DELETE');
+          setIsEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
+          console.log('DEBUG: Epic create/delete enabled:', epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
+          
+          const featureCreateDeleteFeature = config.features.find((f: any) => f.key === 'FEATURE_CREATE_DELETE');
+          setIsFeatureCreateDeleteEnabled(featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
+          console.log('DEBUG: Feature create/delete enabled:', featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
+          
+          const taskCreateDeleteFeature = config.features.find((f: any) => f.key === 'TASK_CREATE_DELETE');
+          setIsTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
+          console.log('DEBUG: Task create/delete enabled:', taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
         } catch (error) {
           console.error('Failed to load course level config:', error);
           // Default to enabled if config loading fails
           setIsTaskUserAssignmentEnabled(true);
+          setIsEpicCreateDeleteEnabled(true);
+          setIsFeatureCreateDeleteEnabled(true);
+          setIsTaskCreateDeleteEnabled(true);
         } finally {
           setConfigLoading(false);
         }
@@ -113,6 +134,13 @@ const EditFanout: React.FC<{
       console.log('Node users:', node?.users);
       
       if (mode === 'create' && createNode) {
+        // Check permissions for create operations
+        if (createNode.type && !canCreateDelete(createNode.type)) {
+          alert(`You don't have permission to create ${createNode.type}s in this course level.`);
+          setLoading(false);
+          return;
+        }
+        
         console.log('Creating node:', {
           type: createNode.type,
           parentIds: createNode.parentIds,
@@ -205,6 +233,12 @@ const EditFanout: React.FC<{
 
   const handleDelete = async () => {
     if (!node) return;
+    
+    // Check permissions for delete operations
+    if (node.type && !canCreateDelete(node.type)) {
+      alert(`You don't have permission to delete ${node.type}s in this course level.`);
+      return;
+    }
     
     const confirmDelete = window.confirm(`Are you sure you want to delete this ${node.type}?`);
     if (!confirmDelete) return;
@@ -300,8 +334,34 @@ const EditFanout: React.FC<{
     }
   };
 
-  const showAddButton = node && ['project', 'epic', 'feature'].includes(node.type);
-  const showDeleteButton = node && ['epic', 'feature', 'task'].includes(node.type);
+  const canCreateDelete = (type: string) => {
+    const result = (() => {
+      switch (type) {
+        case 'epic': return isEpicCreateDeleteEnabled;
+        case 'feature': return isFeatureCreateDeleteEnabled;
+        case 'task': return isTaskCreateDeleteEnabled;
+        default: return true;
+      }
+    })();
+    console.log('DEBUG: canCreateDelete(' + type + ') = ' + result);
+    return result;
+  };
+
+  const showAddButton = node && ['project', 'epic', 'feature'].includes(node.type) && (() => {
+    const result = (() => {
+      switch (node.type) {
+        case 'project': return canCreateDelete('epic');
+        case 'epic': return canCreateDelete('feature');
+        case 'feature': return canCreateDelete('task');
+        default: return false;
+      }
+    })();
+    console.log('DEBUG: showAddButton for', node.type, '= canCreateDelete result:', result);
+    return result;
+  })();
+  
+  const showDeleteButton = node && ['epic', 'feature', 'task'].includes(node.type) && canCreateDelete(node.type);
+  console.log('DEBUG: showDeleteButton for', node?.type, '=', showDeleteButton);
 
   return (
     <div style={{
