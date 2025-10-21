@@ -181,7 +181,6 @@ public class ProjectService {
         if (updatedTask.getStatus() != null) {
             task.setStatus(updatedTask.getStatus());
         }
-        // Add more fields as needed
 
         projectRepository.save(project);
         return task;
