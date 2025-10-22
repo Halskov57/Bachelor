@@ -55,6 +55,11 @@ export async function getCourseLevelConfig(courseLevel: number) {
           key
           enabled
         }
+        templateProject {
+          id
+          title
+          description
+        }
       }
     }
   `;
@@ -422,7 +427,7 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
   async function runMutation(mutation: string, variables: any) {
     console.log('Running mutation:', { mutation, variables });
     
-    const res = await fetch('http://localhost:8081/graphql', {
+    const res = await fetch(getGraphQLUrl(), {
       method: 'POST',
       headers: getGraphQLHeaders(),
       body: JSON.stringify({ query: mutation, variables }),
@@ -441,29 +446,25 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
   let variables: any = {};
 
   if (nodeType === 'project') {
-    // For project creation, use REST API for now since we don't have GraphQL mutation
-    const token = localStorage.getItem('token');
-    const payload = JSON.parse(atob(token!.split('.')[1])); // Parse JWT token
-    const username = payload?.sub;
+    // Use the createProjectFromTemplate GraphQL mutation which handles templates
+    const mutation = `
+      mutation($courseLevel: Int!, $title: String!, $description: String!) {
+        createProjectFromTemplate(courseLevel: $courseLevel, title: $title, description: $description) {
+          id
+          title
+          description
+          courseLevel
+        }
+      }
+    `;
     
-        const res = await fetch(`${getApiUrl('/projects')}?username=${username}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title,
-        description: description || '',
-        courseLevel: courseLevel || 1
-      }),
-    });
+    variables = { 
+      courseLevel: courseLevel || 1,
+      title,
+      description: description || ''
+    };
     
-    if (!res.ok) {
-      throw new Error('Failed to create project');
-    }
-    
-    return await res.json();
+    return await runMutation(mutation, variables);
   } else if (nodeType === 'epic') {
     mutation = `
       mutation($projectId: ID!, $title: String!, $description: String) {
@@ -568,4 +569,141 @@ export async function updateUserRole(username: string, newRole: string) {
   }
 
   return json.data.updateUserRole;
+}
+
+// Template-related mutations
+export async function setTemplateProject(courseLevel: number, projectId: string) {
+  const mutation = `
+    mutation($courseLevel: Int!, $projectId: ID!) {
+      setTemplateProject(courseLevel: $courseLevel, projectId: $projectId) {
+        id
+        courseLevel
+        templateProject {
+          id
+          title
+          description
+        }
+      }
+    }
+  `;
+
+  const variables = { courseLevel, projectId };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.setTemplateProject;
+}
+
+export async function createProjectFromTemplate(courseLevel: number, title: string, description: string) {
+  const mutation = `
+    mutation($courseLevel: Int!, $title: String!, $description: String!) {
+      createProjectFromTemplate(courseLevel: $courseLevel, title: $title, description: $description) {
+        id
+        title
+        description
+        courseLevel
+      }
+    }
+  `;
+
+  const variables = { courseLevel, title, description };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.createProjectFromTemplate;
+}
+
+export async function getAllProjects() {
+  const query = `
+    query {
+      projects {
+        id
+        title
+        description
+        courseLevel
+      }
+    }
+  `;
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.projects;
+}
+
+export async function getProjectsByCurrentUser() {
+  const query = `
+    query {
+      projectsByUsername(username: "${getCurrentUsername()}") {
+        id
+        title
+        description
+        courseLevel
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.projectsByUsername;
+}
+
+// Helper function to get current username from JWT
+function getCurrentUsername(): string {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub || payload.username;
+  } catch (error) {
+    throw new Error('Invalid token');
+  }
 }

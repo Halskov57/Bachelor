@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getCourseLevelConfig, updateCourseLevelConfig, getAllNonSuperAdminUsers, updateUserRole } from '../utils/graphqlMutations';
+import { getCourseLevelConfig, updateCourseLevelConfig, getAllNonSuperAdminUsers, updateUserRole, setTemplateProject, getProjectsByCurrentUser } from '../utils/graphqlMutations';
 import { isSuperAdmin } from '../utils/jwt';
 
 interface FeatureConfig {
@@ -7,10 +7,18 @@ interface FeatureConfig {
   enabled: boolean;
 }
 
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  courseLevel?: number;
+}
+
 interface CourseLevelConfig {
   id: string;
   courseLevel: number;
   features: FeatureConfig[];
+  templateProject?: Project;
 }
 
 interface User {
@@ -34,6 +42,11 @@ const Admin: React.FC = () => {
   const [userLoading, setUserLoading] = useState<boolean>(false);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isUserSuperAdmin] = useState<boolean>(isSuperAdmin());
+
+  // Template management state
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [showProjectSelection, setShowProjectSelection] = useState<boolean>(false);
+  const [templateMessage, setTemplateMessage] = useState<string>('');
 
   const loadConfig = useCallback(async () => {
     try {
@@ -160,6 +173,52 @@ const Admin: React.FC = () => {
     } finally {
       setUserLoading(false);
     }
+  };
+
+  // Template management functions
+  const loadAllProjects = async () => {
+    try {
+      const projects = await getProjectsByCurrentUser();
+      // Now we get only projects owned by the current admin user
+      setAllProjects(projects);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      setTemplateMessage('Failed to load projects');
+    }
+  };
+
+  const handleSetTemplate = async (projectId: string) => {
+    try {
+      setLoading(true);
+      setTemplateMessage('');
+      await setTemplateProject(selectedCourseLevel, projectId);
+      setTemplateMessage('Template project set successfully!');
+      setShowProjectSelection(false);
+      
+      // Refresh the config to show the new template
+      await loadConfig();
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setTemplateMessage(''), 3000);
+    } catch (error) {
+      console.error('Failed to set template:', error);
+      setTemplateMessage('Failed to set template project');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateTemplate = () => {
+    // Simply navigate to dashboard where they can create projects normally
+    window.location.href = '/dashboard';
+  };
+
+  const handleTemplateCreated = () => {
+    // This function is no longer needed but keeping for now
+    setShowProjectSelection(false);
+    setTemplateMessage('Template project created! Now loading projects...');
+    loadAllProjects();
+    setTimeout(() => setTemplateMessage(''), 3000);
   };
 
   return (
@@ -423,7 +482,7 @@ const Admin: React.FC = () => {
 
       {config && (
         <div style={{ marginBottom: '30px' }}>
-          <h2 style={{ color: '#333' }}>Configuration for Course Level {selectedCourseLevel}</h2>
+          <h2 style={{ color: '#333' }}>Configuration for {selectedCourseLevel === 0 ? 'Default Template (All Course Levels)' : `Course Level ${selectedCourseLevel}`}</h2>
           
           <div style={{ 
             border: '1px solid #ddd',
@@ -531,6 +590,145 @@ const Admin: React.FC = () => {
                   When enabled, users can create and delete tasks within features.
                 </p>
               </div>
+            </div>
+
+            {/* Template Project Section */}
+            <div style={{ marginTop: '25px' }}>
+              <h3 style={{ color: '#333', marginBottom: '15px', fontSize: '18px' }}>Template Project</h3>
+              
+              {templateMessage && (
+                <div style={{
+                  padding: '10px',
+                  borderRadius: '4px',
+                  backgroundColor: templateMessage.includes('Failed') ? '#f8d7da' : '#d4edda',
+                  color: templateMessage.includes('Failed') ? '#721c24' : '#155724',
+                  border: `1px solid ${templateMessage.includes('Failed') ? '#f5c6cb' : '#c3e6cb'}`,
+                  marginBottom: '15px'
+                }}>
+                  {templateMessage}
+                </div>
+              )}
+
+              {config?.templateProject ? (
+                <div style={{
+                  padding: '15px',
+                  backgroundColor: '#e8f4fd',
+                  border: '1px solid #bee5eb',
+                  borderRadius: '6px',
+                  marginBottom: '15px'
+                }}>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#0c5460' }}>Current Template:</h4>
+                  <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#0c5460' }}>
+                    {config.templateProject.title}
+                  </p>
+                  <p style={{ margin: '0', color: '#0c5460', fontSize: '14px' }}>
+                    {config.templateProject.description}
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '15px',
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px',
+                  marginBottom: '15px'
+                }}>
+                  <p style={{ margin: '0', color: '#666', fontStyle: 'italic' }}>
+                    No template project set for {selectedCourseLevel === 0 ? 'Default Template (All Course Levels)' : `Course Level ${selectedCourseLevel}`}
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={handleCreateTemplate}
+                  style={{
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Create New Template
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setShowProjectSelection(!showProjectSelection);
+                    if (!showProjectSelection) loadAllProjects();
+                  }}
+                  style={{
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showProjectSelection ? 'Cancel' : 'Set Existing Project as Template'}
+                </button>
+              </div>
+
+              {showProjectSelection && (
+                <div style={{
+                  marginTop: '15px',
+                  padding: '15px',
+                  backgroundColor: '#f8f9fa',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px'
+                }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>Select a Project to Use as Template:</h4>
+                  {allProjects.length > 0 ? (
+                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      {allProjects.map(project => (
+                        <div
+                          key={project.id}
+                          style={{
+                            padding: '10px',
+                            margin: '5px 0',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                          onClick={() => handleSetTemplate(project.id)}
+                        >
+                          <div>
+                            <strong>{project.title}</strong>
+                            <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#666' }}>
+                              {project.description || 'No description'}
+                            </p>
+                          </div>
+                          <button
+                            style={{
+                              backgroundColor: '#007bff',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '3px',
+                              fontSize: '12px'
+                            }}
+                          >
+                            Select
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: '0', color: '#666', fontStyle: 'italic' }}>
+                      No projects found. Create a project first.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Divider */}

@@ -2,6 +2,7 @@ package bachelor.projectmanagement.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,10 @@ public class CourseLevelConfig {
     
     // Extensible feature configuration
     private Map<String, Boolean> features = new HashMap<>();
+    
+    // Template project for this course level
+    @DBRef
+    private Project templateProject;
     
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
@@ -124,6 +129,15 @@ public class CourseLevelConfig {
     
     public void setUpdatedAt(Instant updatedAt) { 
         this.updatedAt = updatedAt; 
+    }
+
+    public Project getTemplateProject() {
+        return templateProject;
+    }
+
+    public void setTemplateProject(Project templateProject) {
+        this.templateProject = templateProject;
+        this.updatedAt = Instant.now();
     }
 
     @Override

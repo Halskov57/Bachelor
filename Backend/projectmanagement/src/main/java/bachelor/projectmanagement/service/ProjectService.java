@@ -423,4 +423,55 @@ public class ProjectService {
     public String getId(Project project) {
         return project.getProjectId();
     }
+
+    public Project copyProjectStructure(Project template, String newTitle, String newDescription, int courseLevel, String username) {
+        System.out.println("DEBUG: Copying project structure from template: " + template.getTitle());
+        
+        // Create new project with basic info
+        Project newProject = new Project();
+        newProject.setTitle(newTitle);
+        newProject.setDescription(newDescription);
+        newProject.setCourseLevel(courseLevel);
+        
+        // Copy epics structure
+        List<Epic> newEpics = new ArrayList<>();
+        if (template.getEpics() != null) {
+            for (Epic templateEpic : template.getEpics()) {
+                Epic newEpic = new Epic();
+                newEpic.setTitle(templateEpic.getTitle());
+                newEpic.setDescription(templateEpic.getDescription());
+                
+                // Copy features structure
+                List<Feature> newFeatures = new ArrayList<>();
+                if (templateEpic.getFeatures() != null) {
+                    for (Feature templateFeature : templateEpic.getFeatures()) {
+                        Feature newFeature = new Feature();
+                        newFeature.setTitle(templateFeature.getTitle());
+                        newFeature.setDescription(templateFeature.getDescription());
+                        
+                        // Copy tasks structure
+                        List<Task> newTasks = new ArrayList<>();
+                        if (templateFeature.getTasks() != null) {
+                            for (Task templateTask : templateFeature.getTasks()) {
+                                Task newTask = new Task();
+                                newTask.setTitle(templateTask.getTitle());
+                                newTask.setDescription(templateTask.getDescription());
+                                newTask.setStatus(TaskStatus.TODO); // Start with default status
+                                newTask.setUsers(new ArrayList<>()); // Start with no assigned users
+                                newTasks.add(newTask);
+                            }
+                        }
+                        newFeature.setTasks(newTasks);
+                        newFeatures.add(newFeature);
+                    }
+                }
+                newEpic.setFeatures(newFeatures);
+                newEpics.add(newEpic);
+            }
+        }
+        newProject.setEpics(newEpics);
+        
+        // Assign IDs and save the project with current user as owner
+        return createProject(newProject, username); // This will assign IDs and save
+    }
 }

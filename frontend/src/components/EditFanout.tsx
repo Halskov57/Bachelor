@@ -440,6 +440,9 @@ const EditFanout: React.FC<{
             onChange={e => setCourseLevel(Number(e.target.value))}
             style={{ width: '100%', marginBottom: '12px' }}
           >
+            <option key={0} value={0}>
+              Default Template (All Course Levels)
+            </option>
             {[1, 2, 3, 4, 5, 6].map(level => (
               <option key={level} value={level}>
                 Course Level {level}

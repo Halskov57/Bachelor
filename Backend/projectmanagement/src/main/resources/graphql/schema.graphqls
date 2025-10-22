@@ -43,6 +43,7 @@ type CourseLevelConfig {
     id: ID!
     courseLevel: Int!
     features: [FeatureConfig!]!
+    templateProject: Project
 }
 
 type FeatureConfig {
@@ -95,6 +96,8 @@ type Mutation {
         courseLevel: Int!,
         features: [FeatureConfigInput!]!
     ): CourseLevelConfig!
+    setTemplateProject(courseLevel: Int!, projectId: ID!): CourseLevelConfig!
+    createProjectFromTemplate(courseLevel: Int!, title: String!, description: String!): Project!
     updateUserRole(username: String!, newRole: String!): User!
 }
 

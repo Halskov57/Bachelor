@@ -1,11 +1,15 @@
 package bachelor.projectmanagement.graphql;
 
 import bachelor.projectmanagement.model.CourseLevelConfig;
+import bachelor.projectmanagement.model.Project;
 import bachelor.projectmanagement.service.CourseLevelConfigService;
+import bachelor.projectmanagement.service.ProjectService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +19,11 @@ import java.util.Map;
 public class CourseLevelConfigResolver {
 
     private final CourseLevelConfigService configService;
+    private final ProjectService projectService;
 
-    public CourseLevelConfigResolver(CourseLevelConfigService configService) {
+    public CourseLevelConfigResolver(CourseLevelConfigService configService, ProjectService projectService) {
         this.configService = configService;
+        this.projectService = projectService;
     }
 
     // Query resolvers
@@ -53,6 +59,77 @@ public class CourseLevelConfigResolver {
             System.err.println("ERROR: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to update course level config: " + e.getMessage(), e);
+        }
+    }
+
+    @MutationMapping
+    public CourseLevelConfig setTemplateProject(@Argument int courseLevel, @Argument String projectId) {
+        try {
+            System.out.println("DEBUG: GraphQL setTemplateProject called with courseLevel=" + courseLevel + ", projectId=" + projectId);
+            CourseLevelConfig config = configService.getConfigOrDefault(courseLevel);
+            Project template = projectService.getProjectById(projectId);
+            
+            if (template == null) {
+                throw new RuntimeException("Project not found with id: " + projectId);
+            }
+            
+            config.setTemplateProject(template);
+            CourseLevelConfig updatedConfig = configService.saveConfig(config);
+            System.out.println("DEBUG: GraphQL setTemplateProject returning: " + updatedConfig);
+            return updatedConfig;
+        } catch (Exception e) {
+            System.err.println("ERROR: GraphQL setTemplateProject failed");
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to set template project: " + e.getMessage(), e);
+        }
+    }
+
+    @MutationMapping
+    public Project createProjectFromTemplate(@Argument int courseLevel, @Argument String title, @Argument String description) {
+        try {
+            System.out.println("DEBUG: GraphQL createProjectFromTemplate called with courseLevel=" + courseLevel + ", title=" + title);
+            
+            // First try to get template for the specific course level
+            CourseLevelConfig config = configService.getConfigOrDefault(courseLevel);
+            Project template = config.getTemplateProject();
+            
+            // If no template for specific course level, try course level 0 (default template)
+            if (template == null && courseLevel != 0) {
+                System.out.println("DEBUG: No template for course level " + courseLevel + ", checking default template (course level 0)");
+                CourseLevelConfig defaultConfig = configService.getConfigOrDefault(0);
+                template = defaultConfig.getTemplateProject();
+            }
+            
+            if (template == null) {
+                // No template exists, create a normal empty project
+                System.out.println("DEBUG: No template found, creating empty project");
+                
+                // Get current authenticated user
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                String currentUsername = authentication.getName();
+                
+                Project newProject = new Project();
+                newProject.setTitle(title);
+                newProject.setDescription(description);
+                newProject.setCourseLevel(courseLevel);
+                return projectService.createProject(newProject, currentUsername);
+            }
+            
+            // Template exists, copy its structure
+            System.out.println("DEBUG: Template found, copying structure from: " + template.getTitle());
+            
+            // Get current authenticated user
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = authentication.getName();
+            
+            Project newProject = projectService.copyProjectStructure(template, title, description, courseLevel, currentUsername);
+            return newProject;
+        } catch (Exception e) {
+            System.err.println("ERROR: GraphQL createProjectFromTemplate failed");
+            System.err.println("ERROR: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create project from template: " + e.getMessage(), e);
         }
     }
 
