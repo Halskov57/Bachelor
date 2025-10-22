@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import ProjectTreeView from '../components/ProjectTreeView';
 import ProjectListView from '../components/ProjectListView';
 import { isAdmin } from '../utils/jwt';
+import { getGraphQLUrl } from '../config/environment';  // <-- ADD THIS IMPORT
 
 function toTreeData(project: any) {
   if (!project || !(project.title || project.name)) return null;
@@ -89,7 +90,7 @@ const Project: React.FC = () => {
       }
     `;
     
-    const response = await fetch('/api/graphql', {
+    const response = await fetch(getGraphQLUrl(), {  // <-- CHANGE THIS LINE
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
