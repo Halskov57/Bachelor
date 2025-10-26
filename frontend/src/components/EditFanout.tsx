@@ -33,7 +33,7 @@ const EditFanout: React.FC<{
   // Task-specific fields
   const [status, setStatus] = useState(node?.status || '');
   const [depth, setDepth] = useState(node?.depth ?? 0);
-  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 1);
+  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 0);
   const [selectedUsers, setSelectedUsers] = useState<string[]>(
     Array.isArray(node?.users) 
       ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
@@ -54,7 +54,7 @@ const EditFanout: React.FC<{
       setDescription(node.description || '');
       setStatus(node.status || '');
       setDepth(node.depth ?? 0);
-      setCourseLevel(node.courseLevel ?? 1);
+      setCourseLevel(node.courseLevel ?? 0);
       setSelectedUsers(
         Array.isArray(node.users) 
           ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
@@ -66,7 +66,7 @@ const EditFanout: React.FC<{
       setDescription('');
       setStatus('');
       setDepth(0);
-      setCourseLevel(1);
+      setCourseLevel(0);
       setSelectedUsers([]);
     }
   }, [node, mode]); // Re-run when node or mode changes
@@ -138,7 +138,8 @@ const EditFanout: React.FC<{
           type: createNode.type,
           parentIds: createNode.parentIds,
           title,
-          description
+          description,
+          courseLevel: courseLevel
         });
         
         const result = await addNode(
@@ -156,7 +157,7 @@ const EditFanout: React.FC<{
         // Existing edit logic
         const changedTitle = title !== (node.title || node.name || '');
         const changedDescription = description !== (node.description || '');
-        const changedCourseLevel = node.type === 'project' && courseLevel !== (node.courseLevel ?? 1);
+        const changedCourseLevel = node.type === 'project' && courseLevel !== (node.courseLevel ?? 0);
 
         let data: any = {};
         if (changedTitle) data.title = title;
@@ -437,7 +438,11 @@ const EditFanout: React.FC<{
           <label>Course Level</label>
           <select
             value={courseLevel}
-            onChange={e => setCourseLevel(Number(e.target.value))}
+            onChange={e => {
+              const newValue = Number(e.target.value);
+              console.log('Course level dropdown changed to:', newValue);
+              setCourseLevel(newValue);
+            }}
             style={{ width: '100%', marginBottom: '12px' }}
           >
             <option key={0} value={0}>

@@ -459,7 +459,7 @@ export async function addNode(nodeType: string, parentIds: any, title: string, d
     `;
     
     variables = { 
-      courseLevel: courseLevel || 1,
+      courseLevel: courseLevel !== undefined ? courseLevel : 1,
       title,
       description: description || ''
     };
