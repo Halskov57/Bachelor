@@ -25,6 +25,11 @@ public class UserResolver {
         return userService.findByUsername(username);
     }
 
+    @QueryMapping
+    public List<User> users() {
+        return userService.getAllUsers();
+    }
+
      @MutationMapping
     public User updateUsername(@Argument String oldUsername, @Argument String newUsername) {
         User user = userService.findByUsername(oldUsername);

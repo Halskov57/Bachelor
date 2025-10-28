@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { updateNode, addNode, deleteNode, getCourseLevelConfig } from '../utils/graphqlMutations';
+import { updateNode, addNode, deleteNode, getCourseLevelConfig, addUserToProject, removeUserFromProject } from '../utils/graphqlMutations';
 
 interface CreateNodeData {
   type: string;
@@ -18,13 +18,15 @@ const EditFanout: React.FC<{
   onSave?: (data?: any) => void; 
   mode?: 'edit' | 'create';
   project?: any; // Add project data to access owners
+  allUsers?: any[]; // Add list of all users
 }> = ({
   node,
   createNode,
   onClose,
   onSave,
   mode = 'edit',
-  project
+  project,
+  allUsers = []
 }) => {
   // Common fields
   const [title, setTitle] = useState(mode === 'create' ? '' : (node?.title || node?.name || ''));
@@ -39,6 +41,13 @@ const EditFanout: React.FC<{
       ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
       : []
   );
+  const [selectedOwners, setSelectedOwners] = useState<string[]>(
+    mode === 'edit' && node?.type === 'project' && Array.isArray(node?.owners)
+      ? node.owners.map((owner: any) => owner.username || owner.name)
+      : []
+  );
+  const [managingOwners, setManagingOwners] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   
   // Course level configuration state
@@ -60,6 +69,9 @@ const EditFanout: React.FC<{
           ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
           : []
       );
+      if (node.type === 'project' && Array.isArray(node.owners)) {
+        setSelectedOwners(node.owners.map((owner: any) => owner.username || owner.name));
+      }
     } else if (mode === 'create') {
       // Reset to empty values for create mode
       setTitle('');
@@ -68,6 +80,7 @@ const EditFanout: React.FC<{
       setDepth(0);
       setCourseLevel(0);
       setSelectedUsers([]);
+      setSelectedOwners([]);
     }
   }, [node, mode]); // Re-run when node or mode changes
 
@@ -118,6 +131,51 @@ const EditFanout: React.FC<{
     
     loadCourseLevelConfig();
   }, [project, node, mode, createNode, courseLevel]);
+
+  const handleAddOwner = async (username: string) => {
+    if (!node || node.type !== 'project') return;
+    
+    try {
+      setLoading(true);
+      await addUserToProject(node.id || node.projectId, username);
+      setSelectedOwners(prev => [...prev, username]);
+      // Don't call onSave to keep the EditFanout open
+      // Just refresh the data silently in the background
+      if (project) {
+        // Update the local node data if needed
+        if (node.owners) {
+          node.owners.push({ username });
+        }
+      }
+    } catch (error: any) {
+      console.error('Error adding owner:', error);
+      alert(`Error adding owner: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveOwner = async (username: string) => {
+    if (!node || node.type !== 'project') return;
+    
+    try {
+      setLoading(true);
+      await removeUserFromProject(node.id || node.projectId, username);
+      setSelectedOwners(prev => prev.filter(u => u !== username));
+      // Don't call onSave to keep the EditFanout open
+      // Just refresh the data silently in the background
+      if (project && node.owners) {
+        node.owners = node.owners.filter((owner: any) => 
+          (owner.username || owner.name) !== username
+        );
+      }
+    } catch (error: any) {
+      console.error('Error removing owner:', error);
+      alert(`Error removing owner: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -455,10 +513,35 @@ const EditFanout: React.FC<{
             ))}
           </select>
 
-          {/* Only show owners for edit mode */}
+          {/* Show owners for edit mode with management option */}
           {mode === 'edit' && (
             <>
-              <label>Project Owners</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ margin: 0 }}>Project Owners</label>
+                <button
+                  onClick={() => {
+                    console.log('Manage button clicked. Current state:', managingOwners);
+                    console.log('All users:', allUsers);
+                    console.log('All users length:', allUsers.length);
+                    setManagingOwners(!managingOwners);
+                    if (managingOwners) {
+                      setUserSearchTerm(''); // Clear search when closing manage mode
+                    }
+                  }}
+                  style={{
+                    padding: '4px 12px',
+                    backgroundColor: managingOwners ? '#dc3545' : '#0066cc',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  {managingOwners ? 'Done' : 'Manage Users'}
+                </button>
+              </div>
+
               <div style={{
                 marginBottom: '12px',
                 padding: '8px',
@@ -466,28 +549,114 @@ const EditFanout: React.FC<{
                 borderRadius: '4px',
                 border: '1px solid #e0e6ed'
               }}>
-                {node.owners && node.owners.length > 0 ? (
+                {selectedOwners.length > 0 ? (
                   <div>
-                    {node.owners.map((owner: any, index: number) => (
+                    {selectedOwners.map((username: string, index: number) => (
                       <span key={index} style={{
-                        display: 'inline-block',
+                        display: 'inline-flex',
+                        alignItems: 'center',
                         backgroundColor: '#022AFF',
                         color: '#fff',
                         padding: '4px 8px',
                         borderRadius: '4px',
                         fontSize: '0.9rem',
-                        margin: '2px 4px 2px 0'
-                      }}>
-                        {owner.username || owner.name || 'Unknown User'}
+                        margin: '2px 4px 2px 0',
+                        cursor: managingOwners ? 'pointer' : 'default'
+                      }}
+                      onClick={() => managingOwners && handleRemoveOwner(username)}
+                      title={managingOwners ? "Click to remove" : undefined}
+                      >
+                        {username}
+                        {managingOwners && <span style={{ marginLeft: '6px' }}>×</span>}
                       </span>
                     ))}
                   </div>
                 ) : (
                   <span style={{ color: '#666', fontStyle: 'italic' }}>
-                    {node.owner ? `Single Owner: ${node.owner.username || node.owner.name}` : 'No owners assigned'}
+                    No owners assigned
                   </span>
                 )}
               </div>
+
+              {/* Add owner input when managing */}
+              {managingOwners && (
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: '#666' }}>
+                    Add User by Username
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Enter username..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && userSearchTerm.trim()) {
+                          // Check if user exists and isn't already added
+                          const userExists = allUsers.some(u => 
+                            (u.username || u.name) === userSearchTerm.trim()
+                          );
+                          const alreadyAdded = selectedOwners.includes(userSearchTerm.trim());
+                          
+                          if (!userExists) {
+                            alert(`User "${userSearchTerm.trim()}" not found`);
+                          } else if (alreadyAdded) {
+                            alert(`User "${userSearchTerm.trim()}" is already added to this project`);
+                          } else {
+                            handleAddOwner(userSearchTerm.trim());
+                            setUserSearchTerm('');
+                          }
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        fontSize: '14px',
+                        border: '1px solid #e0e6ed',
+                        borderRadius: '4px',
+                        boxSizing: 'border-box'
+                      }}
+                      disabled={loading}
+                    />
+                    <button
+                      onClick={() => {
+                        if (userSearchTerm.trim()) {
+                          // Check if user exists and isn't already added
+                          const userExists = allUsers.some(u => 
+                            (u.username || u.name) === userSearchTerm.trim()
+                          );
+                          const alreadyAdded = selectedOwners.includes(userSearchTerm.trim());
+                          
+                          if (!userExists) {
+                            alert(`User "${userSearchTerm.trim()}" not found`);
+                          } else if (alreadyAdded) {
+                            alert(`User "${userSearchTerm.trim()}" is already added to this project`);
+                          } else {
+                            handleAddOwner(userSearchTerm.trim());
+                            setUserSearchTerm('');
+                          }
+                        }
+                      }}
+                      disabled={loading || !userSearchTerm.trim()}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: loading || !userSearchTerm.trim() ? '#ccc' : '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: loading || !userSearchTerm.trim() ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                    Type username and press Enter or click Add
+                  </div>
+                </div>
+              )}
             </>
           )}
         </>

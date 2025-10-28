@@ -48,6 +48,33 @@ function toTreeData(project: any) {
 const Project: React.FC = () => {
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree'>('list');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  const fetchAllUsers = async () => {
+    const token = localStorage.getItem('token');
+    const query = `
+      query {
+        users {
+          id
+          username
+        }
+      }
+    `;
+    
+    const response = await fetch(getGraphQLUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ query })
+    });
+    
+    const result = await response.json();
+    if (result.data?.users) {
+      setAllUsers(result.data.users);
+    }
+  };
 
   const fetchProjectById = async () => {
     const params = new URLSearchParams(window.location.search);
@@ -107,6 +134,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
+    fetchAllUsers();
   }, []);
 
   const treeData = useMemo(() => {
@@ -262,13 +290,14 @@ const Project: React.FC = () => {
       
       <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
         {view === 'list' ? (
-          <ProjectListView project={project} fetchProjectById={fetchProjectById} />
+          <ProjectListView project={project} fetchProjectById={fetchProjectById} allUsers={allUsers} />
         ) : (
           <ProjectTreeView
             key={project.id || project._id || project.title}
             treeData={treeData}
             project={project}
             fetchProjectById={fetchProjectById}
+            allUsers={allUsers}
           />
         )}
       </div>

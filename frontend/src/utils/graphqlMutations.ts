@@ -695,6 +695,70 @@ export async function getProjectsByCurrentUser() {
   return json.data.projectsByUsername;
 }
 
+export async function addUserToProject(projectId: string, username: string) {
+  const mutation = `
+    mutation AddUserToProject($projectId: ID!, $username: String!) {
+      addUserToProject(projectId: $projectId, username: $username) {
+        id
+        title
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const variables = { projectId, username };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.addUserToProject;
+}
+
+export async function removeUserFromProject(projectId: string, username: string) {
+  const mutation = `
+    mutation RemoveUserFromProject($projectId: ID!, $username: String!) {
+      removeUserFromProject(projectId: $projectId, username: $username) {
+        id
+        title
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const variables = { projectId, username };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.removeUserFromProject;
+}
+
 // Helper function to get current username from JWT
 function getCurrentUsername(): string {
   const token = localStorage.getItem('token');

@@ -27,7 +27,7 @@ const getNodeStyle = (type: string) => {
   }
 };
 
-const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
+const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any, allUsers?: any[] }> = ({ treeData, fetchProjectById, project, allUsers = [] }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -300,6 +300,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
           node={editNode}
           mode="edit"
           project={project}
+          allUsers={allUsers}
           onClose={() => {
             setEditNode(null);
             fetchProjectById(); // <-- refreshes the current project data
@@ -315,6 +316,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
           createNode={createNode}
           mode="create"
           project={project}
+          allUsers={allUsers}
           onClose={() => setCreateNode(null)}
           onSave={async () => {
             setCreateNode(null);

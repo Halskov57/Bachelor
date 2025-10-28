@@ -252,4 +252,14 @@ public class ProjectResolver {
             throw new RuntimeException("Failed to add task: " + e.getMessage());
         }
     }
+
+    @MutationMapping
+    public Project addUserToProject(@Argument String projectId, @Argument String username) {
+        return projectService.addUserToProject(projectId, username);
+    }
+
+    @MutationMapping
+    public Project removeUserFromProject(@Argument String projectId, @Argument String username) {
+        return projectService.removeUserFromProject(projectId, username);
+    }
 }

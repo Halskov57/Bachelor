@@ -398,7 +398,7 @@ public class ProjectService {
         }
     }
 
-    public void addUserToProject(String projectId, String username) {
+    public Project addUserToProject(String projectId, String username) {
         // Fetch the project
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
@@ -418,6 +418,28 @@ public class ProjectService {
             user.getProjects().add(project);
             userRepository.save(user);
         }
+
+        return project;
+    }
+
+    public Project removeUserFromProject(String projectId, String username) {
+        // Fetch the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+
+        // Fetch the user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+        // Remove the user from the project's owners list
+        project.getOwners().remove(user);
+        projectRepository.save(project);
+
+        // Remove the project from the user's projects list
+        user.getProjects().removeIf(p -> p.getProjectId().equals(projectId));
+        userRepository.save(user);
+
+        return project;
     }
 
     public String getId(Project project) {
