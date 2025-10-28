@@ -83,6 +83,34 @@ public class SSEService {
     }
 
     /**
+     * Send task created event to all clients subscribed to the project
+     */
+    public void sendTaskCreated(String projectId, Object taskData) {
+        sendEventToProject(projectId, "taskCreated", taskData);
+    }
+
+    /**
+     * Send epic created event to all clients subscribed to the project
+     */
+    public void sendEpicCreated(String projectId, Object epicData) {
+        sendEventToProject(projectId, "epicCreated", epicData);
+    }
+
+    /**
+     * Send feature created event to all clients subscribed to the project
+     */
+    public void sendFeatureCreated(String projectId, Object featureData) {
+        sendEventToProject(projectId, "featureCreated", featureData);
+    }
+
+    /**
+     * Send task user assignment event to all clients subscribed to the project
+     */
+    public void sendTaskUserAssigned(String projectId, Object taskData) {
+        sendEventToProject(projectId, "taskUserAssigned", taskData);
+    }
+
+    /**
      * Send event to all emitters for a specific project
      */
     private void sendEventToProject(String projectId, String eventName, Object data) {

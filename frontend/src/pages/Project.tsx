@@ -113,6 +113,59 @@ const Project: React.FC = () => {
           console.log('🔄 Real-time task update:', data);
           break;
 
+        case 'taskCreated':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            const addTaskToFeature = (epics: any[]): any[] => {
+              return epics.map(epic => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) =>
+                  feature.id === data.featureId
+                    ? { ...feature, tasks: [...(feature.tasks || []), data] }
+                    : feature
+                )
+              }));
+            };
+
+            return {
+              ...prevProject,
+              epics: addTaskToFeature(prevProject.epics || [])
+            };
+          });
+
+          addRealtimeNotification(`✨ New task "${data.title}" created`);
+          console.log('🔄 Real-time task created:', data);
+          break;
+
+        case 'taskUserAssigned':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            const updateTaskUsers = (epics: any[]): any[] => {
+              return epics.map(epic => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) => ({
+                  ...feature,
+                  tasks: (feature.tasks || []).map((task: any) =>
+                    task.id === data.id
+                      ? { ...task, users: data.users }
+                      : task
+                  )
+                }))
+              }));
+            };
+
+            return {
+              ...prevProject,
+              epics: updateTaskUsers(prevProject.epics || [])
+            };
+          });
+
+          addRealtimeNotification(`👤 User assigned to task`);
+          console.log('🔄 Real-time user assigned:', data);
+          break;
+
         case 'epicUpdate':
           setProject((prevProject: any) => {
             if (!prevProject) return prevProject;
@@ -127,6 +180,20 @@ const Project: React.FC = () => {
 
           addRealtimeNotification(`🎯 Epic "${data.title}" updated`);
           console.log('🔄 Real-time epic update:', data);
+          break;
+
+        case 'epicCreated':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: [...(prevProject.epics || []), data]
+            };
+          });
+
+          addRealtimeNotification(`🎯 New epic "${data.title}" created`);
+          console.log('🔄 Real-time epic created:', data);
           break;
 
         case 'featureUpdate':
@@ -148,14 +215,45 @@ const Project: React.FC = () => {
           console.log('🔄 Real-time feature update:', data);
           break;
 
+        case 'featureCreated':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).map((epic: any) =>
+                epic.id === data.epicId
+                  ? { ...epic, features: [...(epic.features || []), data] }
+                  : epic
+              )
+            };
+          });
+
+          addRealtimeNotification(`⚡ New feature "${data.title}" created`);
+          console.log('🔄 Real-time feature created:', data);
+          break;
+
         case 'projectUpdate':
           setProject((prevProject: any) => {
             if (!prevProject) return prevProject;
-            return { ...prevProject, ...data };
+            // Merge the update, preserving existing structure
+            return { 
+              ...prevProject,
+              ...data,
+              // Ensure we keep the existing epics if not provided in update
+              epics: data.epics || prevProject.epics,
+              // Ensure we keep the existing owners if not provided in update
+              owners: data.owners || prevProject.owners
+            };
           });
 
-          addRealtimeNotification(`🚀 Project "${data.title}" updated`);
+          const updateMessage = data.title ? `🚀 Project "${data.title}" updated` : '🚀 Project updated';
+          addRealtimeNotification(updateMessage);
           console.log('🔄 Real-time project update:', data);
+          break;
+
+        default:
+          console.log('🔄 Unhandled SSE event type:', type, data);
           break;
       }
     };

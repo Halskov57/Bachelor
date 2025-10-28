@@ -54,23 +54,41 @@ public class ProjectResolver {
 
     @MutationMapping
     public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
+        System.out.println("🔧 updateProjectTitle called - projectId: " + projectId + ", newTitle: " + newTitle);
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setTitle(newTitle);
         Project updatedProject = projectService.save(project);
         
         pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        
+        // Send minimal update with just the changed fields
+        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
+        projectUpdate.put("id", updatedProject.getProjectId());
+        projectUpdate.put("title", updatedProject.getTitle());
+        System.out.println("📡 Sending SSE projectUpdate: " + projectUpdate);
+        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
+        
         return updatedProject;
     }
 
     @MutationMapping
     public Project updateProjectDescription(@Argument String projectId, @Argument String newDescription) {
+        System.out.println("🔧 updateProjectDescription called - projectId: " + projectId + ", newDescription: " + newDescription);
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setDescription(newDescription);
         Project updatedProject = projectService.save(project);
         
         pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        
+        // Send minimal update with just the changed fields
+        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
+        projectUpdate.put("id", updatedProject.getProjectId());
+        projectUpdate.put("description", updatedProject.getDescription());
+        System.out.println("📡 Sending SSE projectUpdate: " + projectUpdate);
+        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
+        
         return updatedProject;
     }
 
@@ -82,6 +100,13 @@ public class ProjectResolver {
         Project updatedProject = projectService.save(project);
         
         pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        
+        // Send minimal update with just the changed fields
+        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
+        projectUpdate.put("id", updatedProject.getProjectId());
+        projectUpdate.put("courseLevel", updatedProject.getCourseLevel());
+        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
+        
         return updatedProject;
     }
 
@@ -95,7 +120,13 @@ public class ProjectResolver {
         Epic updatedEpic = projectService.saveEpic(projectId, epic);
         
         pubSubService.publishEpicChange(updatedEpic); // PUBLISH
-        sseService.sendEpicUpdate(projectId, updatedEpic); // SSE BROADCAST
+        
+        // Send with correct field mapping (epicId -> id)
+        java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
+        epicUpdate.put("id", updatedEpic.getEpicId());
+        epicUpdate.put("title", updatedEpic.getTitle());
+        sseService.sendEpicUpdate(projectId, epicUpdate); // SSE BROADCAST
+        
         return updatedEpic;
     }
 
@@ -107,7 +138,13 @@ public class ProjectResolver {
         Epic updatedEpic = projectService.saveEpic(projectId, epic);
         
         pubSubService.publishEpicChange(updatedEpic); // PUBLISH
-        sseService.sendEpicUpdate(projectId, updatedEpic); // SSE BROADCAST
+        
+        // Send with correct field mapping (epicId -> id)
+        java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
+        epicUpdate.put("id", updatedEpic.getEpicId());
+        epicUpdate.put("description", updatedEpic.getDescription());
+        sseService.sendEpicUpdate(projectId, epicUpdate); // SSE BROADCAST
+        
         return updatedEpic;
     }
 
@@ -130,19 +167,34 @@ public class ProjectResolver {
         System.out.println("After update: " + updatedFeature.getTitle());
         
         pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
-        sseService.sendFeatureUpdate(projectId, updatedFeature); // SSE BROADCAST
+        
+        // Send with correct field mapping (featureId -> id)
+        java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
+        featureUpdate.put("id", updatedFeature.getFeatureId());
+        featureUpdate.put("title", updatedFeature.getTitle());
+        sseService.sendFeatureUpdate(projectId, featureUpdate); // SSE BROADCAST
+        
         return updatedFeature;
     }
 
     @MutationMapping
     public Feature updateFeatureDescription(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newDescription) {
+        System.out.println("🔧 updateFeatureDescription called - featureId: " + featureId + ", newDescription: " + newDescription);
+        
         Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
         if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
         feature.setDescription(newDescription);
         Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
         
         pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
-        sseService.sendFeatureUpdate(projectId, updatedFeature); // SSE BROADCAST
+        
+        // Send with correct field mapping (featureId -> id)
+        java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
+        featureUpdate.put("id", updatedFeature.getFeatureId());
+        featureUpdate.put("description", updatedFeature.getDescription());
+        System.out.println("📡 Sending SSE featureUpdate: " + featureUpdate);
+        sseService.sendFeatureUpdate(projectId, featureUpdate); // SSE BROADCAST
+        
         return updatedFeature;
     }
 
@@ -162,7 +214,13 @@ public class ProjectResolver {
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
         pubSubService.publishTaskChange(updatedTask); // PUBLISH
-        sseService.sendTaskUpdate(projectId, updatedTask); // SSE BROADCAST
+        
+        // Send with correct field mapping (taskId -> id)
+        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
+        taskUpdate.put("id", updatedTask.getTaskId());
+        taskUpdate.put("title", updatedTask.getTitle());
+        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
+        
         return updatedTask;
     }
 
@@ -180,7 +238,13 @@ public class ProjectResolver {
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
         pubSubService.publishTaskChange(updatedTask); // PUBLISH
-        sseService.sendTaskUpdate(projectId, updatedTask); // SSE BROADCAST
+        
+        // Send with correct field mapping (taskId -> id)
+        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
+        taskUpdate.put("id", updatedTask.getTaskId());
+        taskUpdate.put("description", updatedTask.getDescription());
+        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
+        
         return updatedTask;
     }
 
@@ -213,8 +277,11 @@ public class ProjectResolver {
         );
         pubSubService.publishTaskStatusUpdate(statusUpdate);
         
-        // SSE broadcast for real-time updates
-        sseService.sendTaskUpdate(projectId, updatedTask);
+        // Send with correct field mapping (taskId -> id)
+        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
+        taskUpdate.put("id", updatedTask.getTaskId());
+        taskUpdate.put("status", updatedTask.getStatus().toString());
+        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
         
         return updatedTask;
     }
@@ -269,6 +336,19 @@ public class ProjectResolver {
             getCurrentUser()
         );
         pubSubService.publishTaskAssignmentUpdate(assignmentUpdate);
+        
+        // Send with correct field mapping (taskId -> id) and include users
+        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
+        taskUpdate.put("id", updatedTask.getTaskId());
+        taskUpdate.put("users", assignedUsers.stream()
+            .map(user -> {
+                java.util.Map<String, String> userMap = new java.util.HashMap<>();
+                userMap.put("id", user.getId());
+                userMap.put("username", user.getUsername());
+                return userMap;
+            })
+            .collect(Collectors.toList()));
+        sseService.sendTaskUserAssigned(projectId, taskUpdate); // SSE broadcast for user assignment
         
         return updatedTask;
     }
@@ -330,6 +410,8 @@ public class ProjectResolver {
             Epic newEpic = projectService.addEpicToProject(projectId, epic);
             
             pubSubService.publishEpicChange(newEpic); // PUBLISH
+            sseService.sendEpicCreated(projectId, newEpic); // SSE BROADCAST for creation
+            
             // Also publish the parent project change since the structure changed
             Project updatedProject = projectService.getProjectById(projectId);
             pubSubService.publishProjectChange(updatedProject);
@@ -349,6 +431,17 @@ public class ProjectResolver {
             Feature newFeature = projectService.addFeatureToEpic(projectId, epicId, feature);
             
             pubSubService.publishFeatureChange(newFeature); // PUBLISH
+            
+            // Create a map with epicId for SSE broadcast (since Feature model doesn't have epicId field)
+            java.util.Map<String, Object> featureWithEpicId = new java.util.HashMap<>();
+            featureWithEpicId.put("id", newFeature.getFeatureId());
+            featureWithEpicId.put("title", newFeature.getTitle());
+            featureWithEpicId.put("description", newFeature.getDescription());
+            featureWithEpicId.put("epicId", epicId);
+            featureWithEpicId.put("tasks", newFeature.getTasks());
+            
+            sseService.sendFeatureCreated(projectId, featureWithEpicId); // SSE BROADCAST for creation
+            
             // Also publish the parent project change since the structure changed
             Project updatedProject = projectService.getProjectById(projectId);
             pubSubService.publishProjectChange(updatedProject);
@@ -368,6 +461,8 @@ public class ProjectResolver {
             Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
             
             pubSubService.publishTaskChange(newTask); // PUBLISH
+            sseService.sendTaskCreated(projectId, newTask); // SSE BROADCAST for creation
+            
             // Also publish the parent project change since the structure changed
             Project updatedProject = projectService.getProjectById(projectId);
             pubSubService.publishProjectChange(updatedProject);

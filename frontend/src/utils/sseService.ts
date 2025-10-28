@@ -1,7 +1,7 @@
 import { client } from './apolloClientSetup';
 
 export interface SSEEvent {
-  type: 'taskUpdate' | 'epicUpdate' | 'featureUpdate' | 'projectUpdate';
+  type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'epicUpdate' | 'epicCreated' | 'featureUpdate' | 'featureCreated' | 'projectUpdate';
   data: any;
 }
 
@@ -84,12 +84,28 @@ class SSEService {
       this.handleSSEEvent(projectId, 'taskUpdate', event.data);
     });
 
+    eventSource.addEventListener('taskCreated', (event) => {
+      this.handleSSEEvent(projectId, 'taskCreated', event.data);
+    });
+
+    eventSource.addEventListener('taskUserAssigned', (event) => {
+      this.handleSSEEvent(projectId, 'taskUserAssigned', event.data);
+    });
+
     eventSource.addEventListener('epicUpdate', (event) => {
       this.handleSSEEvent(projectId, 'epicUpdate', event.data);
     });
 
+    eventSource.addEventListener('epicCreated', (event) => {
+      this.handleSSEEvent(projectId, 'epicCreated', event.data);
+    });
+
     eventSource.addEventListener('featureUpdate', (event) => {
       this.handleSSEEvent(projectId, 'featureUpdate', event.data);
+    });
+
+    eventSource.addEventListener('featureCreated', (event) => {
+      this.handleSSEEvent(projectId, 'featureCreated', event.data);
     });
 
     eventSource.addEventListener('projectUpdate', (event) => {
