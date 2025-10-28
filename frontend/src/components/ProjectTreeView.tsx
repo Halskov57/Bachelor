@@ -1,44 +1,36 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { useApolloClient } from '@apollo/client/react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
-import { deleteNode, addNode } from '../utils/graphqlMutations';
+import { NodeData } from '../utils/types';
 
-function measureTextWidth(text: string, font: string): number {
-  const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
-  const canvas = fn.canvas || (fn.canvas = document.createElement("canvas"));
-  const context = canvas.getContext("2d");
-  if (!context) return 100;
-  context.font = font;
-  return context.measureText(text).width;
+interface ProjectTreeViewProps {
+  treeData: NodeData[];
+  project?: {
+    id: string;
+    title: string;
+    epics?: any[];
+    [key: string]: any;
+  };
+   fetchProjectById?: () => Promise<void>;
 }
 
-const getNodeStyle = (type: string) => {
-  switch (type) {
-    case 'project':
-      return { background: '#022AFF', color: '#fff', border: '#001a66', fontWeight: 400 };
-    case 'epic':
-      return { background: '#2456e6', color: '#fff', border: '#001a66', fontWeight: 400 };
-    case 'feature':
-      return { background: '#4d8cff', color: '#fff', border: '#001a66', fontWeight: 400 };
-    case 'task':
-      return { background: '#b3d1ff', color: '#fff', border: '#001a66', fontWeight: 400 };
-    default:
-      return { background: '#fff', color: '#001a66', border: '#001a66', fontWeight: 400 };
-  }
-};
-
-const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
+const ProjectTreeView: React.FC<ProjectTreeViewProps> = ({ treeData, project }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [expandedFeatures, setExpandedFeatures] = useState<{ [key: string]: boolean }>({});
-  const [editNode, setEditNode] = useState<any>(null);
-  const [createNode, setCreateNode] = useState<{
-    type: string;
-    parentIds: any;
-    parentNode?: any;
-  } | null>(null);
+  const [editNode, setEditNode] = useState<NodeData | null>(null);
+  const [createNode, setCreateNode] = useState<{ type: string; parentIds: any; parentNode?: NodeData } | null>(null);
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
+
+  const client = useApolloClient();
+
+  const refetchProject = async () => {
+    await client.refetchQueries({
+      include: ['ProjectById'], // Match the query name in Project.tsx
+    });
+  };
 
   useEffect(() => {
     if (treeContainerRef.current) {
@@ -47,76 +39,80 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
     }
   }, [treeData]);
 
-  const handleNodeClick = (nodeData: any) => {
-    setSelectedNode(nodeData);
+  const handleNodeClick = (nodeDatum: any, event: React.MouseEvent<SVGGElement, MouseEvent>) => {
+    const node: NodeData = {
+      type: nodeDatum.attributes?.type || 'project',
+      id: nodeDatum.attributes?.id,
+      title: nodeDatum.title,
+      description: nodeDatum.description,
+      status: nodeDatum.status,
+      userIds: nodeDatum.users,
+      projectId: nodeDatum.projectId,
+      epicId: nodeDatum.epicId,
+      featureId: nodeDatum.featureId,
+    };
+    setSelectedNode(node);
   };
 
-  const handleNodeHover = (nodeData: any) => {
-    // Optionally show a tooltip or highlight
-  };
+  const handleToggleNode = (nodeId: string) =>
+    setCollapsedNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
 
-  const handleToggleNode = (nodeId: string) => {
-    setCollapsedNodes(prev => ({
-      ...prev,
-      [nodeId]: !prev[nodeId]
-    }));
-  };
-
-  const handleAddChild = (nodeDatum: any) => {
+  const handleAddChild = (nodeDatum: NodeData) => {
     let nodeType = '';
     let parentIds: any = {};
 
-    console.log('Tree handleAddChild called with:', nodeDatum);
-
     if (nodeDatum.type === 'project') {
       nodeType = 'epic';
-      parentIds = { projectId: nodeDatum.projectId || nodeDatum.id };
+      parentIds = { projectId: nodeDatum.id };
     } else if (nodeDatum.type === 'epic') {
       nodeType = 'feature';
-      parentIds = { 
-        projectId: nodeDatum.projectId, 
-        epicId: nodeDatum.epicId || nodeDatum.id 
-      };
+      parentIds = { projectId: nodeDatum.projectId, epicId: nodeDatum.id };
     } else if (nodeDatum.type === 'feature') {
       nodeType = 'task';
-      parentIds = { 
-        projectId: nodeDatum.projectId,
-        epicId: nodeDatum.epicId,
-        featureId: nodeDatum.featureId || nodeDatum.id 
-      };
+      parentIds = { projectId: nodeDatum.projectId, epicId: nodeDatum.epicId, featureId: nodeDatum.id };
     }
 
-    console.log('Tree setting createNode:', { nodeType, parentIds });
-    
-    setCreateNode({ 
-      type: nodeType, 
-      parentIds: parentIds,
-      parentNode: nodeDatum 
-    });
+    setCreateNode({ type: nodeType, parentIds, parentNode: nodeDatum });
   };
 
+  const getNodeStyle = (type: string) => {
+    switch (type) {
+      case 'project':
+      case 'epic':
+        return { background: '#2456e6', color: '#fff', border: '#001a66', fontWeight: 400 };
+      case 'feature':
+        return { background: '#4d8cff', color: '#fff', border: '#001a66', fontWeight: 400 };
+      case 'task':
+        return { background: '#b3d1ff', color: '#fff', border: '#001a66', fontWeight: 400 };
+      default:
+        return { background: '#fff', color: '#001a66', border: '#001a66', fontWeight: 400 };
+    }
+  };
+
+  function measureTextWidth(text: string, font: string): number {
+    const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
+    const canvas = fn.canvas || (fn.canvas = document.createElement('canvas'));
+    const context = canvas.getContext('2d');
+    if (!context) return 100;
+    context.font = font;
+    return context.measureText(text).width;
+  }
+
   const renderCustomNode = ({ nodeDatum, toggleNode }: any) => {
-    const style = getNodeStyle(nodeDatum.type);
+    const style = getNodeStyle(nodeDatum.attributes?.type || 'project');
     const fontSize = 20;
-    const fontWeight = style.fontWeight || 400;
-    const fontFamily = 'Arial, sans-serif';
-    const font = `normal ${fontWeight} ${fontSize}px ${fontFamily}`;
-    const textWidth = measureTextWidth(nodeDatum.name, font)+10;
+    const font = `normal ${style.fontWeight} ${fontSize}px Arial, sans-serif`;
+    const textWidth = measureTextWidth(nodeDatum.title, font) + 10;
     const padding = 24;
     const iconArea = 44;
     const width = Math.max(80, textWidth + padding + iconArea);
     const height = 44;
     const iconSize = 44;
 
-    const isFeature = nodeDatum.type === 'feature';
-    const featureKey = nodeDatum.__rd3t?.id || nodeDatum.name;
-    const hasTasks = nodeDatum.tasks && nodeDatum.tasks.length > 0;
-    const isTaskListOpen = expandedFeatures[featureKey];
     const hasChildren = nodeDatum.children && nodeDatum.children.length > 0;
 
     return (
       <g>
-        {/* Main rounded button */}
         <rect
           x={-width / 2}
           y={-height / 2}
@@ -127,28 +123,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
           stroke={style.border}
           strokeWidth={style.border ? 2 : 0}
         />
-        {/* Transparent clickable rect for edit */}
-        <rect
-          x={-width / 2}
-          y={-height / 2}
-          width={width}
-          height={height}
-          fill="transparent"
-          stroke="transparent"
-          style={{ cursor: 'pointer' }}
-          onClick={e => {
-            e.stopPropagation();
-            setEditNode({
-              ...nodeDatum,
-              type: nodeDatum.type,
-              id: nodeDatum.id,
-              projectId: nodeDatum.projectId,
-              epicId: nodeDatum.epicId,
-              featureId: nodeDatum.featureId,
-            });
-          }}
-        />
-        {/* Title text (no onClick needed) */}
         <text
           x={-width / 2 + 18}
           y={2}
@@ -157,26 +131,16 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
           fontSize={fontSize}
           fill="#fff"
           fontWeight="bold"
-          style={{
-            fontWeight: style.fontWeight,
-            fontFamily: 'Arial, sans-serif',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            stroke: 'none',
-            strokeWidth: 0,
-            textShadow: 'none'
-          }}
         >
-          {nodeDatum.name}
+          {nodeDatum.title}
         </text>
-        {/* Small circle button for +/- */}
         {hasChildren && (
           <g
             style={{ cursor: 'pointer', userSelect: 'none' }}
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
-              handleToggleNode(nodeDatum.__rd3t?.id || nodeDatum.name); // update icon state
-              toggleNode(); // built-in collapse/expand
+              handleToggleNode(nodeDatum.attributes?.id || nodeDatum.title);
+              toggleNode();
             }}
           >
             <ellipse
@@ -196,87 +160,40 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
               fontSize={22}
               fill="#022AFF"
             >
-              {collapsedNodes[featureKey] ? '+' : '-'}
+              {collapsedNodes[nodeDatum.attributes?.id || nodeDatum.title] ? '+' : '-'}
             </text>
-          </g>
-        )}
-        {/* Feature: show task list toggle */}
-        {isFeature && hasTasks && !nodeDatum._collapsed && (
-          <g
-            style={{ cursor: 'pointer', userSelect: 'none' }}
-            onClick={e => {
-              e.stopPropagation();
-              setExpandedFeatures(f => ({ ...f, [featureKey]: !isTaskListOpen }));
-            }}
-          >
-            <ellipse
-              cx={width / 2 - iconSize + 22}
-              cy={0}
-              rx={iconSize / 2.5+3}
-              ry={iconSize / 2.5+3}
-              fill="#fff"
-              stroke="#022AFF"
-              strokeWidth={1}
-            />
-            <text
-              x={width / 2 - iconSize + 22}
-              y={2}
-              textAnchor="middle"
-              alignmentBaseline="middle"
-              fontSize={18}
-              fill="#022AFF"
-            >
-              {isTaskListOpen ? '-' : '+'}
-            </text>
-          </g>
-        )}
-        {/* Render tasks as a list below feature node */}
-        {isFeature && hasTasks && isTaskListOpen && !nodeDatum._collapsed && (
-          <g>
-            {nodeDatum.tasks.map((task: any, idx: number) => (
-              <g key={task.name}>
-                <rect
-                  x={-width / 2}
-                  y={height / 2 + 8 + idx * 32}
-                  width={width}
-                  height={28}
-                  rx={14}
-                  fill="#e6f0ff"
-                  stroke="#022AFF"
-                  strokeWidth={1}
-                />
-                <text
-                  x={0}
-                  y={height / 2 + 28 + idx * 32 - 6}
-                  fill="#022AFF"
-                  fontSize={14}
-                  textAnchor="middle"
-                  alignmentBaseline="middle"
-                >
-                  {task.name}
-                </text>
-              </g>
-            ))}
           </g>
         )}
       </g>
     );
   };
 
-  function applyCollapsedState(node: any, collapsedMap: any) {
-    const id = node.__rd3t?.id || node.name; // Use a unique id if possible
-    const newNode = { ...node };
+  function applyCollapsedState(node: NodeData, collapsedMap: { [key: string]: boolean }): NodeData {
+    const id = node.id || node.title;
+    if (!id) return node;
+    const newNode: NodeData & { _collapsed?: boolean; children?: NodeData[] } = { ...node };
     if (node.children && node.children.length > 0) {
       newNode._collapsed = !!collapsedMap[id];
-      newNode.children = node.children.map((child: any) => applyCollapsedState(child, collapsedMap));
+      newNode.children = node.children.map((child) => applyCollapsedState(child, collapsedMap));
     }
     return newNode;
   }
 
+  function mapToTreeNode(node: NodeData & { _collapsed?: boolean; children?: NodeData[] }): any {
+    return {
+      name: node.title,
+      attributes: { type: node.type, id: node.id },
+      children: node.children?.map(mapToTreeNode),
+      _collapsed: node._collapsed,
+    };
+  }
+
   const treeDataWithCollapse = useMemo(() => {
-    if (!treeData || !treeData[0]) return [];
-    return [applyCollapsedState(treeData[0], collapsedNodes)];
+    if (!treeData || treeData.length === 0) return [];
+    return treeData.map((node) => applyCollapsedState(node, collapsedNodes));
   }, [treeData, collapsedNodes]);
+
+  const treeDataForTree = useMemo(() => treeDataWithCollapse.map(mapToTreeNode), [treeDataWithCollapse]);
 
   return (
     <div
@@ -284,44 +201,55 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       style={{ width: '100%', height: '700px', background: 'rgba(230,230,240,0.96)', borderRadius: 12 }}
     >
       <Tree
-        data={treeData}
+        data={treeDataForTree}
         orientation="vertical"
         translate={translate}
         renderCustomNodeElement={renderCustomNode}
         separation={{ siblings: 2, nonSiblings: 2.5 }}
         nodeSize={{ x: 100, y: 90 }}
-        zoomable={true}
-        collapsible={true}
-        onNodeClick={handleNodeClick}
-        onNodeMouseOver={handleNodeHover}
+        zoomable
+        collapsible
+        onNodeClick={handleNodeClick as any}
       />
-      {editNode && (
-        <EditFanout
-          node={editNode}
-          mode="edit"
-          project={project}
-          onClose={() => {
-            setEditNode(null);
-            fetchProjectById(); // <-- refreshes the current project data
-          }}
-          onSave={(data: any) => {
-            setEditNode(null);
-            fetchProjectById(); // Optionally refresh after save
-          }}
-        />
-      )}
-      {createNode && (
-        <EditFanout
-          createNode={createNode}
-          mode="create"
-          project={project}
-          onClose={() => setCreateNode(null)}
-          onSave={async () => {
-            setCreateNode(null);
-            fetchProjectById(); // Optionally refresh after save
-          }}
-        />
-      )}
+      {editNode && project && (
+  <EditFanout
+    node={editNode}
+    mode="edit"
+    project={{
+      ...project,
+      type: 'project',
+      courseLevel: project.courseLevel || 0,
+      owners: project.owners || [],
+    }}
+    onClose={() => {
+      setEditNode(null);
+      refetchProject();
+    }}
+    onSave={async () => {
+      setEditNode(null);
+      await refetchProject();
+    }}
+  />
+)}
+
+{createNode && project && (
+  <EditFanout
+    createNode={createNode}
+    mode="create"
+    project={{
+      ...project,
+      type: 'project',
+      courseLevel: project.courseLevel || 0,
+      owners: project.owners || [],
+    }}
+    onClose={() => setCreateNode(null)}
+    onSave={async () => {
+      setCreateNode(null);
+      await refetchProject();
+    }}
+  />
+)}
+
     </div>
   );
 };

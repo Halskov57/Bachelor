@@ -1,613 +1,350 @@
-import { getGraphQLUrl, getApiUrl } from '../config/environment';
+import { gql } from '@apollo/client';
+import { client } from './apolloClientSetup';
+import { User, Project, CourseLevelConfig } from './types';
 
-// Helper function to get headers with JWT token
-function getGraphQLHeaders() {
-  const token = localStorage.getItem('token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
-  };
-}
+// --- GraphQL Queries and Mutations ---
 
-// Course Level Config mutations
-export async function updateCourseLevelConfig(
-  courseLevel: number, 
-  features: { key: string; enabled: boolean }[]
-) {
-  const mutation = `
-    mutation($courseLevel: Int!, $features: [FeatureConfigInput!]!) {
-      updateCourseLevelConfig(courseLevel: $courseLevel, features: $features) {
+export const GET_COURSE_LEVEL_CONFIG_QUERY = gql`
+  query GetCourseLevelConfig($courseLevel: Int!) {
+    courseLevelConfig(courseLevel: $courseLevel) {
+      id
+      courseLevel
+      features {
+        key
+        enabled
+      }
+      templateProject {
         id
+        title
+        description
         courseLevel
-        features {
-          key
-          enabled
-        }
       }
     }
-  `;
-  
-  const variables = { courseLevel, features };
-  
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query: mutation, variables }),
-  });
-  
-  const json = await res.json();
-  
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
-  
-  return json.data.updateCourseLevelConfig;
-}
+`;
 
-export async function getCourseLevelConfig(courseLevel: number) {
-  const query = `
-    query($courseLevel: Int!) {
-      courseLevelConfig(courseLevel: $courseLevel) {
+export const UPDATE_COURSE_LEVEL_CONFIG_MUTATION = gql`
+  mutation UpdateCourseLevelConfig($courseLevel: Int!, $features: [FeatureConfigInput!]!) {
+    updateCourseLevelConfig(courseLevel: $courseLevel, features: $features) {
+      id
+      courseLevel
+      features {
+        key
+        enabled
+      }
+      templateProject {
         id
-        courseLevel
+        title
+        description
+      }
+    }
+  }
+`;
+
+export const GET_ALL_NON_SUPER_ADMIN_USERS_QUERY = gql`
+  query GetAllNonSuperAdminUsers {
+    nonSuperAdminUsers {
+      id
+      username
+      role
+    }
+  }
+`;
+
+export const UPDATE_USER_ROLE_MUTATION = gql`
+  mutation UpdateUserRole($userId: ID!, $newRole: UserRole!) {
+    updateUserRole(userId: $userId, newRole: $newRole) {
+      id
+      name
+      email
+      role
+    }
+  }
+`;
+
+export const SET_TEMPLATE_PROJECT_MUTATION = gql`
+  mutation SetTemplateProject($projectId: ID!) {
+    setTemplateProject(projectId: $projectId) {
+      id
+      title
+      isTemplate
+    }
+  }
+`;
+
+export const GET_PROJECTS_BY_CURRENT_USER_QUERY = gql`
+  query GetProjectsByCurrentUser {
+    projectsByCurrentUser {
+      id
+      title
+      description
+      courseLevel
+    }
+  }
+`;
+
+// --- Node CRUD Mutations ---
+export const ADD_EPIC_MUTATION = gql`
+  mutation AddEpic($projectId: ID!, $title: String!, $description: String!) {
+    addEpic(projectId: $projectId, title: $title, description: $description) {
+      id
+      title
+      description
+    }
+  }
+`;
+
+export const ADD_FEATURE_MUTATION = gql`
+  mutation AddFeature($projectId: ID!, $epicId: ID!, $title: String!, $description: String!) {
+    addFeature(projectId: $projectId, epicId: $epicId, title: $title, description: $description) {
+      id
+      title
+      description
+    }
+  }
+`;
+
+export const ADD_TASK_MUTATION = gql`
+  mutation AddTask($projectId: ID!, $epicId: ID!, $featureId: ID!, $title: String!, $description: String!) {
+    addTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, title: $title, description: $description) {
+      id
+      title
+      description
+      status
+    }
+  }
+`;
+
+export const ADD_PROJECT_MUTATION = gql`
+  mutation AddProject($title: String!, $description: String!, $courseLevel: Int!) {
+    addProject(title: $title, description: $description, courseLevel: $courseLevel) {
+      id
+      title
+      description
+      courseLevel
+    }
+  }
+`;
+
+export const UPDATE_PROJECT_TITLE_MUTATION = gql`
+  mutation UpdateProjectTitle($projectId: ID!, $newTitle: String!) {
+    updateProjectTitle(projectId: $projectId, newTitle: $newTitle) {
+      id
+      title
+    }
+  }
+`;
+
+export const UPDATE_PROJECT_DESCRIPTION_MUTATION = gql`
+  mutation UpdateProjectDescription($projectId: ID!, $newDescription: String!) {
+    updateProjectDescription(projectId: $projectId, newDescription: $newDescription) {
+      id
+      description
+    }
+  }
+`;
+
+export const UPDATE_PROJECT_COURSE_LEVEL_MUTATION = gql`
+  mutation UpdateProjectCourseLevel($projectId: ID!, $newCourseLevel: Int!) {
+    updateProjectCourseLevel(projectId: $projectId, newCourseLevel: $newCourseLevel) {
+      id
+      courseLevel
+    }
+  }
+`;
+
+export const UPDATE_EPIC_TITLE_MUTATION = gql`
+  mutation UpdateEpicTitle($projectId: ID!, $epicId: ID!, $newTitle: String!) {
+    updateEpicTitle(projectId: $projectId, epicId: $epicId, newTitle: $newTitle) {
+      id
+      title
+    }
+  }
+`;
+
+export const UPDATE_EPIC_DESCRIPTION_MUTATION = gql`
+  mutation UpdateEpicDescription($projectId: ID!, $epicId: ID!, $newDescription: String!) {
+    updateEpicDescription(projectId: $projectId, epicId: $epicId, newDescription: $newDescription) {
+      id
+      description
+    }
+  }
+`;
+
+export const UPDATE_FEATURE_TITLE_MUTATION = gql`
+  mutation UpdateFeatureTitle($projectId: ID!, $epicId: ID!, $featureId: ID!, $newTitle: String!) {
+    updateFeatureTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, newTitle: $newTitle) {
+      id
+      title
+    }
+  }
+`;
+
+export const UPDATE_FEATURE_DESCRIPTION_MUTATION = gql`
+  mutation UpdateFeatureDescription($projectId: ID!, $epicId: ID!, $featureId: ID!, $newDescription: String!) {
+    updateFeatureDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, newDescription: $newDescription) {
+      id
+      description
+    }
+  }
+`;
+
+export const UPDATE_TASK_TITLE_MUTATION = gql`
+  mutation UpdateTaskTitle($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newTitle: String!) {
+    updateTaskTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newTitle: $newTitle) {
+      id
+      title
+    }
+  }
+`;
+
+export const UPDATE_TASK_DESCRIPTION_MUTATION = gql`
+  mutation UpdateTaskDescription($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newDescription: String!) {
+    updateTaskDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newDescription: $newDescription) {
+      id
+      description
+    }
+  }
+`;
+
+export const UPDATE_TASK_STATUS_MUTATION = gql`
+  mutation UpdateTaskStatus($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newStatus: String!) {
+    updateTaskStatus(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newStatus: $newStatus) {
+      id
+      status
+    }
+  }
+`;
+
+export const UPDATE_TASK_USERS_MUTATION = gql`
+  mutation UpdateTaskUsers($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $userIds: [ID!]!) {
+    updateTaskUsers(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, userIds: $userIds) {
+      id
+      users {
+        id
+        username
+      }
+    }
+  }
+`;
+
+// --- Delete Mutations ---
+
+export const DELETE_EPIC_MUTATION = gql`
+  mutation DeleteEpic($projectId: ID!, $epicId: ID!) {
+    deleteEpic(projectId: $projectId, epicId: $epicId)
+  }
+`;
+
+export const DELETE_FEATURE_MUTATION = gql`
+  mutation DeleteFeature($projectId: ID!, $epicId: ID!, $featureId: ID!) {
+    deleteFeature(projectId: $projectId, epicId: $epicId, featureId: $featureId)
+  }
+`;
+
+export const DELETE_TASK_MUTATION = gql`
+  mutation DeleteTask($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!) {
+    deleteTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId)
+  }
+`;
+
+// --- Project By ID Query ---
+
+export const GET_PROJECT_BY_ID_QUERY = gql`
+  query ProjectById($id: ID!) {
+    projectById(id: $id) {
+      id
+      title
+      description
+      courseLevel
+      epics {
+        id
+        title
+        description
         features {
-          key
-          enabled
-        }
-        templateProject {
           id
           title
           description
+          tasks {
+            id
+            title
+            description
+            status
+          }
         }
       }
     }
-  `;
-  
-  const variables = { courseLevel };
-  
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query, variables }),
+  }
+`;
+
+// --- Utility Functions ---
+
+export const getCourseLevelConfig = async (courseLevel: number): Promise<CourseLevelConfig | null> => {
+  const result = await client.query<{ courseLevelConfig: CourseLevelConfig }>({
+    query: GET_COURSE_LEVEL_CONFIG_QUERY,
+    variables: { courseLevel },
   });
-  
-  const json = await res.json();
-  
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-  
-  return json.data.courseLevelConfig;
-}
+  return result.data?.courseLevelConfig ?? null;
+};
 
-export async function getAllCourseLevelConfigs() {
-  const query = `
-    query {
-      allCourseLevelConfigs {
-        id
-        courseLevel
-        features {
-          key
-          enabled
-        }
-      }
-    }
-  `;
-  
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
+export const updateCourseLevelConfig = async (courseLevel: number, features: any[]): Promise<CourseLevelConfig> => {
+  const result = await client.mutate<{ updateCourseLevelConfig: CourseLevelConfig }>({
+    mutation: UPDATE_COURSE_LEVEL_CONFIG_MUTATION,
+    variables: { courseLevel, features },
   });
-  
-  const json = await res.json();
-  
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-  
-  return json.data.allCourseLevelConfigs;
-}
+  if (!result.data?.updateCourseLevelConfig) throw new Error('Failed to update course level config');
+  return result.data.updateCourseLevelConfig;
+};
 
-export async function updateNode(node: any, parentIds: any) {
-  let results = {};
+// --- Admin Functions ---
 
-  // Helper to run a mutation
-  async function runMutation(mutation: string, variables: any) {
-    console.log('runMutation called with:', { mutation, variables });
-    
-    const res = await fetch(getGraphQLUrl(), {
-      method: 'POST',
-      headers: getGraphQLHeaders(),
-      body: JSON.stringify({ query: mutation, variables }),
-    });
-    
-    console.log('GraphQL response status:', res.status);
-    const json = await res.json();
-    console.log('GraphQL response:', json);
-    console.log('GraphQL response data:', json.data);
-    console.log('GraphQL response data values:', json.data && Object.values(json.data));
-    
-    if (json.errors) {
-      console.error('GraphQL errors:', json.errors);
-      throw new Error(json.errors[0]?.message || 'GraphQL error');
-    }
-    
-    return json.data && Object.values(json.data)[0];
-  }
-
-  if (node.type === 'project') {
-    let didUpdate = false;
-    // Update title if changed
-    if (node.title !== undefined) {
-      const mutation = `
-        mutation($projectId: ID!, $newTitle: String!) {
-          updateProjectTitle(projectId: $projectId, newTitle: $newTitle) {
-            id title description
-          }
-        }
-      `;
-      const variables = { projectId: node.id, newTitle: node.title };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    // Update description if changed
-    if (node.description !== undefined) {
-      const mutation = `
-        mutation($projectId: ID!, $newDescription: String!) {
-          updateProjectDescription(projectId: $projectId, newDescription: $newDescription) {
-            id title description
-          }
-        }
-      `;
-      const variables = { projectId: node.id, newDescription: node.description };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    // Update course level if changed
-    if (node.courseLevel !== undefined) {
-      const mutation = `
-        mutation($projectId: ID!, $newCourseLevel: Int!) {
-          updateProjectCourseLevel(projectId: $projectId, newCourseLevel: $newCourseLevel) {
-            id title description courseLevel
-          }
-        }
-      `;
-      const variables = { projectId: node.id, newCourseLevel: node.courseLevel };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (!didUpdate) {
-      throw new Error('No valid mutation for node type/fields');
-    }
-    return results;
-  }
-
-  // For epic, feature, task
-  let mutation = '';
-  let variables: any = {};
-  let didUpdate = false;
-
-  if (node.type === 'epic') {
-    console.log('Epic updateNode:', { node, parentIds });
-    if (node.title !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $newTitle: String!) {
-          updateEpicTitle(projectId: $projectId, epicId: $epicId, newTitle: $newTitle) {
-            id title description
-          }
-        }
-      `;
-      variables = { 
-        projectId: parentIds.projectId, 
-        epicId: node.id, 
-        newTitle: node.title 
-      };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (node.description !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $newDescription: String!) {
-          updateEpicDescription(projectId: $projectId, epicId: $epicId, newDescription: $newDescription) {
-            id title description
-          }
-        }
-      `;
-      variables = { projectId: parentIds.projectId, epicId: node.id, newDescription: node.description };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-  } else if (node.type === 'feature') {
-    if (node.title !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $newTitle: String!) {
-          updateFeatureTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, newTitle: $newTitle) {
-            id title description
-          }
-        }
-      `;
-      variables = { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id, newTitle: node.title };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (node.description !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $newDescription: String!) {
-          updateFeatureDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, newDescription: $newDescription) {
-            id title description
-          }
-        }
-      `;
-      variables = { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id, newDescription: node.description };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-  } else if (node.type === 'task') {
-    if (node.title !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newTitle: String!) {
-          updateTaskTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newTitle: $newTitle) {
-            id title description status
-          }
-        }
-      `;
-      variables = {
-        projectId: parentIds.projectId,
-        epicId: parentIds.epicId,
-        featureId: parentIds.featureId,
-        taskId: node.id,
-        newTitle: node.title,
-      };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (node.description !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newDescription: String!) {
-          updateTaskDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newDescription: $newDescription) {
-            id title description status
-          }
-        }
-      `;
-      variables = {
-        projectId: parentIds.projectId,
-        epicId: parentIds.epicId,
-        featureId: parentIds.featureId,
-        taskId: node.id,
-        newDescription: node.description,
-      };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (node.status !== undefined) {
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newStatus: String!) {
-          updateTaskStatus(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newStatus: $newStatus) {
-            id title description status
-          }
-        }
-      `;
-      variables = {
-        projectId: parentIds.projectId,
-        epicId: parentIds.epicId,
-        featureId: parentIds.featureId,
-        taskId: node.id,
-        newStatus: node.status,
-      };
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-    if (node.users !== undefined) {
-      console.log('updateTaskUsers - node.users:', node.users);
-      console.log('updateTaskUsers - parentIds:', parentIds);
-      
-      mutation = `
-        mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $userIds: [ID!]!) {
-          updateTaskUsers(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, userIds: $userIds) {
-            id title description users {
-              id username
-            }
-          }
-        }
-      `;
-      variables = {
-        projectId: parentIds.projectId,
-        epicId: parentIds.epicId,
-        featureId: parentIds.featureId,
-        taskId: node.id,
-        userIds: node.users,
-      };
-      console.log('updateTaskUsers - variables:', variables);
-      results = await runMutation(mutation, variables);
-      didUpdate = true;
-    }
-  }
-
-  if (!didUpdate) throw new Error('No valid mutation for node type/fields');
-  return results;
-}
-
-export async function deleteNode(node: any, parentIds: any) {
-  // Helper to run a mutation
-  async function runMutation(mutation: string, variables: any) {
-    console.log('=== DELETE NODE DEBUG ===');
-    console.log('Node:', node);
-    console.log('Parent IDs:', parentIds);
-    console.log('Variables being sent:', variables);
-    
-    const res = await fetch(getGraphQLUrl(), {
-      method: 'POST',
-      headers: getGraphQLHeaders(),
-      body: JSON.stringify({ query: mutation, variables }),
-    });
-    const json = await res.json();
-    
-    console.log('Response:', json);
-    
-    if (json.errors) {
-      console.error('GraphQL errors:', json.errors);
-      throw new Error(json.errors[0].message);
-    }
-    return json.data && Object.values(json.data)[0];
-  }
-
-  let mutation = '';
-  let variables: any = {};
-
-  if (node.type === 'epic') {
-    mutation = `
-      mutation($projectId: ID!, $epicId: ID!) {
-        deleteEpic(projectId: $projectId, epicId: $epicId)
-      }
-    `;
-    variables = { 
-      projectId: parentIds.projectId, 
-      epicId: node.id 
-    };
-  } else if (node.type === 'feature') {
-    const featureId = node.id;
-    const epicId = parentIds.epicId;
-    const projectId = parentIds.projectId;
-    
-    console.log('Feature deletion - extracted IDs:', {
-      featureId,
-      epicId, 
-      projectId
-    });
-    
-    if (!featureId) {
-      throw new Error(`Feature ID is null/undefined. Node: ${JSON.stringify(node)}`);
-    }
-    if (!epicId) {
-      throw new Error(`Epic ID is null/undefined. ParentIds: ${JSON.stringify(parentIds)}`);
-    }
-    if (!projectId) {
-      throw new Error(`Project ID is null/undefined. ParentIds: ${JSON.stringify(parentIds)}`);
-    }
-    
-    mutation = `
-      mutation($projectId: ID!, $epicId: ID!, $featureId: ID!) {
-        deleteFeature(projectId: $projectId, epicId: $epicId, featureId: $featureId)
-      }
-    `;
-    variables = { 
-      projectId, 
-      epicId, 
-      featureId 
-    };
-  } else if (node.type === 'task') {
-    mutation = `
-      mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!) {
-        deleteTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId)
-      }
-    `;
-    variables = {
-      projectId: parentIds.projectId,
-      epicId: parentIds.epicId,
-      featureId: parentIds.featureId,
-      taskId: node.id,
-    };
-  } else {
-    throw new Error(`Delete not supported for node type: ${node.type}`);
-  }
-
-  return await runMutation(mutation, variables);
-}
-
-// Update addNode function with better logging
-
-export async function addNode(nodeType: string, parentIds: any, title: string, description?: string, courseLevel?: number) {
-  console.log('addNode called with:', { nodeType, parentIds, title, description, courseLevel });
-  
-  // Helper to run a mutation
-  async function runMutation(mutation: string, variables: any) {
-    console.log('Running mutation:', { mutation, variables });
-    
-    const res = await fetch(getGraphQLUrl(), {
-      method: 'POST',
-      headers: getGraphQLHeaders(),
-      body: JSON.stringify({ query: mutation, variables }),
-    });
-    const json = await res.json();
-    console.log('Mutation response:', json);
-    
-    if (json.errors) {
-      console.error('GraphQL errors:', json.errors);
-      throw new Error(json.errors[0].message);
-    }
-    return json.data && Object.values(json.data)[0];
-  }
-
-  let mutation = '';
-  let variables: any = {};
-
-  if (nodeType === 'project') {
-    // Use the createProjectFromTemplate GraphQL mutation which handles templates
-    const mutation = `
-      mutation($courseLevel: Int!, $title: String!, $description: String!) {
-        createProjectFromTemplate(courseLevel: $courseLevel, title: $title, description: $description) {
-          id
-          title
-          description
-          courseLevel
-        }
-      }
-    `;
-    
-    variables = { 
-      courseLevel: courseLevel || 1,
-      title,
-      description: description || ''
-    };
-    
-    return await runMutation(mutation, variables);
-  } else if (nodeType === 'epic') {
-    mutation = `
-      mutation($projectId: ID!, $title: String!, $description: String) {
-        addEpic(projectId: $projectId, title: $title, description: $description) {
-          id title description
-        }
-      }
-    `;
-    variables = { 
-      projectId: parentIds.projectId, 
-      title: title,
-      description: description || ''
-    };
-  } else if (nodeType === 'feature') {
-    mutation = `
-      mutation($projectId: ID!, $epicId: ID!, $title: String!, $description: String) {
-        addFeature(projectId: $projectId, epicId: $epicId, title: $title, description: $description) {
-          id title description
-        }
-      }
-    `;
-    variables = { 
-      projectId: parentIds.projectId, 
-      epicId: parentIds.epicId, 
-      title: title,
-      description: description || ''
-    };
-  } else if (nodeType === 'task') {
-    mutation = `
-      mutation($projectId: ID!, $epicId: ID!, $featureId: ID!, $title: String!, $description: String) {
-        addTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, title: $title, description: $description) {
-          id title description status
-        }
-      }
-    `;
-    variables = {
-      projectId: parentIds.projectId,
-      epicId: parentIds.epicId,
-      featureId: parentIds.featureId,
-      title: title,
-      description: description || ''
-    };
-  } else {
-    throw new Error(`Add not supported for node type: ${nodeType}`);
-  }
-
-  return await runMutation(mutation, variables);
-}
-
-// User management functions
-export async function getAllNonSuperAdminUsers() {
-  const query = `
-    query {
-      nonSuperAdminUsers {
-        id
-        username
-        role
-      }
-    }
-  `;
-
-  const res = await fetch('http://localhost:8081/graphql', {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
+export const getAllNonSuperAdminUsers = async (): Promise<User[]> => {
+  const result = await client.query<{ nonSuperAdminUsers: User[] }>({
+    query: GET_ALL_NON_SUPER_ADMIN_USERS_QUERY,
   });
+  return result.data?.nonSuperAdminUsers ?? [];
+};
 
-  const json = await res.json();
-
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-
-  return json.data.nonSuperAdminUsers;
-}
-
-export async function updateUserRole(username: string, newRole: string) {
-  const mutation = `
-    mutation($username: String!, $newRole: String!) {
-      updateUserRole(username: $username, newRole: $newRole) {
-        id
-        username
-        role
-      }
-    }
-  `;
-
-  const variables = { username, newRole };
-
-  const res = await fetch('http://localhost:8081/graphql', {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query: mutation, variables }),
+export const updateUserRole = async (userId: string, newRole: string): Promise<User> => {
+  const result = await client.mutate<{ updateUserRole: User }>({
+    mutation: UPDATE_USER_ROLE_MUTATION,
+    variables: { userId, newRole },
   });
+  if (!result.data?.updateUserRole) throw new Error('Failed to update user role');
+  return result.data.updateUserRole;
+};
 
-  const json = await res.json();
+// --- Template Functions (Apollo Client style) ---
 
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-
-  return json.data.updateUserRole;
-}
-
-// Template-related mutations
-export async function setTemplateProject(courseLevel: number, projectId: string) {
-  const mutation = `
-    mutation($courseLevel: Int!, $projectId: ID!) {
+// Set a project as the template for a course level
+export const setTemplateProject = async (courseLevel: number, projectId: string): Promise<Project> => {
+  const mutation = gql`
+    mutation SetTemplateProject($courseLevel: Int!, $projectId: ID!) {
       setTemplateProject(courseLevel: $courseLevel, projectId: $projectId) {
         id
-        courseLevel
-        templateProject {
-          id
-          title
-          description
-        }
+        title
+        description
       }
     }
   `;
 
-  const variables = { courseLevel, projectId };
-
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query: mutation, variables }),
+  const result = await client.mutate<{ setTemplateProject: Project }>({
+    mutation,
+    variables: { courseLevel, projectId },
   });
 
-  const json = await res.json();
+  if (!result.data?.setTemplateProject) throw new Error('Failed to set template project');
+  return result.data.setTemplateProject;
+};
 
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-
-  return json.data.setTemplateProject;
-}
-
-export async function createProjectFromTemplate(courseLevel: number, title: string, description: string) {
-  const mutation = `
-    mutation($courseLevel: Int!, $title: String!, $description: String!) {
+// Create a project from a template
+export const createProjectFromTemplate = async (
+  courseLevel: number,
+  title: string,
+  description: string
+): Promise<Project> => {
+  const mutation = gql`
+    mutation CreateProjectFromTemplate($courseLevel: Int!, $title: String!, $description: String!) {
       createProjectFromTemplate(courseLevel: $courseLevel, title: $title, description: $description) {
         id
         title
@@ -617,27 +354,19 @@ export async function createProjectFromTemplate(courseLevel: number, title: stri
     }
   `;
 
-  const variables = { courseLevel, title, description };
-
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query: mutation, variables }),
+  const result = await client.mutate<{ createProjectFromTemplate: Project }>({
+    mutation,
+    variables: { courseLevel, title, description },
   });
 
-  const json = await res.json();
+  if (!result.data?.createProjectFromTemplate) throw new Error('Failed to create project from template');
+  return result.data.createProjectFromTemplate;
+};
 
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-
-  return json.data.createProjectFromTemplate;
-}
-
-export async function getAllProjects() {
-  const query = `
-    query {
+// Get all projects (optionally for admin)
+export const getAllProjects = async (): Promise<Project[]> => {
+  const query = gql`
+    query GetAllProjects {
       projects {
         id
         title
@@ -647,63 +376,91 @@ export async function getAllProjects() {
     }
   `;
 
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
+  const result = await client.query<{ projects: Project[] }>({ query });
+  return result.data?.projects ?? [];
+};
+
+
+export const getProjectsByCurrentUser = async (): Promise<Project[]> => {
+  const result = await client.query<{ projectsByCurrentUser: Project[] }>({
+    query: GET_PROJECTS_BY_CURRENT_USER_QUERY,
   });
+  return result.data?.projectsByCurrentUser ?? [];
+};
 
-  const json = await res.json();
+// --- Node CRUD Functions ---
 
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
+export const updateNode = async (data: any, parentIds: any) => {
+  switch (data.type) {
+    case 'project':
+      if (data.title) await client.mutate({ mutation: UPDATE_PROJECT_TITLE_MUTATION, variables: { projectId: data.id, newTitle: data.title } });
+      if (data.description) await client.mutate({ mutation: UPDATE_PROJECT_DESCRIPTION_MUTATION, variables: { projectId: data.id, newDescription: data.description } });
+      if (data.courseLevel) await client.mutate({ mutation: UPDATE_PROJECT_COURSE_LEVEL_MUTATION, variables: { projectId: data.id, newCourseLevel: data.courseLevel } });
+      break;
+    case 'epic':
+      if (data.title) await client.mutate({ mutation: UPDATE_EPIC_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newTitle: data.title } });
+      if (data.description) await client.mutate({ mutation: UPDATE_EPIC_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newDescription: data.description } });
+      break;
+    case 'feature':
+      if (data.title) await client.mutate({ mutation: UPDATE_FEATURE_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newTitle: data.title } });
+      if (data.description) await client.mutate({ mutation: UPDATE_FEATURE_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newDescription: data.description } });
+      break;
+    case 'task':
+      if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
+      if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
+      if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
+      if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
+      break;
+    default:
+      throw new Error(`Unknown node type: ${data.type}`);
   }
+};
 
-  return json.data.projects;
-}
-
-export async function getProjectsByCurrentUser() {
-  const query = `
-    query {
-      projectsByUsername(username: "${getCurrentUsername()}") {
-        id
-        title
-        description
-        courseLevel
-        owners {
-          id
-          username
-        }
+export const addNode = async (
+  type: string,
+  parentIds: any,
+  title: string,
+  description: string,
+  courseLevel?: number // <-- add optional argument
+) => {
+  switch (type) {
+    case 'epic':
+      return await client.mutate({
+        mutation: ADD_EPIC_MUTATION,
+        variables: { projectId: parentIds.projectId, title, description },
+      });
+    case 'feature':
+      return await client.mutate({
+        mutation: ADD_FEATURE_MUTATION,
+        variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, title, description },
+      });
+    case 'task':
+      return await client.mutate({
+        mutation: ADD_TASK_MUTATION,
+        variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, title, description },
+      });
+    case 'project':
+      if (courseLevel === undefined) {
+        throw new Error('courseLevel is required when creating a project');
       }
-    }
-  `;
-
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
-  });
-
-  const json = await res.json();
-
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
+      return await client.mutate({
+        mutation: ADD_PROJECT_MUTATION, // Make sure you have this mutation defined
+        variables: { title, description, courseLevel },
+      });
+    default:
+      throw new Error(`Unknown node type: ${type}`);
   }
+};
 
-  return json.data.projectsByUsername;
-}
-
-// Helper function to get current username from JWT
-function getCurrentUsername(): string {
-  const token = localStorage.getItem('token');
-  if (!token) throw new Error('No token found');
-  
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub || payload.username;
-  } catch (error) {
-    throw new Error('Invalid token');
+export const deleteNode = async (node: any, parentIds: any) => {
+  switch (node.type) {
+    case 'epic':
+      return await client.mutate({ mutation: DELETE_EPIC_MUTATION, variables: { projectId: parentIds.projectId, epicId: node.id } });
+    case 'feature':
+      return await client.mutate({ mutation: DELETE_FEATURE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id } });
+    case 'task':
+      return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
+    default:
+      throw new Error(`Unknown node type: ${node.type}`);
   }
-}
+};

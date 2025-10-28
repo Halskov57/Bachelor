@@ -32,11 +32,31 @@ export const getApiUrl = (endpoint: string): string => {
   return `${config.API_BASE_URL}${endpoint}`;
 };
 
-// Helper function for GraphQL
+// Helper function for GraphQL HTTP endpoint (Queries/Mutations)
 export const getGraphQLUrl = (): string => {
   return config.GRAPHQL_ENDPOINT;
+};
+
+/**
+ * Helper function for GraphQL WebSocket endpoint (Subscriptions).
+ * Uses /subscriptions endpoint for WebSocket connections.
+ */
+export const getWebSocketUrl = (): string => {
+  const baseUrl = config.API_BASE_URL;
+  
+  // Replace http with ws, or https with wss for WebSocket connections
+  if (baseUrl.startsWith('https:')) {
+    return baseUrl.replace('https:', 'wss:') + '/subscriptions';
+  }
+  if (baseUrl.startsWith('http:')) {
+    return baseUrl.replace('http:', 'ws:') + '/subscriptions';
+  }
+  
+  // For relative paths in production
+  return '/subscriptions';
 };
 
 console.log(`🚀 Running in ${CURRENT_ENV} mode`);
 console.log(`📡 API Base: ${config.API_BASE_URL}`);
 console.log(`🔗 GraphQL: ${config.GRAPHQL_ENDPOINT}`);
+console.log(`🔗 WebSocket: ${getWebSocketUrl()}`);

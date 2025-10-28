@@ -1,58 +1,31 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import ProjectTreeView from '../components/ProjectTreeView';
 import ProjectListView from '../components/ProjectListView';
 import { isAdmin } from '../utils/jwt';
-import { getGraphQLUrl } from '../config/environment';  // <-- ADD THIS IMPORT
-
-function toTreeData(project: any) {
-  if (!project || !(project.title || project.name)) return null;
-  return {
-    id: project.projectId || project.id,
-    name: String(project.title || project.name),
-    type: 'project',
-    description: project.description,
-    projectId: project.projectId || project.id, // <-- add this
-    children: (project.epics || []).map((epic: any) => ({
-      id: epic.epicId || epic.id,
-      name: String(epic.title),
-      type: 'epic',
-      description: epic.description,
-      projectId: project.projectId || project.id, // <-- add this
-      epicId: epic.epicId || epic.id,             // <-- add this
-      children: (epic.features || []).map((feature: any) => ({
-        id: feature.featureId || feature.id,
-        name: String(feature.title),
-        type: 'feature',
-        description: feature.description,
-        projectId: project.projectId || project.id, // <-- add this
-        epicId: epic.epicId || epic.id,             // <-- add this
-        featureId: feature.featureId || feature.id, // <-- add this
-        children: (feature.tasks || []).map((task: any) => ({
-          id: task.taskId || task.id,
-          name: String(task.title),
-          type: 'task',
-          description: task.description,
-          depth: task.depth,
-          users: task.users,
-          status: task.status,
-          projectId: project.projectId || project.id,   // <-- add this
-          epicId: epic.epicId || epic.id,               // <-- add this
-          featureId: feature.featureId || feature.id,   // <-- add this
-          taskId: task.taskId || task.id,               // <-- add this
-        })),
-      })),
-    })),
-  };
-}
+import { NodeData } from '../utils/types';
+import { getGraphQLUrl } from '../config/environment';
+import { sseService, SSEEvent } from '../utils/sseService';
 
 const Project: React.FC = () => {
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree'>('list');
+  const [realtimeUpdates, setRealtimeUpdates] = useState<string[]>([]);
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  // Real-time notification helper
+  const addRealtimeNotification = useCallback((message: string) => {
+    setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+    setTimeout(() => {
+      setRealtimeUpdates(prev => prev.slice(1));
+    }, 5000);
+  }, []);
 
   const fetchProjectById = async () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     if (!id) return;
+    
+    setProjectId(id); // Store project ID for subscriptions
     
     const token = localStorage.getItem('token');
     const query = `
@@ -102,12 +75,139 @@ const Project: React.FC = () => {
     const result = await response.json();
     if (result.data?.projectById) {
       setProject(result.data.projectById);
+      console.log('📊 Project loaded:', result.data.projectById.title);
     }
   };
+
+  // Real-time updates using Server-Sent Events (SSE)
+  useEffect(() => {
+    if (!projectId) return;
+
+    const handleSSEEvent = (event: SSEEvent) => {
+      const { type, data } = event;
+
+      switch (type) {
+        case 'taskUpdate':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            const updateTaskInEpics = (epics: any[]): any[] => {
+              return epics.map(epic => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) => ({
+                  ...feature,
+                  tasks: (feature.tasks || []).map((task: any) =>
+                    task.id === data.id ? { ...task, ...data } : task
+                  )
+                }))
+              }));
+            };
+
+            return {
+              ...prevProject,
+              epics: updateTaskInEpics(prevProject.epics || [])
+            };
+          });
+
+          addRealtimeNotification(`📝 Task "${data.title}" updated`);
+          console.log('🔄 Real-time task update:', data);
+          break;
+
+        case 'epicUpdate':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).map((epic: any) =>
+                epic.id === data.id ? { ...epic, ...data } : epic
+              )
+            };
+          });
+
+          addRealtimeNotification(`🎯 Epic "${data.title}" updated`);
+          console.log('🔄 Real-time epic update:', data);
+          break;
+
+        case 'featureUpdate':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).map((epic: any) => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) =>
+                  feature.id === data.id ? { ...feature, ...data } : feature
+                )
+              }))
+            };
+          });
+
+          addRealtimeNotification(`⚡ Feature "${data.title}" updated`);
+          console.log('🔄 Real-time feature update:', data);
+          break;
+
+        case 'projectUpdate':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+            return { ...prevProject, ...data };
+          });
+
+          addRealtimeNotification(`🚀 Project "${data.title}" updated`);
+          console.log('🔄 Real-time project update:', data);
+          break;
+      }
+    };
+
+    // Subscribe to SSE events for this project
+    sseService.subscribeToProject(projectId, handleSSEEvent);
+
+    return () => {
+      // Unsubscribe when component unmounts
+      sseService.unsubscribeFromProject(projectId, handleSSEEvent);
+    };
+  }, [projectId, addRealtimeNotification]);
 
   useEffect(() => {
     fetchProjectById();
   }, []);
+
+function toTreeData(project: any): NodeData | null {
+  if (!project || !(project.title || project.name)) return null;
+
+  return {
+    id: project.id,
+    title: project.title || project.name,
+    type: 'project', // literal
+    projectId: project.id,
+    children: (project.epics || []).map((epic: any): NodeData => ({
+      id: epic.id,
+      title: epic.title,
+      type: 'epic',
+      projectId: project.id,
+      epicId: epic.id,
+      children: (epic.features || []).map((feature: any): NodeData => ({
+        id: feature.id,
+        title: feature.title,
+        type: 'feature',
+        projectId: project.id,
+        epicId: epic.id,
+        featureId: feature.id,
+        children: (feature.tasks || []).map((task: any): NodeData => ({
+          id: task.id,
+          title: task.title,
+          type: 'task',
+          projectId: project.id,
+          epicId: epic.id,
+          featureId: feature.id,
+        })),
+      })),
+    })),
+  };
+}
+
+
 
   const treeData = useMemo(() => {
     const tree = toTreeData(project);
@@ -212,6 +312,63 @@ const Project: React.FC = () => {
         </button>
       </div>
 
+      {/* Real-time notifications */}
+      <div style={{
+        position: 'fixed',
+        top: '80px',
+        right: '20px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        pointerEvents: 'none'
+      }}>
+        {realtimeUpdates.map((update, index) => (
+          <div
+            key={index}
+            style={{
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '4px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              fontSize: '14px',
+              opacity: 0.9,
+              animation: 'slideIn 0.3s ease-out'
+            }}
+          >
+            🔔 {update}
+          </div>
+        ))}
+      </div>
+
+      {/* Connection status indicator */}
+      {projectId && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          left: '20px',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: '#e8f5e8',
+          padding: '4px 12px',
+          borderRadius: '16px',
+          fontSize: '12px',
+          color: '#2e7d32'
+        }}>
+          <span style={{ 
+            width: '8px', 
+            height: '8px', 
+            backgroundColor: '#4caf50', 
+            borderRadius: '50%',
+            animation: 'pulse 2s infinite'
+          }}></span>
+          Real-time enabled
+        </div>
+      )}
+
       {/* Add top margin to account for fixed header */}
       <div style={{ marginTop: '80px' }}>
         <div
@@ -273,6 +430,29 @@ const Project: React.FC = () => {
         )}
       </div>
       </div> {/* Close the marginTop div */}
+
+      {/* CSS for animations */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 0.9;
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
     </>
   );
 };

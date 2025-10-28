@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { ApolloProvider } from "@apollo/client/react";
+import { client } from './utils/apolloClientSetup';
 import Beams from './components/Beams';
 import LoginBox from './components/LoginBox';
 import Header from './components/Header';
@@ -17,7 +19,6 @@ const AppContent: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
       <Header />
       <main style={{ flex: 1, position: 'relative', width: '100%' }}>
-        {/* Only show Beams if not on /project */}
         {location.pathname !== '/project' && (
           <div style={{
             position: 'fixed',
@@ -40,7 +41,6 @@ const AppContent: React.FC = () => {
             />
           </div>
         )}
-        {/* Remove the PageTitle component usage - line 48 */}
         <Routes>
           <Route path="/" element={<LoginBox />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -62,9 +62,11 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <BrowserRouter>
-    <AppContent />
-  </BrowserRouter>
+  <ApolloProvider client={client}>
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  </ApolloProvider>
 );
 
 export default App;

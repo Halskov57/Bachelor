@@ -1,31 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getCourseLevelConfig, updateCourseLevelConfig, getAllNonSuperAdminUsers, updateUserRole, setTemplateProject, getProjectsByCurrentUser } from '../utils/graphqlMutations';
 import { isSuperAdmin } from '../utils/jwt';
-
-interface FeatureConfig {
-  key: string;
-  enabled: boolean;
-}
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  courseLevel?: number;
-}
-
-interface CourseLevelConfig {
-  id: string;
-  courseLevel: number;
-  features: FeatureConfig[];
-  templateProject?: Project;
-}
-
-interface User {
-  id: string;
-  username: string;
-  role: string;
-}
+import { FeatureConfig, Project, CourseLevelConfig, User } from '../utils/types';
 
 const Admin: React.FC = () => {
   const [selectedCourseLevel, setSelectedCourseLevel] = useState<number>(1);
@@ -53,23 +29,29 @@ const Admin: React.FC = () => {
       setLoading(true);
       setMessage(''); // Clear any previous messages
       const configData = await getCourseLevelConfig(selectedCourseLevel);
-      setConfig(configData);
       
-      // Find task user assignment feature
-      const taskUserFeature = configData.features.find((f: FeatureConfig) => f.key === 'TASK_USER_ASSIGNMENT');
-      setTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
-      
-      // Find epic create/delete feature
-      const epicCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'EPIC_CREATE_DELETE');
-      setEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
-      
-      // Find feature create/delete feature
-      const featureCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'FEATURE_CREATE_DELETE');
-      setFeatureCreateDeleteEnabled(featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
-      
-      // Find task create/delete feature
-      const taskCreateDeleteFeature = configData.features.find((f: FeatureConfig) => f.key === 'TASK_CREATE_DELETE');
-      setTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
+      if (configData) {
+        setConfig(configData);
+        
+        // Find task user assignment feature
+        const taskUserFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_USER_ASSIGNMENT');
+        setTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
+        
+        // Find epic create/delete feature
+        const epicCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'EPIC_CREATE_DELETE');
+        setEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
+        
+        // Find feature create/delete feature
+        const featureCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'FEATURE_CREATE_DELETE');
+        setFeatureCreateDeleteEnabled(featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
+        
+        // Find task create/delete feature
+        const taskCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_CREATE_DELETE');
+        setTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
+      } else {
+        // Config is null, create default
+        throw new Error('No configuration found');
+      }
     } catch (error) {
       console.error('Failed to load config:', error);
       
@@ -213,13 +195,7 @@ const Admin: React.FC = () => {
     window.location.href = '/dashboard';
   };
 
-  const handleTemplateCreated = () => {
-    // This function is no longer needed but keeping for now
-    setShowProjectSelection(false);
-    setTemplateMessage('Template project created! Now loading projects...');
-    loadAllProjects();
-    setTimeout(() => setTemplateMessage(''), 3000);
-  };
+
 
   return (
     <>

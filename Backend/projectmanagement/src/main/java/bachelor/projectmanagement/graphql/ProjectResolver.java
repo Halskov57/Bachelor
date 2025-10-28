@@ -9,7 +9,17 @@ import bachelor.projectmanagement.model.Epic;
 import bachelor.projectmanagement.model.Feature;
 import bachelor.projectmanagement.model.Task;
 import bachelor.projectmanagement.model.TaskStatus;
+import bachelor.projectmanagement.model.User;
+import bachelor.projectmanagement.model.TaskStatusUpdate;
+import bachelor.projectmanagement.model.TaskAssignmentUpdate;
+import bachelor.projectmanagement.model.TaskDeletedEvent;
+import bachelor.projectmanagement.model.FeatureDeletedEvent;
+import bachelor.projectmanagement.model.EpicDeletedEvent;
+import bachelor.projectmanagement.model.StructureUpdate;
+import bachelor.projectmanagement.model.UserActivity;
+import bachelor.projectmanagement.service.PubSubService;
 import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.service.SSEService;
 import bachelor.projectmanagement.repository.UserRepository;
 
 import java.util.List;
@@ -20,10 +30,14 @@ public class ProjectResolver {
 
     private final ProjectService projectService;
     private final UserRepository userRepository;
+    private final PubSubService pubSubService;
+    private final SSEService sseService;
 
-    public ProjectResolver(ProjectService projectService, UserRepository userRepository) {
+    public ProjectResolver(ProjectService projectService, UserRepository userRepository, PubSubService pubSubService, SSEService sseService) {
         this.projectService = projectService;
         this.userRepository = userRepository;
+        this.pubSubService = pubSubService;
+        this.sseService = sseService;
     }
 
     @QueryMapping
@@ -36,12 +50,17 @@ public class ProjectResolver {
         return projectService.getProjectById(id);
     }
 
+    // --- Project Update Mutations ---
+
     @MutationMapping
     public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setTitle(newTitle);
-        return projectService.save(project);
+        Project updatedProject = projectService.save(project);
+        
+        pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        return updatedProject;
     }
 
     @MutationMapping
@@ -49,7 +68,10 @@ public class ProjectResolver {
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setDescription(newDescription);
-        return projectService.save(project);
+        Project updatedProject = projectService.save(project);
+        
+        pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        return updatedProject;
     }
 
     @MutationMapping
@@ -57,15 +79,24 @@ public class ProjectResolver {
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setCourseLevel(newCourseLevel);
-        return projectService.save(project);
+        Project updatedProject = projectService.save(project);
+        
+        pubSubService.publishProjectChange(updatedProject); // PUBLISH
+        return updatedProject;
     }
+
+    // --- Epic Update Mutations ---
 
     @MutationMapping
     public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
         Epic epic = projectService.getEpicById(projectId, epicId);
         if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
         epic.setTitle(newTitle);
-        return projectService.saveEpic(projectId, epic);
+        Epic updatedEpic = projectService.saveEpic(projectId, epic);
+        
+        pubSubService.publishEpicChange(updatedEpic); // PUBLISH
+        sseService.sendEpicUpdate(projectId, updatedEpic); // SSE BROADCAST
+        return updatedEpic;
     }
 
     @MutationMapping
@@ -73,8 +104,14 @@ public class ProjectResolver {
         Epic epic = projectService.getEpicById(projectId, epicId);
         if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
         epic.setDescription(newDescription);
-        return projectService.saveEpic(projectId, epic);
+        Epic updatedEpic = projectService.saveEpic(projectId, epic);
+        
+        pubSubService.publishEpicChange(updatedEpic); // PUBLISH
+        sseService.sendEpicUpdate(projectId, updatedEpic); // SSE BROADCAST
+        return updatedEpic;
     }
+
+    // --- Feature Update Mutations ---
 
     @MutationMapping
     public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
@@ -88,11 +125,13 @@ public class ProjectResolver {
 
         feature.setTitle(newTitle);
 
-        Feature updated = projectService.saveFeature(projectId, epicId, feature);
+        Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
 
-        System.out.println("After update: " + updated.getTitle());
-
-        return updated;
+        System.out.println("After update: " + updatedFeature.getTitle());
+        
+        pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
+        sseService.sendFeatureUpdate(projectId, updatedFeature); // SSE BROADCAST
+        return updatedFeature;
     }
 
     @MutationMapping
@@ -100,8 +139,14 @@ public class ProjectResolver {
         Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
         if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
         feature.setDescription(newDescription);
-        return projectService.saveFeature(projectId, epicId, feature);
+        Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
+        
+        pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
+        sseService.sendFeatureUpdate(projectId, updatedFeature); // SSE BROADCAST
+        return updatedFeature;
     }
+
+    // --- Task Update Mutations ---
 
     @MutationMapping
     public Task updateTaskTitle(
@@ -114,7 +159,11 @@ public class ProjectResolver {
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
         task.setTitle(newTitle);
-        return projectService.saveTask(projectId, epicId, featureId, task);
+        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+        
+        pubSubService.publishTaskChange(updatedTask); // PUBLISH
+        sseService.sendTaskUpdate(projectId, updatedTask); // SSE BROADCAST
+        return updatedTask;
     }
 
     @MutationMapping
@@ -128,7 +177,11 @@ public class ProjectResolver {
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
         task.setDescription(newDescription);
-        return projectService.saveTask(projectId, epicId, featureId, task);
+        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+        
+        pubSubService.publishTaskChange(updatedTask); // PUBLISH
+        sseService.sendTaskUpdate(projectId, updatedTask); // SSE BROADCAST
+        return updatedTask;
     }
 
     @MutationMapping
@@ -145,7 +198,25 @@ public class ProjectResolver {
         // Convert String to TaskStatus enum
         TaskStatus status = TaskStatus.valueOf(newStatus);
         task.setStatus(status);
-        return projectService.saveTask(projectId, epicId, featureId, task);
+        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+        
+        // Publish general task change
+        pubSubService.publishTaskChange(updatedTask);
+        
+        // Publish specific task status change event for real-time updates
+        TaskStatusUpdate statusUpdate = new TaskStatusUpdate(
+            taskId, 
+            projectId, 
+            newStatus, 
+            updatedTask.getTitle(),
+            getCurrentUser() // You'll need to implement this method to get current user
+        );
+        pubSubService.publishTaskStatusUpdate(statusUpdate);
+        
+        // SSE broadcast for real-time updates
+        sseService.sendTaskUpdate(projectId, updatedTask);
+        
+        return updatedTask;
     }
 
     @MutationMapping
@@ -166,7 +237,7 @@ public class ProjectResolver {
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
 
-        // Convert usernames to user IDs
+        // Convert usernames to user IDs (assuming userIds here are usernames based on existing logic)
         List<String> resolvedUserIds = userIds.stream()
             .map(username -> {
                 System.out.println("Resolving username: " + username);
@@ -180,13 +251,38 @@ public class ProjectResolver {
 
         // Update the users assigned to the task
         task.setUsers(resolvedUserIds);
-        return projectService.saveTask(projectId, epicId, featureId, task);
+        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+        
+        // Publish general task change
+        pubSubService.publishTaskChange(updatedTask);
+        
+        // Publish specific task assignment update for real-time collaboration
+        List<User> assignedUsers = resolvedUserIds.stream()
+            .map(userId -> userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId)))
+            .collect(Collectors.toList());
+            
+        TaskAssignmentUpdate assignmentUpdate = new TaskAssignmentUpdate(
+            taskId,
+            projectId,
+            assignedUsers,
+            getCurrentUser()
+        );
+        pubSubService.publishTaskAssignmentUpdate(assignmentUpdate);
+        
+        return updatedTask;
     }
+    
+    // --- Deletion Mutations ---
+    // For deletion, we publish the updated parent entity (Project) since the children are nested.
 
     @MutationMapping
     public Boolean deleteEpic(@Argument String projectId, @Argument String epicId) {
         try {
             projectService.deleteEpicFromProject(projectId, epicId);
+            // Fetch the updated project after deletion to publish the change
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete epic: " + e.getMessage());
@@ -197,6 +293,9 @@ public class ProjectResolver {
     public Boolean deleteFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId) {
         try {
             projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
+            // Fetch the updated project after deletion to publish the change
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete feature: " + e.getMessage());
@@ -211,11 +310,16 @@ public class ProjectResolver {
             @Argument String taskId) {
         try {
             projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+            // Fetch the updated project after deletion to publish the change
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete task: " + e.getMessage());
         }
     }
+
+    // --- Creation Mutations ---
 
     @MutationMapping
     public Epic addEpic(@Argument String projectId, @Argument String title, @Argument String description) {
@@ -223,7 +327,14 @@ public class ProjectResolver {
             Epic epic = new Epic();
             epic.setTitle(title);
             epic.setDescription(description);
-            return projectService.addEpicToProject(projectId, epic);
+            Epic newEpic = projectService.addEpicToProject(projectId, epic);
+            
+            pubSubService.publishEpicChange(newEpic); // PUBLISH
+            // Also publish the parent project change since the structure changed
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject);
+            
+            return newEpic;
         } catch (Exception e) {
             throw new RuntimeException("Failed to add epic: " + e.getMessage());
         }
@@ -235,7 +346,14 @@ public class ProjectResolver {
             Feature feature = new Feature();
             feature.setTitle(title);
             feature.setDescription(description);
-            return projectService.addFeatureToEpic(projectId, epicId, feature);
+            Feature newFeature = projectService.addFeatureToEpic(projectId, epicId, feature);
+            
+            pubSubService.publishFeatureChange(newFeature); // PUBLISH
+            // Also publish the parent project change since the structure changed
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject);
+            
+            return newFeature;
         } catch (Exception e) {
             throw new RuntimeException("Failed to add feature: " + e.getMessage());
         }
@@ -247,9 +365,27 @@ public class ProjectResolver {
             Task task = new Task();
             task.setTitle(title);
             task.setDescription(description);
-            return projectService.addTaskToFeature(projectId, epicId, featureId, task);
+            Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
+            
+            pubSubService.publishTaskChange(newTask); // PUBLISH
+            // Also publish the parent project change since the structure changed
+            Project updatedProject = projectService.getProjectById(projectId);
+            pubSubService.publishProjectChange(updatedProject);
+            
+            return newTask;
         } catch (Exception e) {
             throw new RuntimeException("Failed to add task: " + e.getMessage());
         }
+    }
+    
+    // Helper method to get current authenticated user
+    // You'll need to implement this based on your authentication system
+    private User getCurrentUser() {
+        // For now, return a dummy user - replace with actual authentication logic
+        // Example: SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+        User currentUser = new User();
+        currentUser.setId("current-user-id");
+        currentUser.setUsername("current-user");
+        return currentUser;
     }
 }

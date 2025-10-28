@@ -34,6 +34,14 @@ public class CorsConfig {
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         
+        // WebSocket specific headers for GraphQL subscriptions
+        configuration.addAllowedHeader("Sec-WebSocket-Protocol");
+        configuration.addAllowedHeader("Sec-WebSocket-Version");
+        configuration.addAllowedHeader("Sec-WebSocket-Key");
+        configuration.addAllowedHeader("Connection");
+        configuration.addAllowedHeader("Upgrade");
+        configuration.addAllowedHeader("Authorization");
+        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -153,6 +153,11 @@ public class ProjectService {
         if (task.getStatus() == null) {
             task.setStatus(TaskStatus.TODO);
         }
+        
+        // Set parent IDs for subscription filtering
+        task.setProjectId(projectId);
+        task.setEpicId(epicId);
+        task.setFeatureId(featureId);
         feature.getTasks().add(task);
         projectRepository.save(project);
         return task;
@@ -282,10 +287,19 @@ public class ProjectService {
     public Task getTaskById(String projectId, String epicId, String featureId, String taskId) {
         Feature feature = getFeatureById(projectId, epicId, featureId);
         if (feature == null) return null;
-        return feature.getTasks().stream()
+        Task task = feature.getTasks().stream()
             .filter(t -> t.getTaskId().equals(taskId))
             .findFirst()
             .orElse(null);
+        
+        // Ensure parent IDs are set for subscription filtering
+        if (task != null) {
+            task.setProjectId(projectId);
+            task.setEpicId(epicId);
+            task.setFeatureId(featureId);
+        }
+        
+        return task;
     }
 
     public Project save(Project project) {
@@ -362,6 +376,12 @@ public class ProjectService {
                                     System.out.println("Updating task users from: " + task.getUsers() + " to: " + updatedTask.getUsers());
                                     task.setUsers(updatedTask.getUsers());
                                 }
+                                
+                                // Ensure parent IDs are set for subscription filtering
+                                task.setProjectId(projectId);
+                                task.setEpicId(epicId);
+                                task.setFeatureId(featureId);
+                                
                                 // Add more fields as needed
                                 projectRepository.save(project);
                                 return task;

@@ -30,6 +30,9 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.deny()) // Security header
+            )
             .authorizeHttpRequests(authz -> authz
                 
                 // 1. CRITICAL FIX: Allow OPTIONS pre-flight requests globally
@@ -38,6 +41,10 @@ public class SecurityConfig {
                 // Public endpoints (no authentication required)
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
+                
+                // SSE endpoints for real-time updates (JWT passed as query param)
+                .requestMatchers(HttpMethod.GET, "/api/sse/**").permitAll() // SSE connections
+                .requestMatchers(HttpMethod.POST, "/graphql").authenticated() // GraphQL HTTP queries
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()
