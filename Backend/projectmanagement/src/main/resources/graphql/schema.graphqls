@@ -92,6 +92,8 @@ type Mutation {
     addEpic(projectId: ID!, title: String!, description: String): Epic!
     addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
     addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
+    addUserToProject(projectId: ID!, username: String!): Project!
+    removeUserFromProject(projectId: ID!, username: String!): Project!
     updateCourseLevelConfig(
         courseLevel: Int!,
         features: [FeatureConfigInput!]!

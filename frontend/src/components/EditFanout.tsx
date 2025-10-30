@@ -52,26 +52,35 @@ interface EditFanoutProps {
 }
 
 const EditFanout: React.FC<EditFanoutProps> = ({
+  project?: any; // Add project data to access owners
+  allUsers?: any[]; // Add list of all users
+}> = ({
   node,
   createNode,
   onClose,
   onSave,
   mode = 'edit',
   project,
+  allUsers = []
 }) => {
   // --- State ---
   const [title, setTitle] = useState(node?.title || node?.name || '');
   const [description, setDescription] = useState(node?.description || '');
   const [status, setStatus] = useState(node?.status || '');
   const [depth, setDepth] = useState(node?.depth ?? 0);
-  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 1);
-
+  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 0);
   const [selectedUsers, setSelectedUsers] = useState<string[]>(
     node && Array.isArray(node.users)
     ? node.users.map(u => (typeof u === 'string' ? u : u.username))
     : []
   );
-
+  const [selectedOwners, setSelectedOwners] = useState<string[]>(
+    mode === 'edit' && node?.type === 'project' && Array.isArray(node?.owners)
+      ? node.owners.map((owner: any) => owner.username || owner.name)
+      : []
+  );
+  const [managingOwners, setManagingOwners] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Course level config flags
@@ -89,19 +98,23 @@ const EditFanout: React.FC<EditFanoutProps> = ({
       setDescription(node.description || '');
       setStatus(node.status || '');
       setDepth(node.depth ?? 0);
-      setCourseLevel(node.courseLevel ?? 1);
+      setCourseLevel(node.courseLevel ?? 0);
       setSelectedUsers(
         Array.isArray(node.users)
           ? node.users.map(u => (typeof u === 'string' ? u : u.username))
           : []
       );
+      if (node.type === 'project' && Array.isArray(node.owners)) {
+        setSelectedOwners(node.owners.map((owner: any) => owner.username || owner.name));
+      }
     } else if (mode === 'create') {
       setTitle('');
       setDescription('');
       setStatus('');
       setDepth(0);
-      setCourseLevel(1);
+      setCourseLevel(0);
       setSelectedUsers([]);
+      setSelectedOwners([]);
     }
   }, [node, mode]);
 
@@ -178,6 +191,15 @@ const EditFanout: React.FC<EditFanoutProps> = ({
           return;
         }
         
+        console.log('Creating node:', {
+          type: createNode.type,
+          parentIds: createNode.parentIds,
+          title,
+          description,
+          courseLevel: courseLevel
+        });
+        
+        const result = await addNode(
         await addNode(
           createNode.type,
           createNode.parentIds,
@@ -364,7 +386,11 @@ const EditFanout: React.FC<EditFanoutProps> = ({
           <label>Course Level</label>
           <select
             value={courseLevel}
-            onChange={e => setCourseLevel(Number(e.target.value))}
+            onChange={e => {
+              const newValue = Number(e.target.value);
+              console.log('Course level dropdown changed to:', newValue);
+              setCourseLevel(newValue);
+            }}
             style={{ width: '100%', marginBottom: '12px' }}
           >
             <option value={0}>Default Template (All Course Levels)</option>
@@ -374,6 +400,42 @@ const EditFanout: React.FC<EditFanoutProps> = ({
               </option>
             ))}
           </select>
+
+          {/* Only show owners for edit mode */}
+          {mode === 'edit' && (
+            <>
+              <label>Project Owners</label>
+              <div style={{
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+                border: '1px solid #e0e6ed'
+              }}>
+                {node.owners && node.owners.length > 0 ? (
+                  <div>
+                    {node.owners.map((owner: any, index: number) => (
+                      <span key={index} style={{
+                        display: 'inline-block',
+                        backgroundColor: '#022AFF',
+                        color: '#fff',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        margin: '2px 4px 2px 0'
+                      }}>
+                        {owner.username || owner.name || 'Unknown User'}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ color: '#666', fontStyle: 'italic' }}>
+                    {node.owner ? `Single Owner: ${node.owner.username || node.owner.name}` : 'No owners assigned'}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
 

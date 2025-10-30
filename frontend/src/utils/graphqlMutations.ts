@@ -265,6 +265,23 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
           id
           title
           description
+          courseLevel
+        }
+      }
+    `;
+    
+    variables = { 
+      courseLevel: courseLevel !== undefined ? courseLevel : 1,
+      title,
+      description: description || ''
+    };
+    
+    return await runMutation(mutation, variables);
+  } else if (nodeType === 'epic') {
+    mutation = `
+      mutation($projectId: ID!, $title: String!, $description: String) {
+        addEpic(projectId: $projectId, title: $title, description: $description) {
+          id title description
           tasks {
             id
             title
@@ -462,5 +479,127 @@ export const deleteNode = async (node: any, parentIds: any) => {
       return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
     default:
       throw new Error(`Unknown node type: ${node.type}`);
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.projects;
+}
+
+export async function getProjectsByCurrentUser() {
+  const query = `
+    query {
+      projectsByUsername(username: "${getCurrentUsername()}") {
+        id
+        title
+        description
+        courseLevel
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.projectsByUsername;
+}
+
+export async function addUserToProject(projectId: string, username: string) {
+  const mutation = `
+    mutation AddUserToProject($projectId: ID!, $username: String!) {
+      addUserToProject(projectId: $projectId, username: $username) {
+        id
+        title
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const variables = { projectId, username };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.addUserToProject;
+}
+
+export async function removeUserFromProject(projectId: string, username: string) {
+  const mutation = `
+    mutation RemoveUserFromProject($projectId: ID!, $username: String!) {
+      removeUserFromProject(projectId: $projectId, username: $username) {
+        id
+        title
+        owners {
+          id
+          username
+        }
+      }
+    }
+  `;
+
+  const variables = { projectId, username };
+
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query: mutation, variables }),
+  });
+
+  const json = await res.json();
+
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+
+  return json.data.removeUserFromProject;
+}
+
+// Helper function to get current username from JWT
+function getCurrentUsername(): string {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub || payload.username;
+  } catch (error) {
+    throw new Error('Invalid token');
   }
 };

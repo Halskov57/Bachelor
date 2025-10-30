@@ -18,6 +18,7 @@ const Admin: React.FC = () => {
   const [userLoading, setUserLoading] = useState<boolean>(false);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isUserSuperAdmin] = useState<boolean>(isSuperAdmin());
+  const [userSearchTerm, setUserSearchTerm] = useState<string>('');
 
   // Template management state
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -197,6 +198,79 @@ const Admin: React.FC = () => {
 
 
 
+  // Filter users based on search term
+  const getFilteredUsers = () => {
+    if (!userSearchTerm.trim()) {
+      return users;
+    }
+
+    const searchLower = userSearchTerm.toLowerCase();
+    
+    // Calculate similarity score for each user
+    const usersWithScore = users.map(user => {
+      const usernameLower = user.username.toLowerCase();
+      let score = 0;
+
+      // Exact match gets highest score
+      if (usernameLower === searchLower) {
+        score = 1000;
+      }
+      // Starts with search term gets high score
+      else if (usernameLower.startsWith(searchLower)) {
+        score = 500;
+      }
+      // Contains search term gets medium score
+      else if (usernameLower.includes(searchLower)) {
+        score = 250;
+      }
+      // Calculate Levenshtein distance for fuzzy matching
+      else {
+        const distance = levenshteinDistance(searchLower, usernameLower);
+        score = Math.max(0, 100 - distance * 10);
+      }
+
+      return { user, score };
+    });
+
+    // Sort by score (highest first) and take top 5
+    return usersWithScore
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map(item => item.user);
+  };
+
+  // Simple Levenshtein distance implementation
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix: number[][] = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  };
+
+  const filteredUsers = getFilteredUsers();
+
   return (
     <>
       {/* Top navigation bar */}
@@ -311,6 +385,51 @@ const Admin: React.FC = () => {
                 Manage user roles. You can promote users to Admin or demote them back to regular users.
               </p>
               
+              {/* Search input */}
+              <div style={{ marginBottom: '15px' }}>
+                <input
+                  type="text"
+                  placeholder="Search users by username..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    fontSize: '14px',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {userSearchTerm && (
+                  <div style={{ 
+                    marginTop: '5px', 
+                    fontSize: '12px', 
+                    color: '#6c757d' 
+                  }}>
+                    Showing top {Math.min(filteredUsers.length, 5)} result{filteredUsers.length !== 1 ? 's' : ''} for "{userSearchTerm}"
+                  </div>
+                )}
+              </div>
+              
+              {!userSearchTerm ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  color: '#666',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '4px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
+                    Search for users
+                  </div>
+                  <div style={{ fontSize: '14px' }}>
+                    Type a username in the search box above to find and manage users
+                  </div>
+                </div>
+              ) : (
               <div style={{ 
                 maxHeight: '250px', // Reduced height
                 overflowY: 'auto',
@@ -341,7 +460,7 @@ const Admin: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user, index) => (
+                    {filteredUsers.map((user, index) => (
                       <tr key={user.id} style={{ 
                         backgroundColor: index % 2 === 0 ? '#fff' : '#f8f9fa'
                       }}>
@@ -411,10 +530,11 @@ const Admin: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              )}
               
-              {users.length === 0 && (
+              {userSearchTerm && filteredUsers.length === 0 && (
                 <p style={{ textAlign: 'center', color: '#666', margin: '20px 0' }}>
-                  No users found.
+                  No users found matching "{userSearchTerm}".
                 </p>
               )}
             </div>

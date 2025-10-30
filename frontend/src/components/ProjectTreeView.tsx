@@ -15,7 +15,7 @@ interface ProjectTreeViewProps {
    fetchProjectById?: () => Promise<void>;
 }
 
-const ProjectTreeView: React.FC<ProjectTreeViewProps> = ({ treeData, project }) => {
+const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any, allUsers?: any[] }> = ({ treeData, fetchProjectById, project, allUsers = [] }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);

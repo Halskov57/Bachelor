@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import EditFanout from './EditFanout';
 
-const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> = ({ project, fetchProjectById }) => {
+const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void, allUsers?: any[] }> = ({ project, fetchProjectById, allUsers = [] }) => {
   const [expandedEpic, setExpandedEpic] = useState<string | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
   const [editNode, setEditNode] = useState<any>(null);
@@ -223,6 +223,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
           node={editNode}
           mode="edit"
           project={project}
+          allUsers={allUsers}
           onClose={() => setEditNode(null)}
           onSave={async (data?: any) => {
             if (data?.action === 'create') {
@@ -243,6 +244,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
           createNode={createNode}
           mode="create"
           project={project}
+          allUsers={allUsers}
           onClose={() => setCreateNode(null)}
           onSave={async () => {
             await fetchProjectById();
