@@ -2,7 +2,6 @@ package bachelor.projectmanagement.graphql;
 
 import bachelor.projectmanagement.model.CourseLevelConfig;
 import bachelor.projectmanagement.model.Project;
-import bachelor.projectmanagement.service.PubSubService;
 import bachelor.projectmanagement.service.CourseLevelConfigService;
 import bachelor.projectmanagement.service.ProjectService;
 import org.springframework.graphql.data.method.annotation.Argument;

@@ -12,9 +12,6 @@ import bachelor.projectmanagement.model.Feature;
 import bachelor.projectmanagement.model.Task;
 import bachelor.projectmanagement.model.TaskStatus;
 import bachelor.projectmanagement.model.User;
-import bachelor.projectmanagement.model.TaskStatusUpdate;
-import bachelor.projectmanagement.model.TaskAssignmentUpdate;
-import bachelor.projectmanagement.service.PubSubService;
 import bachelor.projectmanagement.service.ProjectService;
 import bachelor.projectmanagement.service.SSEService;
 import bachelor.projectmanagement.repository.UserRepository;
@@ -27,13 +24,11 @@ public class ProjectResolver {
 
     private final ProjectService projectService;
     private final UserRepository userRepository;
-    private final PubSubService pubSubService;
     private final SSEService sseService;
 
-    public ProjectResolver(ProjectService projectService, UserRepository userRepository, PubSubService pubSubService, SSEService sseService) {
+    public ProjectResolver(ProjectService projectService, UserRepository userRepository, SSEService sseService) {
         this.projectService = projectService;
         this.userRepository = userRepository;
-        this.pubSubService = pubSubService;
         this.sseService = sseService;
     }
 
@@ -74,7 +69,6 @@ public class ProjectResolver {
         project.setTitle(newTitle);
         Project updatedProject = projectService.save(project);
         
-        pubSubService.publishProjectChange(updatedProject); // PUBLISH
         
         // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
@@ -97,7 +91,6 @@ public class ProjectResolver {
         project.setDescription(newDescription);
         Project updatedProject = projectService.save(project);
         
-        pubSubService.publishProjectChange(updatedProject); // PUBLISH
         
         // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
@@ -119,7 +112,6 @@ public class ProjectResolver {
         project.setCourseLevel(newCourseLevel);
         Project updatedProject = projectService.save(project);
         
-        pubSubService.publishProjectChange(updatedProject); // PUBLISH
         
         // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
@@ -142,7 +134,6 @@ public class ProjectResolver {
         epic.setTitle(newTitle);
         Epic updatedEpic = projectService.saveEpic(projectId, epic);
         
-        pubSubService.publishEpicChange(updatedEpic); // PUBLISH
         
         // Send with correct field mapping (epicId -> id)
         java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
@@ -163,7 +154,6 @@ public class ProjectResolver {
         epic.setDescription(newDescription);
         Epic updatedEpic = projectService.saveEpic(projectId, epic);
         
-        pubSubService.publishEpicChange(updatedEpic); // PUBLISH
         
         // Send with correct field mapping (epicId -> id)
         java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
@@ -195,7 +185,6 @@ public class ProjectResolver {
 
         System.out.println("After update: " + updatedFeature.getTitle());
         
-        pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
         
         // Send with correct field mapping (featureId -> id)
         java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
@@ -218,7 +207,6 @@ public class ProjectResolver {
         feature.setDescription(newDescription);
         Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
         
-        pubSubService.publishFeatureChange(updatedFeature); // PUBLISH
         
         // Send with correct field mapping (featureId -> id)
         java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
@@ -247,7 +235,6 @@ public class ProjectResolver {
         task.setTitle(newTitle);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
-        pubSubService.publishTaskChange(updatedTask); // PUBLISH
         
         // Send with correct field mapping (taskId -> id)
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
@@ -273,7 +260,6 @@ public class ProjectResolver {
         task.setDescription(newDescription);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
-        pubSubService.publishTaskChange(updatedTask); // PUBLISH
         
         // Send with correct field mapping (taskId -> id)
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
@@ -302,20 +288,7 @@ public class ProjectResolver {
         task.setStatus(status);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
-        // Publish general task change
-        pubSubService.publishTaskChange(updatedTask);
-        
-        // Publish specific task status change event for real-time updates
-        TaskStatusUpdate statusUpdate = new TaskStatusUpdate(
-            taskId, 
-            projectId, 
-            newStatus, 
-            updatedTask.getTitle(),
-            getCurrentUser() // You'll need to implement this method to get current user
-        );
-        pubSubService.publishTaskStatusUpdate(statusUpdate);
-        
-        // Send with correct field mapping (taskId -> id)
+        // Send SSE update with correct field mapping (taskId -> id)
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
         taskUpdate.put("id", updatedTask.getTaskId());
         taskUpdate.put("status", updatedTask.getStatus().toString());
@@ -361,23 +334,14 @@ public class ProjectResolver {
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
         // Publish general task change
-        pubSubService.publishTaskChange(updatedTask);
         
-        // Publish specific task assignment update for real-time collaboration
+        // Get assigned users for SSE broadcast
         List<User> assignedUsers = resolvedUserIds.stream()
             .map(userId -> userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId)))
             .collect(Collectors.toList());
-            
-        TaskAssignmentUpdate assignmentUpdate = new TaskAssignmentUpdate(
-            taskId,
-            projectId,
-            assignedUsers,
-            getCurrentUser()
-        );
-        pubSubService.publishTaskAssignmentUpdate(assignmentUpdate);
         
-        // Send with correct field mapping (taskId -> id) and include users
+        // Send SSE update with correct field mapping (taskId -> id) and include users
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
         taskUpdate.put("id", updatedTask.getTaskId());
         taskUpdate.put("users", assignedUsers.stream()
@@ -403,9 +367,6 @@ public class ProjectResolver {
         
         try {
             projectService.deleteEpicFromProject(projectId, epicId);
-            // Fetch the updated project after deletion to publish the change
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete epic: " + e.getMessage());
@@ -419,9 +380,6 @@ public class ProjectResolver {
         
         try {
             projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
-            // Fetch the updated project after deletion to publish the change
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete feature: " + e.getMessage());
@@ -439,9 +397,6 @@ public class ProjectResolver {
         
         try {
             projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
-            // Fetch the updated project after deletion to publish the change
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject); // PUBLISH PARENT CHANGE
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete task: " + e.getMessage());
@@ -461,12 +416,9 @@ public class ProjectResolver {
             epic.setDescription(description);
             Epic newEpic = projectService.addEpicToProject(projectId, epic);
             
-            pubSubService.publishEpicChange(newEpic); // PUBLISH
             sseService.sendEpicCreated(projectId, newEpic); // SSE BROADCAST for creation
             
             // Also publish the parent project change since the structure changed
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject);
             
             return newEpic;
         } catch (Exception e) {
@@ -485,7 +437,6 @@ public class ProjectResolver {
             feature.setDescription(description);
             Feature newFeature = projectService.addFeatureToEpic(projectId, epicId, feature);
             
-            pubSubService.publishFeatureChange(newFeature); // PUBLISH
             
             // Create a map with epicId for SSE broadcast (since Feature model doesn't have epicId field)
             java.util.Map<String, Object> featureWithEpicId = new java.util.HashMap<>();
@@ -498,8 +449,6 @@ public class ProjectResolver {
             sseService.sendFeatureCreated(projectId, featureWithEpicId); // SSE BROADCAST for creation
             
             // Also publish the parent project change since the structure changed
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject);
             
             return newFeature;
         } catch (Exception e) {
@@ -518,12 +467,9 @@ public class ProjectResolver {
             task.setDescription(description);
             Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
             
-            pubSubService.publishTaskChange(newTask); // PUBLISH
             sseService.sendTaskCreated(projectId, newTask); // SSE BROADCAST for creation
             
             // Also publish the parent project change since the structure changed
-            Project updatedProject = projectService.getProjectById(projectId);
-            pubSubService.publishProjectChange(updatedProject);
             
             return newTask;
         } catch (Exception e) {
@@ -531,17 +477,6 @@ public class ProjectResolver {
         }
     }
     
-    // Helper method to get current authenticated user
-    // You'll need to implement this based on your authentication system
-    private User getCurrentUser() {
-        // For now, return a dummy user - replace with actual authentication logic
-        // Example: SecurityContextHolder.getContext().getAuthentication().getPrincipal()
-        User currentUser = new User();
-        currentUser.setId("current-user-id");
-        currentUser.setUsername("current-user");
-        return currentUser;
-    }
-
     @MutationMapping
     public Project addUserToProject(@Argument String projectId, @Argument String username) {
         String currentUsername = getCurrentUsername();
