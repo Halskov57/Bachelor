@@ -4,11 +4,11 @@ package bachelor.projectmanagement.model;
  * Enum representing the possible statuses for a Project.
  */
 public enum ProjectStatus {
-    NOT_STARTED("Not Started"),
-    IN_PROGRESS("In Progress"),
-    COMPLETED("Completed"),
-    ON_HOLD("On Hold"),
-    CANCELLED("Cancelled");
+    TODO("Todo"),
+    IN_PROGRESS("In progress"),
+    DONE("Done"),
+    BLOCKED("Blocked"),
+    NEED_HELP("Need help");
 
     private final String displayName;
 

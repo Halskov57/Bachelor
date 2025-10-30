@@ -4,11 +4,11 @@ package bachelor.projectmanagement.model;
  * Enum representing the possible statuses for an Epic.
  */
 public enum EpicStatus {
-    NOT_STARTED("Not Started"),
-    IN_PROGRESS("In Progress"),
-    COMPLETED("Completed"),
+    TODO("Todo"),
+    IN_PROGRESS("In progress"),
+    DONE("Done"),
     BLOCKED("Blocked"),
-    CANCELLED("Cancelled");
+    NEED_HELP("Need help");
 
     private final String displayName;
 

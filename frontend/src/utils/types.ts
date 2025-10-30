@@ -78,7 +78,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status?: 'TODO' | 'IN_PROGRESS' | 'DONE' | string;
+  status?: 'Todo' | 'In progress' | 'Done' | 'Blocked' | 'Need help' | string;
   projectId: string;
   epicId: string;
   featureId: string;

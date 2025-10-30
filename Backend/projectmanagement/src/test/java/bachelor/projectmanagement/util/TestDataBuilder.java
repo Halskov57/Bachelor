@@ -34,7 +34,7 @@ public class TestDataBuilder {
         project.setDescription("Test project description");
         project.setDepth(1);
         project.setCourseLevel(100);
-        project.setStatus(ProjectStatus.NOT_STARTED);
+        project.setStatus(ProjectStatus.TODO);
         project.setOwner(owner);
         project.setEpics(new ArrayList<>());
         return project;
@@ -50,7 +50,7 @@ public class TestDataBuilder {
         epic.setTitle(title);
         epic.setDescription("Test epic description");
         epic.setDepth(2);
-        epic.setStatus(EpicStatus.NOT_STARTED);
+        epic.setStatus(EpicStatus.TODO);
         epic.setFeatures(new ArrayList<>());
         return epic;
     }
@@ -65,7 +65,7 @@ public class TestDataBuilder {
         feature.setTitle(title);
         feature.setDescription("Test feature description");
         feature.setDepth(3);
-        feature.setStatus(FeatureStatus.NOT_STARTED);
+        feature.setStatus(FeatureStatus.TODO);
         feature.setTasks(new ArrayList<>());
         return feature;
     }

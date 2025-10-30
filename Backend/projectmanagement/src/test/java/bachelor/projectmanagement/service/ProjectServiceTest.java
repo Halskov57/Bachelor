@@ -392,7 +392,7 @@ class ProjectServiceTest {
         
         Task partialUpdate = new Task();
         partialUpdate.setTaskId(testTask.getTaskId());
-        partialUpdate.setStatus(TaskStatus.COMPLETED);
+        partialUpdate.setStatus(TaskStatus.DONE);
 
         when(projectRepository.findById(testProject.getProjectId())).thenReturn(Optional.of(testProject));
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
@@ -403,7 +403,7 @@ class ProjectServiceTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(TaskStatus.COMPLETED, result.getStatus());
+        assertEquals(TaskStatus.DONE, result.getStatus());
         assertEquals(testTask.getTitle(), result.getTitle()); // Should retain original title
         verify(projectRepository).save(testProject);
     }

@@ -712,12 +712,11 @@ const EditFanout: React.FC<{
             style={{ width: '100%', marginBottom: '12px' }}
           >
             <option value="">Select status</option>
-            <option value="TODO">TODO</option>
-            <option value="NOT_STARTED">NOT STARTED</option>
-            <option value="IN_PROGRESS">IN PROGRESS</option>
-            <option value="COMPLETED">COMPLETED</option>
-            <option value="BLOCKED">BLOCKED</option>
-            <option value="CANCELLED">CANCELLED</option>
+            <option value="TODO">Todo</option>
+            <option value="IN_PROGRESS">In progress</option>
+            <option value="DONE">Done</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="NEED_HELP">Need help</option>
           </select>
           
           <label>Depth</label>
