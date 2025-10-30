@@ -119,7 +119,7 @@ const LoginBox: React.FC = () => {
       </h2>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '28px', gap: '18px' }}>
         <span style={{ color: mode === 'login' ? '#022AFF' : '#888', fontWeight: 600, fontSize: '1.1rem' }}>Login</span>
-        <label style={{ display: 'inline-block', position: 'relative', width: '54px', height: '28px' }}>
+        <label style={{ display: 'inline-block', position: 'relative', width: '54px', height: '30px' }}>
           <input
             type="checkbox"
             checked={mode === 'create'}
