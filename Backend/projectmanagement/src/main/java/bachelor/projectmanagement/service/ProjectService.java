@@ -426,7 +426,7 @@ public class ProjectService {
 
         // Fetch the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User with username '" + username + "' not found"));
+                .orElseThrow(() -> new bachelor.projectmanagement.exception.UserNotFoundException("User '" + username + "' does not exist"));
 
         // Add the user to the project's owners list if not already present
         if (!project.getOwners().contains(user)) {
@@ -450,7 +450,7 @@ public class ProjectService {
 
         // Fetch the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User with username '" + username + "' not found"));
+                .orElseThrow(() -> new bachelor.projectmanagement.exception.UserNotFoundException("User '" + username + "' does not exist"));
 
         // Remove the user from the project's owners list
         project.getOwners().remove(user);
