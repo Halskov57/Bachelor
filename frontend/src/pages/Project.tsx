@@ -320,7 +320,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
-  });
+  }, []); // Only run once on mount
 
 function toTreeData(project: any): NodeData | null {
   if (!project || !(project.title || project.name)) return null;
