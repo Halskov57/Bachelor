@@ -3,7 +3,6 @@ import { useApolloClient } from '@apollo/client/react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
 import { NodeData } from '../utils/types';
-import { getAllNonSuperAdminUsers } from '../utils/graphqlMutations';
 
 
 const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
@@ -12,7 +11,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
   const [editNode, setEditNode] = useState<NodeData | null>(null);
   const [createNode, setCreateNode] = useState<{ type: string; parentIds: any; parentNode?: NodeData } | null>(null);
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
-  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const client = useApolloClient();
 
@@ -21,20 +19,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       include: ['ProjectById'], // Match the query name in Project.tsx
     });
   };
-
-  // Fetch all users on component mount
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const users = await getAllNonSuperAdminUsers();
-        console.log('Fetched all users:', users);
-        setAllUsers(users);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
 
   useEffect(() => {
     if (treeContainerRef.current) {
@@ -220,7 +204,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       courseLevel: project.courseLevel || 0,
       owners: project.owners || [],
     }}
-    allUsers={allUsers}
     onClose={() => {
       setEditNode(null);
       refetchProject();
@@ -242,7 +225,6 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       courseLevel: project.courseLevel || 0,
       owners: project.owners || [],
     }}
-    allUsers={allUsers}
     onClose={() => setCreateNode(null)}
     onSave={async () => {
       setCreateNode(null);

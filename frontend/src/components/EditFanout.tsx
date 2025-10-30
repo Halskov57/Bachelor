@@ -18,15 +18,13 @@ const EditFanout: React.FC<{
   onSave?: (data?: any) => void; 
   mode?: 'edit' | 'create';
   project?: any; // Add project data to access owners
-  allUsers?: any[]; // Add list of all users
 }> = ({
   node,
   createNode,
   onClose,
   onSave,
   mode = 'edit',
-  project,
-  allUsers = []
+  project
 }) => {
   // Common fields
   const [title, setTitle] = useState(mode === 'create' ? '' : (node?.title || node?.name || ''));
@@ -49,6 +47,15 @@ const EditFanout: React.FC<{
   const [managingOwners, setManagingOwners] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  
+  // Show notification with auto-dismiss
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 5000); // Auto-dismiss after 5 seconds
+  };
   
   // Course level configuration state
   const [isTaskUserAssignmentEnabled, setIsTaskUserAssignmentEnabled] = useState<boolean>(true);
@@ -139,6 +146,8 @@ const EditFanout: React.FC<{
       setLoading(true);
       await addUserToProject(node.id || node.projectId, username);
       setSelectedOwners(prev => [...prev, username]);
+      // Show success notification
+      showNotification(`User "${username}" successfully added to the project!`, 'success');
       // Don't call onSave to keep the EditFanout open
       // Just refresh the data silently in the background
       if (project) {
@@ -149,7 +158,15 @@ const EditFanout: React.FC<{
       }
     } catch (error: any) {
       console.error('Error adding owner:', error);
-      alert(`Error adding owner: ${error.message}`);
+      // Check if it's a "user not found" error
+      const errorMessage = error.message || '';
+      if (errorMessage.toLowerCase().includes('not found') || 
+          errorMessage.toLowerCase().includes('does not exist') ||
+          errorMessage.toLowerCase().includes('user with username')) {
+        showNotification(`User "${username}" not found. Please check the username and try again.`, 'error');
+      } else {
+        showNotification(`Error adding owner: ${errorMessage}`, 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -162,6 +179,8 @@ const EditFanout: React.FC<{
       setLoading(true);
       await removeUserFromProject(node.id || node.projectId, username);
       setSelectedOwners(prev => prev.filter(u => u !== username));
+      // Show success notification
+      showNotification(`User "${username}" removed from the project`, 'success');
       // Don't call onSave to keep the EditFanout open
       // Just refresh the data silently in the background
       if (project && node.owners) {
@@ -171,7 +190,7 @@ const EditFanout: React.FC<{
       }
     } catch (error: any) {
       console.error('Error removing owner:', error);
-      alert(`Error removing owner: ${error.message}`);
+      showNotification(`Error removing owner: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -521,8 +540,6 @@ const EditFanout: React.FC<{
                 <button
                   onClick={() => {
                     console.log('Manage button clicked. Current state:', managingOwners);
-                    console.log('All users:', allUsers);
-                    console.log('All users length:', allUsers.length);
                     setManagingOwners(!managingOwners);
                     if (managingOwners) {
                       setUserSearchTerm(''); // Clear search when closing manage mode
@@ -592,28 +609,13 @@ const EditFanout: React.FC<{
                       onChange={(e) => setUserSearchTerm(e.target.value)}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && userSearchTerm.trim()) {
-                          // Check if user exists and isn't already added (case-insensitive)
-                          const searchTermLower = userSearchTerm.trim().toLowerCase();
-                          const matchedUser = allUsers.find(u => 
-                            (u.username || u.name).toLowerCase() === searchTermLower
-                          );
-                          const actualUsername = matchedUser ? (matchedUser.username || matchedUser.name) : null;
-                          const alreadyAdded = actualUsername && selectedOwners.includes(actualUsername);
+                          const username = userSearchTerm.trim();
                           
-                          console.log('User search debug:', {
-                            searchTerm: userSearchTerm.trim(),
-                            allUsers,
-                            matchedUser,
-                            actualUsername,
-                            alreadyAdded
-                          });
-                          
-                          if (!matchedUser) {
-                            alert(`User "${userSearchTerm.trim()}" not found`);
-                          } else if (alreadyAdded) {
-                            alert(`User "${actualUsername}" is already added to this project`);
+                          // Check if already added (case-sensitive for now)
+                          if (selectedOwners.includes(username)) {
+                            showNotification(`User "${username}" is already added to this project`, 'error');
                           } else {
-                            handleAddOwner(actualUsername);
+                            handleAddOwner(username);
                             setUserSearchTerm('');
                           }
                         }
@@ -631,28 +633,13 @@ const EditFanout: React.FC<{
                     <button
                       onClick={() => {
                         if (userSearchTerm.trim()) {
-                          // Check if user exists and isn't already added (case-insensitive)
-                          const searchTermLower = userSearchTerm.trim().toLowerCase();
-                          const matchedUser = allUsers.find(u => 
-                            (u.username || u.name).toLowerCase() === searchTermLower
-                          );
-                          const actualUsername = matchedUser ? (matchedUser.username || matchedUser.name) : null;
-                          const alreadyAdded = actualUsername && selectedOwners.includes(actualUsername);
+                          const username = userSearchTerm.trim();
                           
-                          console.log('User search debug:', {
-                            searchTerm: userSearchTerm.trim(),
-                            allUsers,
-                            matchedUser,
-                            actualUsername,
-                            alreadyAdded
-                          });
-                          
-                          if (!matchedUser) {
-                            alert(`User "${userSearchTerm.trim()}" not found`);
-                          } else if (alreadyAdded) {
-                            alert(`User "${actualUsername}" is already added to this project`);
+                          // Check if already added
+                          if (selectedOwners.includes(username)) {
+                            showNotification(`User "${username}" is already added to this project`, 'error');
                           } else {
-                            handleAddOwner(actualUsername);
+                            handleAddOwner(username);
                             setUserSearchTerm('');
                           }
                         }
@@ -901,6 +888,59 @@ const EditFanout: React.FC<{
           )}
         </div>
       </div>
+
+      {/* Notification Toast */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          right: '20px',
+          backgroundColor: notification.type === 'success' ? '#4CAF50' : '#f44336',
+          color: 'white',
+          padding: '12px 20px',
+          borderRadius: '6px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 10000,
+          fontSize: '14px',
+          fontWeight: '500',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          animation: 'slideInRight 0.3s ease-out',
+          maxWidth: '400px'
+        }}>
+          <span>{notification.type === 'success' ? '✅' : '❌'}</span>
+          <span>{notification.message}</span>
+          <button
+            onClick={() => setNotification(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '18px',
+              padding: '0 4px',
+              marginLeft: '8px'
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Animation for notification */}
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };
