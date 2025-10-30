@@ -182,7 +182,20 @@ const ProjectTreeView: React.FC<ProjectTreeViewProps> = ({ treeData, project }) 
   function mapToTreeNode(node: NodeData & { _collapsed?: boolean; children?: NodeData[] }): any {
     return {
       name: node.title,
-      attributes: { type: node.type, id: node.id },
+      title: node.title,
+      description: node.description,
+      status: node.status,
+      projectId: node.projectId,
+      epicId: node.epicId,
+      featureId: node.featureId,
+      users: node.userIds,
+      attributes: { 
+        type: node.type, 
+        id: node.id,
+        projectId: node.projectId,
+        epicId: node.epicId,
+        featureId: node.featureId,
+      },
       children: node.children?.map(mapToTreeNode),
       _collapsed: node._collapsed,
     };

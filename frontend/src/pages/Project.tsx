@@ -277,17 +277,21 @@ function toTreeData(project: any): NodeData | null {
   return {
     id: project.id,
     title: project.title || project.name,
-    type: 'project', // literal
+    description: project.description,
+    courseLevel: project.courseLevel,
+    type: 'project',
     projectId: project.id,
     children: (project.epics || []).map((epic: any): NodeData => ({
       id: epic.id,
       title: epic.title,
+      description: epic.description,
       type: 'epic',
       projectId: project.id,
       epicId: epic.id,
       children: (epic.features || []).map((feature: any): NodeData => ({
         id: feature.id,
         title: feature.title,
+        description: feature.description,
         type: 'feature',
         projectId: project.id,
         epicId: epic.id,
@@ -295,6 +299,9 @@ function toTreeData(project: any): NodeData | null {
         children: (feature.tasks || []).map((task: any): NodeData => ({
           id: task.id,
           title: task.title,
+          description: task.description,
+          status: task.status,
+          userIds: task.users?.map((u: any) => u.id || u.username),
           type: 'task',
           projectId: project.id,
           epicId: epic.id,
