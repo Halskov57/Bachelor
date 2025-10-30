@@ -22,12 +22,17 @@ public class UserController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<User> createUser(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String password = body.get("password");
+    public ResponseEntity<?> createUser(@RequestBody Map<String, String> body) {
+        try {
+            String username = body.get("username");
+            String password = body.get("password");
 
-        User user = userService.createUser(username, password);
-        return ResponseEntity.ok(user);
+            User user = userService.createUser(username, password);
+            return ResponseEntity.ok(user);
+        } catch (RuntimeException e) {
+            // Return specific error message from UserService
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PostMapping("/verify")

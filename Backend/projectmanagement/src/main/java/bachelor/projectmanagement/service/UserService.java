@@ -19,10 +19,36 @@ public class UserService {
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
+    /**
+     * Validates password requirements:
+     * - At least 8 characters long
+     * - Contains at least one uppercase letter
+     * - Contains at least one number
+     * 
+     * @param password The password to validate
+     * @throws RuntimeException if password doesn't meet requirements
+     */
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 8) {
+            throw new RuntimeException("Password must be at least 8 characters long");
+        }
+        
+        if (!password.matches(".*[A-Z].*")) {
+            throw new RuntimeException("Password must contain at least one uppercase letter");
+        }
+        
+        if (!password.matches(".*\\d.*")) {
+            throw new RuntimeException("Password must contain at least one number");
+        }
+    }
+
     public User createUser(String username, String rawPassword) {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
+
+        // Validate password requirements
+        validatePassword(rawPassword);
 
         String hashedPassword = passwordEncoder.encode(rawPassword);
 
@@ -35,6 +61,9 @@ public class UserService {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
+
+        // Validate password requirements
+        validatePassword(rawPassword);
 
         String hashedPassword = passwordEncoder.encode(rawPassword);
 

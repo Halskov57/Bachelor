@@ -14,39 +14,39 @@ public class DatabaseSeeder {
 @Bean
 CommandLineRunner seedUsers(UserRepository userRepository, UserService userService, ProjectService projectService) {
     return args -> {
-        // Create users if they don't exist (password = username)
+        // Create users if they don't exist (password = name + "12345")
         if (userRepository.findByUsername("alice").isEmpty()) {
-            userService.createUser("alice", "alice");
-            System.out.println("✅ Created user alice with password 'alice'");
+            userService.createUser("alice", "Alice12345");
+            System.out.println("✅ Created user alice with password 'Alice12345'");
             // Create a test project for alice
             createTestProjectForUser("alice", projectService, userRepository);
 
         }
         if (userRepository.findByUsername("bob").isEmpty()) {
-            userService.createUser("bob", "bob");
-            System.out.println("✅ Created user bob with password 'bob'");
+            userService.createUser("bob", "Bob12345");
+            System.out.println("✅ Created user bob with password 'Bob12345'");
             // Create a minimal project for bob
             var createdProject = createMinimalProjectForUser("bob", projectService, userRepository);
             projectService.addUserToProject(createdProject.getId(), "alice");
         }
         if (userRepository.findByUsername("charlie").isEmpty()) {
-            userService.createUser("charlie", "charlie");
-            System.out.println("✅ Created user charlie with password 'charlie'");
+            userService.createUser("charlie", "Charlie12345");
+            System.out.println("✅ Created user charlie with password 'Charlie12345'");
         }
 
         // Create User1 through User10 (no projects)
         for (int i = 1; i <= 10; i++) {
             String username = "User" + i;
             if (userRepository.findByUsername(username).isEmpty()) {
-                userService.createUser(username, username);
-                System.out.println("✅ Created user " + username + " with password '" + username + "'");
+                userService.createUser(username, username + "12345");
+                System.out.println("✅ Created user " + username + " with password '" + username + "12345'");
             }
         }
 
         // SuperAdmin user (only one allowed)
         if (userRepository.findByUsername("admin").isEmpty()) {
-            userService.createSuperAdminUser("admin", "admin");
-            System.out.println("✅ Created super admin user with username 'admin' and password 'admin'");
+            userService.createSuperAdminUser("admin", "Admin12345");
+            System.out.println("✅ Created super admin user with username 'admin' and password 'Admin12345'");
         } else {
             System.out.println("ℹ️ Super admin user already exists, skipping creation.");
         }
