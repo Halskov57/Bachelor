@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { updateNode, addNode, deleteNode, getCourseLevelConfig, addUserToProject, removeUserFromProject } from '../utils/graphqlMutations';
+import { isAdmin } from '../utils/jwt';
 
 interface CreateNodeData {
   type: string;
@@ -33,7 +34,18 @@ const EditFanout: React.FC<{
   // Task-specific fields
   const [status, setStatus] = useState(node?.status || '');
   const [depth, setDepth] = useState(node?.depth ?? 0);
-  const [courseLevel, setCourseLevel] = useState(node?.courseLevel ?? 0);
+  const [courseLevel, setCourseLevel] = useState(() => {
+    // If editing, use the node's course level
+    if (mode === 'edit' && node?.courseLevel !== undefined) {
+      return node.courseLevel;
+    }
+    // If creating and admin, default to 0 (template)
+    if (mode === 'create' && isAdmin()) {
+      return node?.courseLevel ?? 0;
+    }
+    // If creating and non-admin, default to 1
+    return node?.courseLevel ?? 1;
+  });
   const [selectedUsers, setSelectedUsers] = useState<string[]>(
     Array.isArray(node?.users) 
       ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
@@ -85,7 +97,7 @@ const EditFanout: React.FC<{
       setDescription('');
       setStatus('');
       setDepth(0);
-      setCourseLevel(0);
+      setCourseLevel(isAdmin() ? 0 : 1); // Default to 0 for admin, 1 for regular users
       setSelectedUsers([]);
       setSelectedOwners([]);
     }
@@ -97,15 +109,18 @@ const EditFanout: React.FC<{
       let projectCourseLevel = null;
       
       // Determine the course level to check
-      if (project?.courseLevel) {
+      // Priority: 1. project prop, 2. node's courseLevel (for projects), 3. selected courseLevel (for new projects)
+      if (project?.courseLevel !== undefined && project?.courseLevel !== null) {
         projectCourseLevel = project.courseLevel;
-      } else if (node?.courseLevel) {
+      } else if (node?.type === 'project' && node?.courseLevel !== undefined && node?.courseLevel !== null) {
         projectCourseLevel = node.courseLevel;
       } else if (mode === 'create' && createNode?.type === 'project') {
         projectCourseLevel = courseLevel; // Use the selected course level for new projects
       }
       
-      if (projectCourseLevel) {
+      console.log('DEBUG: Determining course level for config - project:', project?.courseLevel, 'node:', node?.courseLevel, 'determined:', projectCourseLevel);
+      
+      if (projectCourseLevel !== null && projectCourseLevel !== undefined) {
         try {
           const config = await getCourseLevelConfig(projectCourseLevel);
           console.log('DEBUG: Loaded config for course level', projectCourseLevel, ':', config);
@@ -113,6 +128,7 @@ const EditFanout: React.FC<{
           // Load all feature configurations
           const taskUserFeature = config.features.find((f: any) => f.key === 'TASK_USER_ASSIGNMENT');
           setIsTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
+          console.log('DEBUG: Task user assignment enabled:', taskUserFeature ? taskUserFeature.enabled : true);
           
           const epicCreateDeleteFeature = config.features.find((f: any) => f.key === 'EPIC_CREATE_DELETE');
           setIsEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
@@ -133,6 +149,13 @@ const EditFanout: React.FC<{
           setIsFeatureCreateDeleteEnabled(true);
           setIsTaskCreateDeleteEnabled(true);
         }
+      } else {
+        console.log('DEBUG: No course level determined, defaulting to all features enabled');
+        // If we can't determine course level, default to all enabled
+        setIsTaskUserAssignmentEnabled(true);
+        setIsEpicCreateDeleteEnabled(true);
+        setIsFeatureCreateDeleteEnabled(true);
+        setIsTaskCreateDeleteEnabled(true);
       }
     };
     
@@ -520,16 +543,26 @@ const EditFanout: React.FC<{
               console.log('Course level dropdown changed to:', newValue);
               setCourseLevel(newValue);
             }}
-            style={{ width: '100%', marginBottom: '12px' }}
+            disabled={mode === 'edit'} // Disable when editing a project
+            style={{ 
+              width: '100%', 
+              marginBottom: '12px',
+              opacity: mode === 'edit' ? 0.6 : 1,
+              cursor: mode === 'edit' ? 'not-allowed' : 'pointer'
+            }}
           >
-            <option key={0} value={0}>
-              Default Template (All Course Levels)
-            </option>
+            {/* Show course levels 1-6 first */}
             {[1, 2, 3, 4, 5, 6].map(level => (
               <option key={level} value={level}>
                 Course Level {level}
               </option>
             ))}
+            {/* Only show "Default Template" option for admins at the end */}
+            {isAdmin() && mode === 'create' && (
+              <option key={0} value={0}>
+                Default Template
+              </option>
+            )}
           </select>
 
           {/* Show owners for edit mode with management option */}

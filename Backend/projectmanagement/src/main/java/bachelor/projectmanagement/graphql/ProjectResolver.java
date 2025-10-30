@@ -15,6 +15,7 @@ import bachelor.projectmanagement.model.TaskAssignmentUpdate;
 import bachelor.projectmanagement.service.PubSubService;
 import bachelor.projectmanagement.service.ProjectService;
 import bachelor.projectmanagement.service.SSEService;
+import bachelor.projectmanagement.service.CourseLevelConfigService;
 import bachelor.projectmanagement.repository.UserRepository;
 
 import java.util.List;
@@ -27,12 +28,14 @@ public class ProjectResolver {
     private final UserRepository userRepository;
     private final PubSubService pubSubService;
     private final SSEService sseService;
+    private final CourseLevelConfigService courseLevelConfigService;
 
-    public ProjectResolver(ProjectService projectService, UserRepository userRepository, PubSubService pubSubService, SSEService sseService) {
+    public ProjectResolver(ProjectService projectService, UserRepository userRepository, PubSubService pubSubService, SSEService sseService, CourseLevelConfigService courseLevelConfigService) {
         this.projectService = projectService;
         this.userRepository = userRepository;
         this.pubSubService = pubSubService;
         this.sseService = sseService;
+        this.courseLevelConfigService = courseLevelConfigService;
     }
 
     @QueryMapping
@@ -295,6 +298,18 @@ public class ProjectResolver {
         System.out.println("featureId: " + featureId);
         System.out.println("taskId: " + taskId);
         System.out.println("userIds: " + userIds);
+
+        // Get the project to check its course level
+        Project project = projectService.getProjectById(projectId);
+        if (project == null) {
+            throw new RuntimeException("Project not found: " + projectId);
+        }
+
+        // Check if task user assignment is enabled for this course level
+        int courseLevel = project.getCourseLevel();
+        if (!courseLevelConfigService.isTaskUserAssignmentEnabled(courseLevel)) {
+            throw new RuntimeException("Task user assignment is not enabled for course level " + courseLevel);
+        }
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);

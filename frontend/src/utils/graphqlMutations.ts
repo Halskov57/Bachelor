@@ -35,11 +35,10 @@ export const GET_ALL_NON_SUPER_ADMIN_USERS_QUERY = gql`
 `;
 
 export const UPDATE_USER_ROLE_MUTATION = gql`
-  mutation UpdateUserRole($userId: ID!, $newRole: UserRole!) {
-    updateUserRole(userId: $userId, newRole: $newRole) {
+  mutation UpdateUserRole($username: String!, $newRole: String!) {
+    updateUserRole(username: $username, newRole: $newRole) {
       id
-      name
-      email
+      username
       role
     }
   }
@@ -323,10 +322,10 @@ export const getAllNonSuperAdminUsers = async (): Promise<User[]> => {
   return result.data?.nonSuperAdminUsers ?? [];
 };
 
-export const updateUserRole = async (userId: string, newRole: string): Promise<User> => {
+export const updateUserRole = async (username: string, newRole: string): Promise<User> => {
   const result = await client.mutate<{ updateUserRole: User }>({
     mutation: UPDATE_USER_ROLE_MUTATION,
-    variables: { userId, newRole },
+    variables: { username, newRole },
   });
   if (!result.data?.updateUserRole) throw new Error('Failed to update user role');
   return result.data.updateUserRole;

@@ -4,6 +4,7 @@ import bachelor.projectmanagement.model.CourseLevelConfig;
 import bachelor.projectmanagement.repository.CourseLevelConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,21 +17,87 @@ public class CourseLevelConfigService {
     private CourseLevelConfigRepository configRepository;
 
     /**
+     * Clean up duplicate course level configs on startup
+     */
+    @PostConstruct
+    public void cleanupDuplicateConfigs() {
+        try {
+            System.out.println("🔍 Checking for duplicate CourseLevelConfig documents...");
+            
+            // Get all configs
+            List<CourseLevelConfig> allConfigs = configRepository.findAll();
+            Map<Integer, List<CourseLevelConfig>> configsByLevel = new HashMap<>();
+            
+            // Group by course level
+            for (CourseLevelConfig config : allConfigs) {
+                configsByLevel.computeIfAbsent(config.getCourseLevel(), k -> new java.util.ArrayList<>()).add(config);
+            }
+            
+            // Find and clean duplicates
+            int duplicatesRemoved = 0;
+            for (Map.Entry<Integer, List<CourseLevelConfig>> entry : configsByLevel.entrySet()) {
+                List<CourseLevelConfig> configs = entry.getValue();
+                if (configs.size() > 1) {
+                    System.err.println("⚠️  Found " + configs.size() + " duplicate configs for courseLevel " + entry.getKey());
+                    
+                    // Keep the first one (oldest by createdAt), delete the rest
+                    configs.sort((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()));
+                    CourseLevelConfig toKeep = configs.get(0);
+                    System.out.println("✅ Keeping config with ID: " + toKeep.getId() + " (created at " + toKeep.getCreatedAt() + ")");
+                    
+                    for (int i = 1; i < configs.size(); i++) {
+                        CourseLevelConfig toDelete = configs.get(i);
+                        System.out.println("🗑️  Deleting duplicate config with ID: " + toDelete.getId() + " (created at " + toDelete.getCreatedAt() + ")");
+                        configRepository.delete(toDelete);
+                        duplicatesRemoved++;
+                    }
+                }
+            }
+            
+            if (duplicatesRemoved > 0) {
+                System.out.println("✅ Cleaned up " + duplicatesRemoved + " duplicate CourseLevelConfig document(s)");
+            } else {
+                System.out.println("✅ No duplicate CourseLevelConfig documents found");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error during duplicate config cleanup: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Get configuration for a specific course level
      */
     public Optional<CourseLevelConfig> getConfig(int courseLevel) {
-        return configRepository.findByCourseLevel(courseLevel);
+        // Repository may return multiple documents if duplicates exist; return first if present
+        try {
+            var list = configRepository.findAllByCourseLevel(courseLevel);
+            if (list != null && !list.isEmpty()) {
+                if (list.size() > 1) {
+                    System.err.println("WARN: Multiple CourseLevelConfig documents found for courseLevel " + courseLevel + ". Using the first one.");
+                }
+                return Optional.of(list.get(0));
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to load config list for course level " + courseLevel + ": " + e.getMessage());
+            throw e;
+        }
     }
 
     /**
      * Get configuration for a specific course level, creating default if not exists
+     * Synchronized to prevent race conditions during concurrent config creation
      */
-    public CourseLevelConfig getConfigOrDefault(int courseLevel) {
+    public synchronized CourseLevelConfig getConfigOrDefault(int courseLevel) {
         try {
             System.out.println("DEBUG: Looking for config with course level " + courseLevel);
-            Optional<CourseLevelConfig> existing = configRepository.findByCourseLevel(courseLevel);
-            if (existing.isPresent()) {
-                CourseLevelConfig config = existing.get();
+            var list = configRepository.findAllByCourseLevel(courseLevel);
+            if (list != null && !list.isEmpty()) {
+                if (list.size() > 1) {
+                    System.err.println("WARN: Multiple CourseLevelConfig documents found for courseLevel " + courseLevel + ". Using the first one.");
+                }
+                CourseLevelConfig config = list.get(0);
                 System.out.println("DEBUG: Found existing config: " + config);
                 
                 // Migration: Check if the config has all required features
@@ -61,6 +128,13 @@ public class CourseLevelConfigService {
             }
             
             System.out.println("DEBUG: No existing config found, creating default");
+            // Double-check after synchronization (another thread may have created it)
+            list = configRepository.findAllByCourseLevel(courseLevel);
+            if (list != null && !list.isEmpty()) {
+                System.out.println("DEBUG: Config was created by another thread, using it");
+                return list.get(0);
+            }
+            
             // Create and save default config if it doesn't exist
             CourseLevelConfig defaultConfig = createDefaultConfig(courseLevel);
             System.out.println("DEBUG: Created default config: " + defaultConfig);
@@ -143,8 +217,11 @@ public class CourseLevelConfigService {
      * Delete configuration for a course level
      */
     public void deleteConfig(int courseLevel) {
-        configRepository.findByCourseLevel(courseLevel)
-                .ifPresent(config -> configRepository.delete(config));
+        // Delete all configs with that course level (clean up duplicates if any)
+        var list = configRepository.findAllByCourseLevel(courseLevel);
+        if (list != null && !list.isEmpty()) {
+            list.forEach(configRepository::delete);
+        }
     }
 
     /**
