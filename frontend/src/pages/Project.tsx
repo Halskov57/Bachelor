@@ -13,14 +13,36 @@ const Project: React.FC = () => {
   const [view, setView] = useState<'list' | 'tree'>('list');
   const [realtimeUpdates, setRealtimeUpdates] = useState<string[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [pendingNotifications, setPendingNotifications] = useState<Map<string, NodeJS.Timeout>>(new Map());
 
-  // Real-time notification helper
-  const addRealtimeNotification = useCallback((message: string) => {
-    setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
-    setTimeout(() => {
-      setRealtimeUpdates(prev => prev.slice(1));
-    }, 5000);
-  }, []);
+  // Real-time notification helper with debouncing to prevent duplicate notifications
+  const addRealtimeNotification = useCallback((message: string, debounceKey?: string) => {
+    // If a debounce key is provided, use it to prevent duplicate notifications
+    if (debounceKey) {
+      // Clear any existing timeout for this key
+      const existingTimeout = pendingNotifications.get(debounceKey);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+      
+      // Set a new timeout to show the notification after 500ms
+      const timeout = setTimeout(() => {
+        setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+        setTimeout(() => {
+          setRealtimeUpdates(prev => prev.slice(1));
+        }, 5000);
+        pendingNotifications.delete(debounceKey);
+      }, 500);
+      
+      setPendingNotifications(prev => new Map(prev).set(debounceKey, timeout));
+    } else {
+      // No debouncing, show immediately
+      setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+      setTimeout(() => {
+        setRealtimeUpdates(prev => prev.slice(1));
+      }, 5000);
+    }
+  }, [pendingNotifications]);
 
 
   const fetchProjectById = async () => {
@@ -160,7 +182,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`📝 Task "${data.title}" updated`);
+          addRealtimeNotification(`Task updated`, `task-${data.id}`);
           console.log('🔄 Real-time task update:', data);
           break;
 
@@ -185,7 +207,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`✨ New task "${data.title}" created`);
+          addRealtimeNotification(`Task created`);
           console.log('🔄 Real-time task created:', data);
           break;
 
@@ -213,7 +235,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`👤 User assigned to task`);
+          addRealtimeNotification(`User assigned to task`);
           console.log('🔄 Real-time user assigned:', data);
           break;
 
@@ -229,7 +251,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`🎯 Epic "${data.title}" updated`);
+          addRealtimeNotification(`Epic updated`, `epic-${data.id}`);
           console.log('🔄 Real-time epic update:', data);
           break;
 
@@ -243,7 +265,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`🎯 New epic "${data.title}" created`);
+          addRealtimeNotification(`Epic created`);
           console.log('🔄 Real-time epic created:', data);
           break;
 
@@ -262,7 +284,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`⚡ Feature "${data.title}" updated`);
+          addRealtimeNotification(`Feature updated`, `feature-${data.id}`);
           console.log('🔄 Real-time feature update:', data);
           break;
 
@@ -280,7 +302,7 @@ const Project: React.FC = () => {
             };
           });
 
-          addRealtimeNotification(`⚡ New feature "${data.title}" created`);
+          addRealtimeNotification(`Feature created`);
           console.log('🔄 Real-time feature created:', data);
           break;
 
@@ -298,8 +320,7 @@ const Project: React.FC = () => {
             };
           });
 
-          const updateMessage = data.title ? `🚀 Project "${data.title}" updated` : '🚀 Project updated';
-          addRealtimeNotification(updateMessage);
+          addRealtimeNotification(`Project updated`, `project-${projectId}`);
           console.log('🔄 Real-time project update:', data);
           break;
 

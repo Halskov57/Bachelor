@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ApolloProvider } from "@apollo/client/react";
 import { client } from './utils/apolloClientSetup';
+import { ToastProvider } from './utils/toastContext';
 import Beams from './components/Beams';
 import LoginBox from './components/LoginBox';
 import Header from './components/Header';
@@ -63,9 +64,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => (
   <ApolloProvider client={client}>
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ToastProvider>
   </ApolloProvider>
 );
 

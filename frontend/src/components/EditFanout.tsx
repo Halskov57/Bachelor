@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { updateNode, addNode, deleteNode, getCourseLevelConfig, addUserToProject, removeUserFromProject } from '../utils/graphqlMutations';
 import { isAdmin } from '../utils/jwt';
+import { useToast } from '../utils/toastContext';
 
 interface CreateNodeData {
   type: string;
@@ -59,15 +60,9 @@ const EditFanout: React.FC<{
   const [managingOwners, setManagingOwners] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
-  // Show notification with auto-dismiss
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 5000); // Auto-dismiss after 5 seconds
-  };
+  // Use unified toast system
+  const { showSuccess, showError, showWarning } = useToast();
   
   // Course level configuration state
   const [isTaskUserAssignmentEnabled, setIsTaskUserAssignmentEnabled] = useState<boolean>(true);
@@ -170,7 +165,7 @@ const EditFanout: React.FC<{
       await addUserToProject(node.id || node.projectId, username);
       setSelectedOwners(prev => [...prev, username]);
       // Show success notification
-      showNotification(`User "${username}" successfully added to the project!`, 'success');
+      showSuccess(`User "${username}" successfully added to the project!`);
       // Don't call onSave to keep the EditFanout open
       // Just refresh the data silently in the background
       if (project) {
@@ -186,9 +181,9 @@ const EditFanout: React.FC<{
       if (errorMessage.toLowerCase().includes('not found') || 
           errorMessage.toLowerCase().includes('does not exist') ||
           errorMessage.toLowerCase().includes('user with username')) {
-        showNotification(`User "${username}" not found. Please check the username and try again.`, 'error');
+        showError(`User "${username}" not found. Please check the username and try again.`);
       } else {
-        showNotification(`Error adding owner: ${errorMessage}`, 'error');
+        showError(`Error adding owner: ${errorMessage}`);
       }
     } finally {
       setLoading(false);
@@ -203,7 +198,7 @@ const EditFanout: React.FC<{
       await removeUserFromProject(node.id || node.projectId, username);
       setSelectedOwners(prev => prev.filter(u => u !== username));
       // Show success notification
-      showNotification(`User "${username}" removed from the project`, 'success');
+      showSuccess(`User "${username}" removed from the project`);
       // Don't call onSave to keep the EditFanout open
       // Just refresh the data silently in the background
       if (project && node.owners) {
@@ -213,7 +208,7 @@ const EditFanout: React.FC<{
       }
     } catch (error: any) {
       console.error('Error removing owner:', error);
-      showNotification(`Error removing owner: ${error.message}`, 'error');
+      showError(`Error removing owner: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -229,7 +224,7 @@ const EditFanout: React.FC<{
       if (mode === 'create' && createNode) {
         // Check permissions for create operations
         if (createNode.type && !canCreateDelete(createNode.type)) {
-          alert(`You don't have permission to create ${createNode.type}s in this course level.`);
+          showError(`You don't have permission to create ${createNode.type}s in this course level.`);
           setLoading(false);
           return;
         }
@@ -319,7 +314,7 @@ const EditFanout: React.FC<{
       }
     } catch (error: any) {
       console.error('Save error:', error);
-      alert(`Error: ${error.message}`);
+      showError(`Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -330,7 +325,7 @@ const EditFanout: React.FC<{
     
     // Check permissions for delete operations
     if (node.type && !canCreateDelete(node.type)) {
-      alert(`You don't have permission to delete ${node.type}s in this course level.`);
+      showError(`You don't have permission to delete ${node.type}s in this course level.`);
       return;
     }
     
@@ -353,11 +348,12 @@ const EditFanout: React.FC<{
       }
 
       await deleteNode(node, parentIds);
+      showSuccess(`${node.type.charAt(0).toUpperCase() + node.type.slice(1)} deleted successfully`);
       onSave?.(); // Refresh data
       onClose();
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert(`Error deleting ${node.type}: ${error.message}`);
+      showError(`Error deleting ${node.type}: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -646,7 +642,7 @@ const EditFanout: React.FC<{
                           
                           // Check if already added (case-sensitive for now)
                           if (selectedOwners.includes(username)) {
-                            showNotification(`User "${username}" is already added to this project`, 'error');
+                            showError(`User "${username}" is already added to this project`);
                           } else {
                             handleAddOwner(username);
                             setUserSearchTerm('');
@@ -670,7 +666,7 @@ const EditFanout: React.FC<{
                           
                           // Check if already added
                           if (selectedOwners.includes(username)) {
-                            showNotification(`User "${username}" is already added to this project`, 'error');
+                            showError(`User "${username}" is already added to this project`);
                           } else {
                             handleAddOwner(username);
                             setUserSearchTerm('');
@@ -719,14 +715,6 @@ const EditFanout: React.FC<{
             <option value="BLOCKED">BLOCKED</option>
             <option value="CANCELLED">CANCELLED</option>
           </select>
-          
-          <label>Depth</label>
-          <input
-            type="number"
-            value={depth}
-            onChange={e => setDepth(Number(e.target.value))}
-            style={{ width: '100%', marginBottom: '12px' }}
-          />
           
           {/* Only show user assignment if enabled for this course level */}
           {isTaskUserAssignmentEnabled && (
@@ -921,59 +909,6 @@ const EditFanout: React.FC<{
           )}
         </div>
       </div>
-
-      {/* Notification Toast */}
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          right: '20px',
-          backgroundColor: notification.type === 'success' ? '#4CAF50' : '#f44336',
-          color: 'white',
-          padding: '12px 20px',
-          borderRadius: '6px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          zIndex: 10000,
-          fontSize: '14px',
-          fontWeight: '500',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          animation: 'slideInRight 0.3s ease-out',
-          maxWidth: '400px'
-        }}>
-          <span>{notification.type === 'success' ? '✅' : '❌'}</span>
-          <span>{notification.message}</span>
-          <button
-            onClick={() => setNotification(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '18px',
-              padding: '0 4px',
-              marginLeft: '8px'
-            }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* Animation for notification */}
-      <style>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };
