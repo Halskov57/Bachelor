@@ -3,6 +3,8 @@ package bachelor.projectmanagement.graphql;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import bachelor.projectmanagement.model.Project;
 import bachelor.projectmanagement.model.Epic;
@@ -35,6 +37,17 @@ public class ProjectResolver {
         this.sseService = sseService;
     }
 
+    /**
+     * Helper method to get the current authenticated username
+     */
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("User not authenticated");
+        }
+        return authentication.getName();
+    }
+
     @QueryMapping
     public List<Project> projectsByUsername(@Argument String username) {
         return projectService.getProjectsByUsername(username);
@@ -42,6 +55,9 @@ public class ProjectResolver {
 
     @QueryMapping
     public Project projectById(@Argument String id) {
+        String currentUsername = getCurrentUsername();
+        // Verify the user has access to this project
+        projectService.verifyProjectAccess(id, currentUsername);
         return projectService.getProjectById(id);
     }
 
@@ -49,6 +65,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         System.out.println("🔧 updateProjectTitle called - projectId: " + projectId + ", newTitle: " + newTitle);
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
@@ -69,6 +88,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Project updateProjectDescription(@Argument String projectId, @Argument String newDescription) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         System.out.println("🔧 updateProjectDescription called - projectId: " + projectId + ", newDescription: " + newDescription);
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
@@ -89,6 +111,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Project updateProjectCourseLevel(@Argument String projectId, @Argument int newCourseLevel) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         Project project = projectService.getProjectById(projectId);
         if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
         project.setCourseLevel(newCourseLevel);
@@ -109,6 +134,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         Epic epic = projectService.getEpicById(projectId, epicId);
         if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
         epic.setTitle(newTitle);
@@ -127,6 +155,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Epic updateEpicDescription(@Argument String projectId, @Argument String epicId, @Argument String newDescription) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         Epic epic = projectService.getEpicById(projectId, epicId);
         if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
         epic.setDescription(newDescription);
@@ -147,6 +178,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         System.out.println("updateFeatureTitle called with:");
         System.out.println("projectId: " + projectId + ", epicId: " + epicId + ", featureId: " + featureId + ", newTitle: " + newTitle);
 
@@ -174,6 +208,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Feature updateFeatureDescription(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newDescription) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         System.out.println("🔧 updateFeatureDescription called - featureId: " + featureId + ", newDescription: " + newDescription);
         
         Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
@@ -202,6 +239,8 @@ public class ProjectResolver {
             @Argument String featureId,
             @Argument String taskId,
             @Argument String newTitle) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
@@ -226,6 +265,8 @@ public class ProjectResolver {
             @Argument String featureId,
             @Argument String taskId,
             @Argument String newDescription) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
@@ -250,6 +291,8 @@ public class ProjectResolver {
             @Argument String featureId,
             @Argument String taskId,
             @Argument String newStatus) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
         if (task == null) throw new RuntimeException("Task not found: " + taskId);
@@ -288,6 +331,8 @@ public class ProjectResolver {
             @Argument String featureId,
             @Argument String taskId,
             @Argument List<String> userIds) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
 
         System.out.println("updateTaskUsers called with:");
         System.out.println("projectId: " + projectId);
@@ -353,6 +398,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Boolean deleteEpic(@Argument String projectId, @Argument String epicId) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             projectService.deleteEpicFromProject(projectId, epicId);
             // Fetch the updated project after deletion to publish the change
@@ -366,6 +414,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Boolean deleteFeature(@Argument String projectId, @Argument String epicId, @Argument String featureId) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
             // Fetch the updated project after deletion to publish the change
@@ -383,6 +434,9 @@ public class ProjectResolver {
             @Argument String epicId,
             @Argument String featureId,
             @Argument String taskId) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
             // Fetch the updated project after deletion to publish the change
@@ -398,6 +452,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Epic addEpic(@Argument String projectId, @Argument String title, @Argument String description) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             Epic epic = new Epic();
             epic.setTitle(title);
@@ -419,6 +476,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Feature addFeature(@Argument String projectId, @Argument String epicId, @Argument String title, @Argument String description) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             Feature feature = new Feature();
             feature.setTitle(title);
@@ -449,6 +509,9 @@ public class ProjectResolver {
 
     @MutationMapping
     public Task addTask(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String title, @Argument String description) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         try {
             Task task = new Task();
             task.setTitle(title);
@@ -481,11 +544,17 @@ public class ProjectResolver {
 
     @MutationMapping
     public Project addUserToProject(@Argument String projectId, @Argument String username) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         return projectService.addUserToProject(projectId, username);
     }
 
     @MutationMapping
     public Project removeUserFromProject(@Argument String projectId, @Argument String username) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
         return projectService.removeUserFromProject(projectId, username);
     }
 }

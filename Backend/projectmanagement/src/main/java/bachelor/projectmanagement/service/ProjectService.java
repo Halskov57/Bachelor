@@ -1,5 +1,6 @@
 package bachelor.projectmanagement.service;
 
+import bachelor.projectmanagement.exception.UnauthorizedException;
 import bachelor.projectmanagement.model.*;
 import bachelor.projectmanagement.repository.ProjectRepository;
 import bachelor.projectmanagement.repository.UserRepository;
@@ -425,7 +426,7 @@ public class ProjectService {
 
         // Fetch the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new RuntimeException("User with username '" + username + "' not found"));
 
         // Add the user to the project's owners list if not already present
         if (!project.getOwners().contains(user)) {
@@ -449,7 +450,7 @@ public class ProjectService {
 
         // Fetch the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new RuntimeException("User with username '" + username + "' not found"));
 
         // Remove the user from the project's owners list
         project.getOwners().remove(user);
@@ -460,6 +461,41 @@ public class ProjectService {
         userRepository.save(user);
 
         return project;
+    }
+
+    /**
+     * Check if a user has access to a project (is an owner)
+     * @param projectId The project ID to check
+     * @param username The username to check
+     * @return true if user is an owner or superadmin, false otherwise
+     */
+    public boolean hasProjectAccess(String projectId, String username) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+        
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        
+        // SuperAdmins have access to all projects
+        if ("SUPERADMIN".equals(user.getRole())) {
+            return true;
+        }
+        
+        // Check if user is in the project's owners list
+        return project.getOwners().stream()
+                .anyMatch(owner -> owner.getUsername().equals(username));
+    }
+
+    /**
+     * Verify that a user has access to a project, throws exception if not
+     * @param projectId The project ID to check
+     * @param username The username to check
+     * @throws RuntimeException if user does not have access
+     */
+    public void verifyProjectAccess(String projectId, String username) {
+        if (!hasProjectAccess(projectId, username)) {
+            throw new UnauthorizedException("Access denied: You are not authorized to access this project");
+        }
     }
 
     public String getId(Project project) {
