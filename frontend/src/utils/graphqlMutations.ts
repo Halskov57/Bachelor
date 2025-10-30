@@ -4,6 +4,22 @@ import { User, Project, CourseLevelConfig } from './types';
 import { getCurrentUsername } from './jwt';
 import { getGraphQLUrl } from '../config/environment';
 
+// Helper function to check for authorization errors and redirect to login
+const handleAuthError = (error: any) => {
+  const errorMessage = error?.message || '';
+  if (errorMessage.includes('Access denied') || 
+      errorMessage.includes('not authorized') || 
+      errorMessage.includes('Unauthorized') ||
+      errorMessage.includes('User not authenticated')) {
+    console.error('❌ Authorization error:', errorMessage);
+    alert('Your session has expired or you do not have access. Redirecting to login...');
+    localStorage.removeItem('token');
+    window.location.href = '/';
+    return true;
+  }
+  return false;
+};
+
 // --- GraphQL Queries and Mutations ---
 
 export const UPDATE_COURSE_LEVEL_CONFIG_MUTATION = gql`
@@ -404,28 +420,38 @@ export const getProjectsByCurrentUser = async (): Promise<Project[]> => {
 // --- Node CRUD Functions ---
 
 export const updateNode = async (data: any, parentIds: any) => {
-  switch (data.type) {
-    case 'project':
-      if (data.title) await client.mutate({ mutation: UPDATE_PROJECT_TITLE_MUTATION, variables: { projectId: data.id, newTitle: data.title } });
-      if (data.description) await client.mutate({ mutation: UPDATE_PROJECT_DESCRIPTION_MUTATION, variables: { projectId: data.id, newDescription: data.description } });
-      if (data.courseLevel) await client.mutate({ mutation: UPDATE_PROJECT_COURSE_LEVEL_MUTATION, variables: { projectId: data.id, newCourseLevel: data.courseLevel } });
-      break;
-    case 'epic':
-      if (data.title) await client.mutate({ mutation: UPDATE_EPIC_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newTitle: data.title } });
-      if (data.description) await client.mutate({ mutation: UPDATE_EPIC_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newDescription: data.description } });
-      break;
-    case 'feature':
-      if (data.title) await client.mutate({ mutation: UPDATE_FEATURE_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newTitle: data.title } });
-      if (data.description) await client.mutate({ mutation: UPDATE_FEATURE_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newDescription: data.description } });
-      break;
-    case 'task':
-      if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
-      if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
-      if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
-      if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
-      break;
-    default:
-      throw new Error(`Unknown node type: ${data.type}`);
+  try {
+    switch (data.type) {
+      case 'project':
+        if (data.title) await client.mutate({ mutation: UPDATE_PROJECT_TITLE_MUTATION, variables: { projectId: data.id, newTitle: data.title } });
+        if (data.description) await client.mutate({ mutation: UPDATE_PROJECT_DESCRIPTION_MUTATION, variables: { projectId: data.id, newDescription: data.description } });
+        if (data.courseLevel) await client.mutate({ mutation: UPDATE_PROJECT_COURSE_LEVEL_MUTATION, variables: { projectId: data.id, newCourseLevel: data.courseLevel } });
+        break;
+      case 'epic':
+        if (data.title) await client.mutate({ mutation: UPDATE_EPIC_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newTitle: data.title } });
+        if (data.description) await client.mutate({ mutation: UPDATE_EPIC_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newDescription: data.description } });
+        break;
+      case 'feature':
+        if (data.title) await client.mutate({ mutation: UPDATE_FEATURE_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newTitle: data.title } });
+        if (data.description) await client.mutate({ mutation: UPDATE_FEATURE_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newDescription: data.description } });
+        break;
+      case 'task':
+        if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
+        if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
+        if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
+        if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
+        break;
+      default:
+        throw new Error(`Unknown node type: ${data.type}`);
+    }
+  } catch (error: any) {
+    // Check for authorization errors
+    if (error.graphQLErrors) {
+      if (error.graphQLErrors.some((err: any) => handleAuthError(err))) {
+        throw new Error('Authentication required');
+      }
+    }
+    throw error;
   }
 };
 
@@ -436,42 +462,62 @@ export const addNode = async (
   description: string,
   courseLevel?: number // <-- add optional argument
 ) => {
-  switch (type) {
-    case 'epic':
-      return await client.mutate({
-        mutation: ADD_EPIC_MUTATION,
-        variables: { projectId: parentIds.projectId, title, description },
-      });
-    case 'feature':
-      return await client.mutate({
-        mutation: ADD_FEATURE_MUTATION,
-        variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, title, description },
-      });
-    case 'task':
-      return await client.mutate({
-        mutation: ADD_TASK_MUTATION,
-        variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, title, description },
-      });
-    case 'project':
-      if (courseLevel === undefined) {
-        throw new Error('courseLevel is required when creating a project');
+  try {
+    switch (type) {
+      case 'epic':
+        return await client.mutate({
+          mutation: ADD_EPIC_MUTATION,
+          variables: { projectId: parentIds.projectId, title, description },
+        });
+      case 'feature':
+        return await client.mutate({
+          mutation: ADD_FEATURE_MUTATION,
+          variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, title, description },
+        });
+      case 'task':
+        return await client.mutate({
+          mutation: ADD_TASK_MUTATION,
+          variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, title, description },
+        });
+      case 'project':
+        if (courseLevel === undefined) {
+          throw new Error('courseLevel is required when creating a project');
+        }
+        return await createProjectFromTemplate(courseLevel, title, description);
+      default:
+        throw new Error(`Unknown node type: ${type}`);
+    }
+  } catch (error: any) {
+    // Check for authorization errors
+    if (error.graphQLErrors) {
+      if (error.graphQLErrors.some((err: any) => handleAuthError(err))) {
+        throw new Error('Authentication required');
       }
-      return await createProjectFromTemplate(courseLevel, title, description);
-    default:
-      throw new Error(`Unknown node type: ${type}`);
+    }
+    throw error;
   }
 };
 
 export const deleteNode = async (node: any, parentIds: any) => {
-  switch (node.type) {
-    case 'epic':
-      return await client.mutate({ mutation: DELETE_EPIC_MUTATION, variables: { projectId: parentIds.projectId, epicId: node.id } });
-    case 'feature':
-      return await client.mutate({ mutation: DELETE_FEATURE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id } });
-    case 'task':
-      return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
-    default:
-      throw new Error(`Unknown node type: ${node.type}`);
+  try {
+    switch (node.type) {
+      case 'epic':
+        return await client.mutate({ mutation: DELETE_EPIC_MUTATION, variables: { projectId: parentIds.projectId, epicId: node.id } });
+      case 'feature':
+        return await client.mutate({ mutation: DELETE_FEATURE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id } });
+      case 'task':
+        return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
+      default:
+        throw new Error(`Unknown node type: ${node.type}`);
+    }
+  } catch (error: any) {
+    // Check for authorization errors
+    if (error.graphQLErrors) {
+      if (error.graphQLErrors.some((err: any) => handleAuthError(err))) {
+        throw new Error('Authentication required');
+      }
+    }
+    throw error;
   }
 };
 
@@ -510,6 +556,10 @@ export async function addUserToProject(projectId: string, username: string) {
 
   if (json.errors) {
     console.error('GraphQL errors:', json.errors);
+    // Check for auth errors and redirect if needed
+    if (json.errors.some((err: any) => handleAuthError(err))) {
+      throw new Error('Authentication required');
+    }
     throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
 
@@ -542,6 +592,10 @@ export async function removeUserFromProject(projectId: string, username: string)
 
   if (json.errors) {
     console.error('GraphQL errors:', json.errors);
+    // Check for auth errors and redirect if needed
+    if (json.errors.some((err: any) => handleAuthError(err))) {
+      throw new Error('Authentication required');
+    }
     throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProjectTreeView from '../components/ProjectTreeView';
 import ProjectListView from '../components/ProjectListView';
 import { isAdmin } from '../utils/jwt';
@@ -7,6 +8,7 @@ import { getGraphQLUrl } from '../config/environment';
 import { sseService, SSEEvent } from '../utils/sseService';
 
 const Project: React.FC = () => {
+  const navigate = useNavigate();
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree'>('list');
   const [realtimeUpdates, setRealtimeUpdates] = useState<string[]>([]);
@@ -22,61 +24,109 @@ const Project: React.FC = () => {
 
 
   const fetchProjectById = async () => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    if (!id) return;
-    
-    setProjectId(id); // Store project ID for subscriptions
-    
-    const token = localStorage.getItem('token');
-    const query = `
-      query($id: ID!) {
-        projectById(id: $id) {
-          id
-          title
-          description
-          courseLevel
-          owners {
-            id
-            username
-          }
-          epics {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (!id) return;
+      
+      setProjectId(id); // Store project ID for subscriptions
+      
+      const token = localStorage.getItem('token');
+      const query = `
+        query($id: ID!) {
+          projectById(id: $id) {
             id
             title
             description
-            features {
+            courseLevel
+            owners {
+              id
+              username
+            }
+            epics {
               id
               title
               description
-              tasks {
+              features {
                 id
                 title
                 description
-                status
-                users {
+                tasks {
                   id
-                  username
+                  title
+                  description
+                  status
+                  users {
+                    id
+                    username
+                  }
                 }
               }
             }
           }
         }
+      `;
+      
+      const response = await fetch(getGraphQLUrl(), {  // <-- CHANGE THIS LINE
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ query, variables: { id } })
+      });
+      
+      const result = await response.json();
+      
+      console.log('🔍 Full GraphQL result:', result);
+      
+      // Check for authorization errors
+      if (result.errors) {
+        console.log('🔍 Errors found:', result.errors);
+        
+        const authError = result.errors.find((error: any) => {
+          console.log('🔍 Checking error message:', error.message);
+          return error.message?.includes('Access denied') || 
+                 error.message?.includes('not authorized') ||
+                 error.message?.includes('Unauthorized');
+        });
+        
+        console.log('🔍 Auth error found?', authError);
+        
+        if (authError) {
+          console.error('❌ Authorization error:', authError.message);
+          console.log('🔄 Redirecting to login...');
+          // Clear everything and redirect
+          setProject(null);
+          setProjectId(null);
+          localStorage.removeItem('token');
+          // Use both navigation methods to ensure redirect
+          navigate('/', { replace: true });
+          window.location.href = '/';
+          return;
+        }
+        
+        // Handle other errors
+        console.error('GraphQL errors:', result.errors);
       }
-    `;
-    
-    const response = await fetch(getGraphQLUrl(), {  // <-- CHANGE THIS LINE
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ query, variables: { id } })
-    });
-    
-    const result = await response.json();
-    if (result.data?.projectById) {
-      setProject(result.data.projectById);
-      console.log('📊 Project loaded:', result.data.projectById.title);
+      
+      if (result.data?.projectById) {
+        setProject(result.data.projectById);
+        console.log('📊 Project loaded:', result.data.projectById.title);
+      } else if (!result.errors) {
+        // Project not found or other issue
+        console.error('Project not found');
+        localStorage.removeItem('token');
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching project:', error);
+      // On any error, redirect to login
+      setProject(null);
+      setProjectId(null);
+      localStorage.removeItem('token');
+      navigate('/', { replace: true });
+      window.location.href = '/';
     }
   };
 
