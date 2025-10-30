@@ -559,7 +559,6 @@ function toTreeData(project: any): NodeData | null {
             treeData={treeData}
             project={project}
             fetchProjectById={fetchProjectById}
-            allUsers={allUsers}
           />
         )}
       </div>

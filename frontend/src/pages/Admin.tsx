@@ -30,7 +30,7 @@ const Admin: React.FC = () => {
       setLoading(true);
       setMessage(''); // Clear any previous messages
       const configData = await getCourseLevelConfig(selectedCourseLevel);
-      
+
       if (configData) {
         setConfig(configData);
         
@@ -162,7 +162,7 @@ const Admin: React.FC = () => {
   const loadAllProjects = async () => {
     try {
       const projects = await getProjectsByCurrentUser();
-      // Now we get only projects owned by the current admin user
+      // Get projects owned by the current user
       setAllProjects(projects);
     } catch (error) {
       console.error('Failed to load projects:', error);

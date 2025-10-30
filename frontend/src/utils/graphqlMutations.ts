@@ -1,27 +1,10 @@
 import { gql } from '@apollo/client';
 import { client } from './apolloClientSetup';
 import { User, Project, CourseLevelConfig } from './types';
+import { getCurrentUsername } from './jwt';
+import { getGraphQLUrl } from '../config/environment';
 
 // --- GraphQL Queries and Mutations ---
-
-export const GET_COURSE_LEVEL_CONFIG_QUERY = gql`
-  query GetCourseLevelConfig($courseLevel: Int!) {
-    courseLevelConfig(courseLevel: $courseLevel) {
-      id
-      courseLevel
-      features {
-        key
-        enabled
-      }
-      templateProject {
-        id
-        title
-        description
-        courseLevel
-      }
-    }
-  }
-`;
 
 export const UPDATE_COURSE_LEVEL_CONFIG_MUTATION = gql`
   mutation UpdateCourseLevelConfig($courseLevel: Int!, $features: [FeatureConfigInput!]!) {
@@ -63,18 +46,26 @@ export const UPDATE_USER_ROLE_MUTATION = gql`
 `;
 
 export const SET_TEMPLATE_PROJECT_MUTATION = gql`
-  mutation SetTemplateProject($projectId: ID!) {
-    setTemplateProject(projectId: $projectId) {
+  mutation SetTemplateProject($courseLevel: Int!, $projectId: ID!) {
+    setTemplateProject(courseLevel: $courseLevel, projectId: $projectId) {
       id
-      title
-      isTemplate
+      courseLevel
+      features {
+        key
+        enabled
+      }
+      templateProject {
+        id
+        title
+        description
+      }
     }
   }
 `;
 
 export const GET_PROJECTS_BY_CURRENT_USER_QUERY = gql`
-  query GetProjectsByCurrentUser {
-    projectsByCurrentUser {
+  query ProjectsByUsername($username: String!) {
+    projectsByUsername(username: $username) {
       id
       title
       description
@@ -111,17 +102,6 @@ export const ADD_TASK_MUTATION = gql`
       title
       description
       status
-    }
-  }
-`;
-
-export const ADD_PROJECT_MUTATION = gql`
-  mutation AddProject($title: String!, $description: String!, $courseLevel: Int!) {
-    addProject(title: $title, description: $description, courseLevel: $courseLevel) {
-      id
-      title
-      description
-      courseLevel
     }
   }
 `;
@@ -257,6 +237,10 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
       title
       description
       courseLevel
+      owners {
+        id
+        username
+      }
       epics {
         id
         title
@@ -266,27 +250,15 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
           title
           description
           courseLevel
-        }
-      }
-    `;
-    
-    variables = { 
-      courseLevel: courseLevel !== undefined ? courseLevel : 1,
-      title,
-      description: description || ''
-    };
-    
-    return await runMutation(mutation, variables);
-  } else if (nodeType === 'epic') {
-    mutation = `
-      mutation($projectId: ID!, $title: String!, $description: String) {
-        addEpic(projectId: $projectId, title: $title, description: $description) {
-          id title description
           tasks {
             id
             title
             description
             status
+            users {
+              id
+              username
+            }
           }
         }
       }
@@ -296,13 +268,42 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
 
 // --- Utility Functions ---
 
-export const getCourseLevelConfig = async (courseLevel: number): Promise<CourseLevelConfig | null> => {
-  const result = await client.query<{ courseLevelConfig: CourseLevelConfig }>({
-    query: GET_COURSE_LEVEL_CONFIG_QUERY,
-    variables: { courseLevel },
+
+export async function getCourseLevelConfig(courseLevel: number) {
+  const query = `
+    query($courseLevel: Int!) {
+      courseLevelConfig(courseLevel: $courseLevel) {
+        id
+        courseLevel
+        features {
+          key
+          enabled
+        }
+        templateProject {
+          id
+          title
+          description
+        }
+      }
+    }
+  `;
+    const variables = { courseLevel };
+  
+  const res = await fetch(getGraphQLUrl(), {
+    method: 'POST',
+    headers: getGraphQLHeaders(),
+    body: JSON.stringify({ query, variables }),
   });
-  return result.data?.courseLevelConfig ?? null;
-};
+  
+  const json = await res.json();
+  
+  if (json.errors) {
+    console.error('GraphQL errors:', json.errors);
+    throw new Error(json.errors[0]?.message || 'GraphQL error');
+  }
+  
+  return json.data.courseLevelConfig;
+}
 
 export const updateCourseLevelConfig = async (courseLevel: number, features: any[]): Promise<CourseLevelConfig> => {
   const result = await client.mutate<{ updateCourseLevelConfig: CourseLevelConfig }>({
@@ -334,19 +335,9 @@ export const updateUserRole = async (userId: string, newRole: string): Promise<U
 // --- Template Functions (Apollo Client style) ---
 
 // Set a project as the template for a course level
-export const setTemplateProject = async (courseLevel: number, projectId: string): Promise<Project> => {
-  const mutation = gql`
-    mutation SetTemplateProject($courseLevel: Int!, $projectId: ID!) {
-      setTemplateProject(courseLevel: $courseLevel, projectId: $projectId) {
-        id
-        title
-        description
-      }
-    }
-  `;
-
-  const result = await client.mutate<{ setTemplateProject: Project }>({
-    mutation,
+export const setTemplateProject = async (courseLevel: number, projectId: string): Promise<CourseLevelConfig> => {
+  const result = await client.mutate<{ setTemplateProject: CourseLevelConfig }>({
+    mutation: SET_TEMPLATE_PROJECT_MUTATION,
     variables: { courseLevel, projectId },
   });
 
@@ -399,10 +390,16 @@ export const getAllProjects = async (): Promise<Project[]> => {
 
 
 export const getProjectsByCurrentUser = async (): Promise<Project[]> => {
-  const result = await client.query<{ projectsByCurrentUser: Project[] }>({
+  const username = getCurrentUsername();
+  if (!username) {
+    throw new Error('No username found in token');
+  }
+  
+  const result = await client.query<{ projectsByUsername: Project[] }>({
     query: GET_PROJECTS_BY_CURRENT_USER_QUERY,
+    variables: { username },
   });
-  return result.data?.projectsByCurrentUser ?? [];
+  return result.data?.projectsByUsername ?? [];
 };
 
 // --- Node CRUD Functions ---
@@ -460,10 +457,7 @@ export const addNode = async (
       if (courseLevel === undefined) {
         throw new Error('courseLevel is required when creating a project');
       }
-      return await client.mutate({
-        mutation: ADD_PROJECT_MUTATION, // Make sure you have this mutation defined
-        variables: { title, description, courseLevel },
-      });
+      return await createProjectFromTemplate(courseLevel, title, description);
     default:
       throw new Error(`Unknown node type: ${type}`);
   }
@@ -479,53 +473,17 @@ export const deleteNode = async (node: any, parentIds: any) => {
       return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
     default:
       throw new Error(`Unknown node type: ${node.type}`);
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
-  });
-
-  const json = await res.json();
-
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
+};
 
-  return json.data.projects;
-}
-
-export async function getProjectsByCurrentUser() {
-  const query = `
-    query {
-      projectsByUsername(username: "${getCurrentUsername()}") {
-        id
-        title
-        description
-        courseLevel
-        owners {
-          id
-          username
-        }
-      }
-    }
-  `;
-
-  const res = await fetch(getGraphQLUrl(), {
-    method: 'POST',
-    headers: getGraphQLHeaders(),
-    body: JSON.stringify({ query }),
-  });
-
-  const json = await res.json();
-
-  if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
-    throw new Error(json.errors[0]?.message || 'GraphQL error');
-  }
-
-  return json.data.projectsByUsername;
-}
+// Helper function to get headers with JWT token
+const getGraphQLHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
 
 export async function addUserToProject(projectId: string, username: string) {
   const mutation = `
@@ -590,16 +548,3 @@ export async function removeUserFromProject(projectId: string, username: string)
 
   return json.data.removeUserFromProject;
 }
-
-// Helper function to get current username from JWT
-function getCurrentUsername(): string {
-  const token = localStorage.getItem('token');
-  if (!token) throw new Error('No token found');
-  
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub || payload.username;
-  } catch (error) {
-    throw new Error('Invalid token');
-  }
-};

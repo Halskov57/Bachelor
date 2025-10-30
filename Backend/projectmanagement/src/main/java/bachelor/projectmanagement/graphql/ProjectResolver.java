@@ -12,11 +12,6 @@ import bachelor.projectmanagement.model.TaskStatus;
 import bachelor.projectmanagement.model.User;
 import bachelor.projectmanagement.model.TaskStatusUpdate;
 import bachelor.projectmanagement.model.TaskAssignmentUpdate;
-import bachelor.projectmanagement.model.TaskDeletedEvent;
-import bachelor.projectmanagement.model.FeatureDeletedEvent;
-import bachelor.projectmanagement.model.EpicDeletedEvent;
-import bachelor.projectmanagement.model.StructureUpdate;
-import bachelor.projectmanagement.model.UserActivity;
 import bachelor.projectmanagement.service.PubSubService;
 import bachelor.projectmanagement.service.ProjectService;
 import bachelor.projectmanagement.service.SSEService;
@@ -482,5 +477,15 @@ public class ProjectResolver {
         currentUser.setId("current-user-id");
         currentUser.setUsername("current-user");
         return currentUser;
+    }
+
+    @MutationMapping
+    public Project addUserToProject(@Argument String projectId, @Argument String username) {
+        return projectService.addUserToProject(projectId, username);
+    }
+
+    @MutationMapping
+    public Project removeUserFromProject(@Argument String projectId, @Argument String username) {
+        return projectService.removeUserFromProject(projectId, username);
     }
 }

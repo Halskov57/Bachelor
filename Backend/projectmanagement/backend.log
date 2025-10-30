@@ -1,0 +1,104 @@
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/C:/Users/nicol/Documents/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------< bachelor.projectmanagement:projectmanagement >------------
+[INFO] Building Project Management App 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> spring-boot:3.5.5:run (default-cli) > test-compile @ projectmanagement >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ projectmanagement ---
+[INFO] Copying 2 resources from src\main\resources to target\classes
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ projectmanagement ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ projectmanagement ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ projectmanagement ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< spring-boot:3.5.5:run (default-cli) < test-compile @ projectmanagement <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.5:run (default-cli) @ projectmanagement ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.5)
+
+2025-10-30T16:21:29.447+01:00  INFO 14712 --- [application] [  restartedMain] bachelor.projectmanagement.Application   : Starting Application using Java 25 with PID 14712 (C:\Users\nicol\Documents\7.sem\Bachelor\Backend\projectmanagement\target\classes started by nicol in C:\Users\nicol\Documents\7.sem\Bachelor\Backend\projectmanagement)
+2025-10-30T16:21:29.451+01:00  INFO 14712 --- [application] [  restartedMain] bachelor.projectmanagement.Application   : No active profile set, falling back to 1 default profile: "default"
+2025-10-30T16:21:29.618+01:00  INFO 14712 --- [application] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-10-30T16:21:29.618+01:00  INFO 14712 --- [application] [  restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-10-30T16:21:30.706+01:00  INFO 14712 --- [application] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2025-10-30T16:21:30.835+01:00  INFO 14712 --- [application] [  restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 125 ms. Found 3 MongoDB repository interfaces.
+2025-10-30T16:21:31.488+01:00  INFO 14712 --- [application] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+2025-10-30T16:21:31.504+01:00  INFO 14712 --- [application] [  restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-10-30T16:21:31.504+01:00  INFO 14712 --- [application] [  restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.44]
+2025-10-30T16:21:31.557+01:00  INFO 14712 --- [application] [  restartedMain] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-10-30T16:21:31.558+01:00  INFO 14712 --- [application] [  restartedMain] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1939 ms
+2025-10-30T16:21:31.789+01:00  INFO 14712 --- [application] [  restartedMain] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync|spring-boot", "version": "5.5.1"}, "os": {"type": "Windows", "name": "Windows 11", "architecture": "amd64", "version": "10.0"}, "platform": "Java/Oracle Corporation/25+36-3489"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=MongoCredential{mechanism=SCRAM-SHA-256, userName='admin', source='admin', password=<hidden>, mechanismProperties=<hidden>}, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@471a9a0a, com.mongodb.Jep395RecordCodecProvider@16746469, com.mongodb.KotlinCodecProvider@2f200966]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=JAVA_LEGACY, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2025-10-30T16:21:31.821+01:00  INFO 14712 --- [application] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=17, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=19002300, minRoundTripTimeNanos=0}
+2025-10-30T16:21:31.986+01:00  INFO 14712 --- [application] [  restartedMain] o.s.b.d.a.OptionalLiveReloadServer       : LiveReload server is running on port 35729
+2025-10-30T16:21:32.836+01:00  INFO 14712 --- [application] [  restartedMain] efaultSchemaResourceGraphQlSourceBuilder : Loaded 1 resource(s) in the GraphQL schema.
+2025-10-30T16:21:33.016+01:00  INFO 14712 --- [application] [  restartedMain] o.s.b.a.g.GraphQlAutoConfiguration       : GraphQL schema inspection:
+	Unmapped fields: {Query=[projects], Mutation=[updateUserUsername]}
+	Unmapped registrations: {Mutation.updateUsername=UserResolver#updateUsername[2 args], Mutation.updatePassword=UserResolver#updatePassword[2 args]}
+	Unmapped arguments: {SubscriptionResolver#epicUpdated[2 args]=[id], SubscriptionResolver#featureUpdated[2 args]=[id]}
+	Skipped types: []
+2025-10-30T16:21:33.039+01:00  INFO 14712 --- [application] [  restartedMain] s.b.a.g.s.GraphQlWebMvcAutoConfiguration : GraphQL endpoint HTTP POST /graphql
+2025-10-30T16:21:33.086+01:00  WARN 14712 --- [application] [  restartedMain] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: f2bbb64c-d6b0-4c08-8e05-408799ff5307
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-10-30T16:21:33.093+01:00  INFO 14712 --- [application] [  restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2025-10-30T16:21:33.376+01:00  INFO 14712 --- [application] [  restartedMain] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/'
+2025-10-30T16:21:33.382+01:00  INFO 14712 --- [application] [  restartedMain] bachelor.projectmanagement.Application   : Started Application in 4.345 seconds (process running for 4.928)
+2025-10-30T16:21:33.453+01:00  INFO 14712 --- [application] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-10-30T16:21:33.453+01:00  INFO 14712 --- [application] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-10-30T16:21:33.454+01:00  INFO 14712 --- [application] [nio-8081-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-10-30T16:21:33.601+01:00  INFO 14712 --- [application] [nio-8081-exec-2] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 6903782e9eaa820eeb5b6963
+2025-10-30T16:21:33.601+01:00  INFO 14712 --- [application] [nio-8081-exec-1] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+?? Super admin user already exists, skipping creation.
+Testing MongoDB connection via Spring Boot...
+? Connection successful! Ping response: {"ok": 1.0}
+Collections in database: [users, course_configs, projects]
+2025-10-30T16:23:00.198+01:00  INFO 14712 --- [application] [nio-8081-exec-8] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+2025-10-30T16:28:10.058+01:00  INFO 14712 --- [application] [nio-8081-exec-7] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+2025-10-30T16:36:38.812+01:00  INFO 14712 --- [application] [nio-8081-exec-8] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+DEBUG: Looking for config with course level 1
+DEBUG: No existing config found, creating default
+DEBUG: Creating default config for course level 1
+DEBUG: Created default config: CourseLevelConfig{id='null', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129495200Z, updatedAt=2025-10-30T15:36:39.129495200Z}
+DEBUG: Created default config: CourseLevelConfig{id='null', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129495200Z, updatedAt=2025-10-30T15:36:39.129495200Z}
+DEBUG: Saved default config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129495200Z, updatedAt=2025-10-30T15:36:39.129495200Z}
+2025-10-30T16:37:26.725+01:00  INFO 14712 --- [application] [io-8081-exec-10] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+DEBUG: Looking for config with course level 1
+DEBUG: Looking for config with course level 1
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}
+2025-10-30T16:38:34.045+01:00  INFO 14712 --- [application] [nio-8081-exec-1] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+DEBUG: Looking for config with course level 1
+DEBUG: Looking for config with course level 1
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}
+2025-10-30T16:39:13.223+01:00  INFO 14712 --- [application] [nio-8081-exec-2] b.projectmanagement.service.SSEService   : Created SSE emitter for project: 69037d0d15295fe6629eaa87
+DEBUG: Looking for config with course level 1
+DEBUG: Looking for config with course level 1
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}
+DEBUG: Found existing config: CourseLevelConfig{id='690386077b75027914ad4645', courseLevel=1, features={EPIC_CREATE_DELETE=true, TASK_USER_ASSIGNMENT=true, FEATURE_CREATE_DELETE=true, TASK_CREATE_DELETE=true}, createdAt=2025-10-30T15:36:39.129Z, updatedAt=2025-10-30T15:36:39.129Z}

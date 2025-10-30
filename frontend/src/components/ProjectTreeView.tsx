@@ -1,28 +1,18 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useApolloClient } from '@apollo/client/react';
 import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
 import { NodeData } from '../utils/types';
+import { getAllNonSuperAdminUsers } from '../utils/graphqlMutations';
 
-interface ProjectTreeViewProps {
-  treeData: NodeData[];
-  project?: {
-    id: string;
-    title: string;
-    epics?: any[];
-    [key: string]: any;
-  };
-   fetchProjectById?: () => Promise<void>;
-}
 
-const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any, allUsers?: any[] }> = ({ treeData, fetchProjectById, project, allUsers = [] }) => {
+const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
-  const [expandedFeatures, setExpandedFeatures] = useState<{ [key: string]: boolean }>({});
   const [editNode, setEditNode] = useState<NodeData | null>(null);
   const [createNode, setCreateNode] = useState<{ type: string; parentIds: any; parentNode?: NodeData } | null>(null);
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
+  const [allUsers, setAllUsers] = useState<any[]>([]);
 
   const client = useApolloClient();
 
@@ -31,6 +21,20 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       include: ['ProjectById'], // Match the query name in Project.tsx
     });
   };
+
+  // Fetch all users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await getAllNonSuperAdminUsers();
+        console.log('Fetched all users:', users);
+        setAllUsers(users);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (treeContainerRef.current) {
@@ -51,29 +55,11 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       epicId: nodeDatum.epicId,
       featureId: nodeDatum.featureId,
     };
-    setSelectedNode(node);
+    setEditNode(node);
   };
 
   const handleToggleNode = (nodeId: string) =>
     setCollapsedNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
-
-  const handleAddChild = (nodeDatum: NodeData) => {
-    let nodeType = '';
-    let parentIds: any = {};
-
-    if (nodeDatum.type === 'project') {
-      nodeType = 'epic';
-      parentIds = { projectId: nodeDatum.id };
-    } else if (nodeDatum.type === 'epic') {
-      nodeType = 'feature';
-      parentIds = { projectId: nodeDatum.projectId, epicId: nodeDatum.id };
-    } else if (nodeDatum.type === 'feature') {
-      nodeType = 'task';
-      parentIds = { projectId: nodeDatum.projectId, epicId: nodeDatum.epicId, featureId: nodeDatum.id };
-    }
-
-    setCreateNode({ type: nodeType, parentIds, parentNode: nodeDatum });
-  };
 
   const getNodeStyle = (type: string) => {
     switch (type) {
@@ -168,7 +154,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
     );
   };
 
-  function applyCollapsedState(node: NodeData, collapsedMap: { [key: string]: boolean }): NodeData {
+  const applyCollapsedState = useCallback((node: NodeData, collapsedMap: { [key: string]: boolean }): NodeData => {
     const id = node.id || node.title;
     if (!id) return node;
     const newNode: NodeData & { _collapsed?: boolean; children?: NodeData[] } = { ...node };
@@ -177,9 +163,9 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       newNode.children = node.children.map((child) => applyCollapsedState(child, collapsedMap));
     }
     return newNode;
-  }
+  }, []);
 
-  function mapToTreeNode(node: NodeData & { _collapsed?: boolean; children?: NodeData[] }): any {
+  const mapToTreeNode = useCallback((node: NodeData & { _collapsed?: boolean; children?: NodeData[] }): any => {
     return {
       name: node.title,
       title: node.title,
@@ -199,14 +185,14 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       children: node.children?.map(mapToTreeNode),
       _collapsed: node._collapsed,
     };
-  }
+  }, []);
 
   const treeDataWithCollapse = useMemo(() => {
     if (!treeData || treeData.length === 0) return [];
-    return treeData.map((node) => applyCollapsedState(node, collapsedNodes));
-  }, [treeData, collapsedNodes]);
+    return treeData.map((node: NodeData) => applyCollapsedState(node, collapsedNodes));
+  }, [treeData, collapsedNodes, applyCollapsedState]);
 
-  const treeDataForTree = useMemo(() => treeDataWithCollapse.map(mapToTreeNode), [treeDataWithCollapse]);
+  const treeDataForTree = useMemo(() => treeDataWithCollapse.map(mapToTreeNode), [treeDataWithCollapse, mapToTreeNode]);
 
   return (
     <div
@@ -234,6 +220,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       courseLevel: project.courseLevel || 0,
       owners: project.owners || [],
     }}
+    allUsers={allUsers}
     onClose={() => {
       setEditNode(null);
       refetchProject();
@@ -255,6 +242,7 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
       courseLevel: project.courseLevel || 0,
       owners: project.owners || [],
     }}
+    allUsers={allUsers}
     onClose={() => setCreateNode(null)}
     onSave={async () => {
       setCreateNode(null);

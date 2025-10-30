@@ -51,3 +51,11 @@ export function debugToken(): void {
   console.log('User role:', payload?.role);
   console.log('Token expiry:', payload?.exp ? new Date(payload.exp * 1000) : 'No expiry');
 }
+
+export function getCurrentUsername(): string {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('No token found');
+  
+  const payload = parseJwt(token);
+  return payload?.sub || payload?.username || '';
+}

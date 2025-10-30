@@ -21,15 +21,12 @@ public class CourseLevelConfigResolver {
 
     private final CourseLevelConfigService configService;
     private final ProjectService projectService;
-    private final PubSubService pubSubService; // 1. Declare PubSubService
 
     public CourseLevelConfigResolver(
             CourseLevelConfigService configService, 
-            ProjectService projectService,
-            PubSubService pubSubService) { // 2. Inject PubSubService
+            ProjectService projectService) { // 2. Inject PubSubService
         this.configService = configService;
         this.projectService = projectService;
-        this.pubSubService = pubSubService; // 3. Initialize PubSubService
     }
 
     // Query resolvers
@@ -123,17 +120,13 @@ public class CourseLevelConfigResolver {
                 projectToCreate.setTitle(title);
                 projectToCreate.setDescription(description);
                 projectToCreate.setCourseLevel(courseLevel);
+                return projectService.createProject(projectToCreate, currentUsername);
                 
-                newProject = projectService.createProject(projectToCreate, currentUsername);
-            } else {
-                // Template exists, copy its structure
-                System.out.println("DEBUG: Template found, copying structure from: " + template.getTitle());
+            } 
+            // Template exists, copy its structure
+            System.out.println("DEBUG: Template found, copying structure from: " + template.getTitle());
                 
                 newProject = projectService.copyProjectStructure(template, title, description, courseLevel, currentUsername);
-            }
-            
-            // 4. PUBLISH PROJECT CHANGE EVENT
-            pubSubService.publishProjectChange(newProject);
             
             return newProject;
         } catch (Exception e) {

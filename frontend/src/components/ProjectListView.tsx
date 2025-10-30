@@ -244,7 +244,6 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void, al
           createNode={createNode}
           mode="create"
           project={project}
-          allUsers={allUsers}
           onClose={() => setCreateNode(null)}
           onSave={async () => {
             await fetchProjectById();
