@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ProjectTreeView, ProjectListView } from '../components/ProjectViews';
+import { ProjectTreeView, ProjectListView, UserTaskTable } from '../components/ProjectViews';
 import { isAdmin } from '../utils/jwt';
 import { NodeData } from '../utils/types';
 import { getGraphQLUrl } from '../config/environment';
@@ -9,7 +9,7 @@ import { sseService, SSEEvent } from '../utils/sseService';
 const Project: React.FC = () => {
   const navigate = useNavigate();
   const [project, setProject] = useState<any>(null);
-  const [view, setView] = useState<'list' | 'tree'>('list');
+  const [view, setView] = useState<'list' | 'tree' | 'users'>('list');
   const [realtimeUpdates, setRealtimeUpdates] = useState<string[]>([]);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [pendingNotifications, setPendingNotifications] = useState<Map<string, NodeJS.Timeout>>(new Map());
@@ -557,7 +557,7 @@ function toTreeData(project: any): NodeData | null {
           padding: '16px 0',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(2,42,255,0.08)',
-          maxWidth: 400,
+          maxWidth: 600,
           marginLeft: 'auto',
           marginRight: 'auto'
         }}
@@ -580,6 +580,7 @@ function toTreeData(project: any): NodeData | null {
         <button
           onClick={() => setView('tree')}
           style={{
+            marginRight: '12px',
             padding: '8px 18px',
             borderRadius: '8px',
             border: view === 'tree' ? '2px solid #022AFF' : '1px solid #aaa',
@@ -591,18 +592,34 @@ function toTreeData(project: any): NodeData | null {
         >
           Tree View
         </button>
+        <button
+          onClick={() => setView('users')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '8px',
+            border: view === 'users' ? '2px solid #022AFF' : '1px solid #aaa',
+            background: view === 'users' ? '#022AFF' : '#fff',
+            color: view === 'users' ? '#fff' : '#022AFF',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          👤 User Tasks
+        </button>
       </div>
       
       <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
         {view === 'list' ? (
           <ProjectListView project={project} fetchProjectById={fetchProjectById} />
-        ) : (
+        ) : view === 'tree' ? (
           <ProjectTreeView
             key={project.id || project._id || project.title}
             treeData={treeData}
             project={project}
             fetchProjectById={fetchProjectById}
           />
+        ) : (
+          <UserTaskTable project={project} />
         )}
       </div>
       </div> {/* Close the marginTop div */}
