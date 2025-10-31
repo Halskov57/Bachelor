@@ -1,13 +1,261 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import Tree from 'react-d3-tree';
+import React, { useState } from 'react';
 import { NodeData } from '../../../utils/types';
 import { useProjectViewState } from '../hooks/useProjectViewState';
 import { ProjectViewModal } from '../components/ProjectViewModal';
-import { createNodeFromTreeData } from '../utils/nodeHelpers';
+
+interface TreeNodeProps {
+  node: NodeData;
+  level: number;
+  collapsed: { [key: string]: boolean };
+  onToggle: (id: string) => void;
+  onNodeClick: (node: NodeData) => void;
+}
+
+const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, onNodeClick }) => {
+  const hasChildren = node.children && node.children.length > 0;
+  const nodeId = node.id || node.title;
+  const isCollapsed = collapsed[nodeId];
+
+  const getNodeColor = (type: string) => {
+    switch (type) {
+      case 'project': return '#022AFF';
+      case 'epic': return '#4d8cff';
+      case 'feature': return '#7aa3ff';
+      case 'task': return '#a6c1ff';
+      default: return '#ccc';
+    }
+  };
+
+
+
+  return (
+    <div style={{ 
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      marginTop: level > 0 ? '60px' : '0'
+    }}>
+      {/* Connection line from parent (comes from above) */}
+      {level > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '-40px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '2px',
+          height: '40px',
+          backgroundColor: '#999',
+          pointerEvents: 'none',
+          zIndex: 1
+        }} />
+      )}
+      
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '8px 16px',
+          backgroundColor: getNodeColor(node.type),
+          color: '#fff',
+          borderRadius: '20px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          position: 'relative',
+          zIndex: 2,
+          minWidth: '120px',
+          justifyContent: 'center'
+        }}
+        onClick={() => onNodeClick(node)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+        }}
+      >
+        <div style={{
+          fontWeight: '600',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          {node.title}
+        </div>
+        
+        {/* Expand/collapse indicator */}
+        {hasChildren && (
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle(nodeId);
+            }}
+            style={{
+              position: 'absolute',
+              top: '-8px',
+              right: '-8px',
+              background: '#fff',
+              border: '2px solid #333',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              cursor: 'pointer',
+              fontSize: '10px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#333'
+            }}
+          >
+            {isCollapsed ? '+' : '−'}
+          </div>
+        )}
+      </div>
+      
+      {hasChildren && !isCollapsed && (
+        <div style={{ position: 'relative' }}>
+          {/* Check if children are tasks (show as list) or other types (show as tree) */}
+          {node.children![0]?.type === 'task' ? (
+            /* Tasks as vertical list */
+            <div>
+              {/* Vertical line down from feature to task list */}
+              <div style={{
+                position: 'absolute',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '2px',
+                height: '40px',
+                backgroundColor: '#999',
+                zIndex: 1
+              }} />
+              
+              {/* Tasks container */}
+              <div style={{
+                marginTop: '60px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                {node.children!.map((task, index) => (
+                  <div key={task.id || task.title}>
+                    {/* Task node */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '6px 12px',
+                        backgroundColor: getNodeColor(task.type),
+                        color: '#fff',
+                        borderRadius: '15px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        minWidth: '100px',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                      onClick={() => onNodeClick(task)}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                      }}
+                    >
+                      {task.title}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Non-tasks as horizontal tree */
+            <div>
+              {/* Vertical line down from this node */}
+              <div style={{
+                position: 'absolute',
+                top: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '2px',
+                height: '40px',
+                backgroundColor: '#999',
+                zIndex: 1
+              }} />
+              
+              {/* Horizontal line connecting all children */}
+              {node.children!.length > 1 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '60px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: `${(node.children!.length - 1) * 120}px`,
+                  height: '2px',
+                  backgroundColor: '#999',
+                  zIndex: 1
+                }} />
+              )}
+              
+              {/* Vertical lines from horizontal connector to each child */}
+              {node.children!.map((child, index) => {
+                const childCount = node.children!.length;
+                const offsetFromCenter = (index - (childCount - 1) / 2) * 120;
+                
+                return (
+                  <div
+                    key={`connector-${child.id || child.title}`}
+                    style={{
+                      position: 'absolute',
+                      top: '60px',
+                      left: '50%',
+                      transform: `translateX(${offsetFromCenter - 1}px)`,
+                      width: '2px',
+                      height: '40px',
+                      backgroundColor: '#999',
+                      zIndex: 1
+                    }}
+                  />
+                );
+              })}
+              
+              {/* Children container */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: '120px',
+                marginTop: '100px',
+                position: 'relative'
+              }}>
+                {node.children!.map((child, index) => (
+                  <TreeNode
+                    key={child.id || child.title}
+                    node={child}
+                    level={level + 1}
+                    collapsed={collapsed}
+                    onToggle={onToggle}
+                    onNodeClick={onNodeClick}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
-  const treeContainerRef = useRef<HTMLDivElement>(null);
-  const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
 
   const {
@@ -20,170 +268,72 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
     handleSaveCreate,
   } = useProjectViewState(fetchProjectById);
 
-  useEffect(() => {
-    if (treeContainerRef.current) {
-      const { width } = treeContainerRef.current.getBoundingClientRect();
-      setTranslate({ x: width / 2, y: 80 });
-    }
-  }, [treeData]);
+  const handleToggleNode = (nodeId: string) => {
+    setCollapsedNodes(prev => ({
+      ...prev,
+      [nodeId]: !prev[nodeId]
+    }));
+  };
 
-  const handleNodeClick = (nodeDatum: any, event: React.MouseEvent<SVGGElement, MouseEvent>) => {
-    const node = createNodeFromTreeData(nodeDatum);
+  const handleNodeClick = (node: NodeData) => {
     handleEditNode(node);
   };
 
-  const handleToggleNode = (nodeId: string) =>
-    setCollapsedNodes((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
-
-  const getNodeStyle = (type: string) => {
-    switch (type) {
-      case 'project':
-      case 'epic':
-        return { background: '#2456e6', color: '#fff', border: '#001a66', fontWeight: 400 };
-      case 'feature':
-        return { background: '#4d8cff', color: '#fff', border: '#001a66', fontWeight: 400 };
-      case 'task':
-        return { background: '#b3d1ff', color: '#fff', border: '#001a66', fontWeight: 400 };
-      default:
-        return { background: '#fff', color: '#001a66', border: '#001a66', fontWeight: 400 };
-    }
-  };
-
-  function measureTextWidth(text: string, font: string): number {
-    const fn = measureTextWidth as typeof measureTextWidth & { canvas?: HTMLCanvasElement };
-    const canvas = fn.canvas || (fn.canvas = document.createElement('canvas'));
-    const context = canvas.getContext('2d');
-    if (!context) return 100;
-    context.font = font;
-    return context.measureText(text).width;
+  if (!treeData || treeData.length === 0) {
+    return (
+      <div style={{
+        background: 'rgba(230,230,240,0.96)',
+        borderRadius: 12,
+        padding: '40px',
+        textAlign: 'center',
+        color: '#666',
+        fontStyle: 'italic'
+      }}>
+        No project data available
+      </div>
+    );
   }
 
-  const renderCustomNode = ({ nodeDatum, toggleNode }: any) => {
-    const style = getNodeStyle(nodeDatum.attributes?.type || 'project');
-    const fontSize = 20;
-    const font = `normal ${style.fontWeight} ${fontSize}px Arial, sans-serif`;
-    const textWidth = measureTextWidth(nodeDatum.title, font) + 10;
-    const padding = 24;
-    const iconArea = 44;
-    const width = Math.max(80, textWidth + padding + iconArea);
-    const height = 44;
-    const iconSize = 44;
-
-    const hasChildren = nodeDatum.children && nodeDatum.children.length > 0;
-
-    return (
-      <g>
-        <rect
-          x={-width / 2}
-          y={-height / 2}
-          width={width}
-          height={height}
-          rx={height / 2}
-          fill={style.background}
-          stroke={style.border}
-          strokeWidth={style.border ? 2 : 0}
-        />
-        <text
-          x={-width / 2 + 18}
-          y={2}
-          textAnchor="start"
-          alignmentBaseline="middle"
-          fontSize={fontSize}
-          fill="#fff"
-          fontWeight="bold"
-        >
-          {nodeDatum.title}
-        </text>
-        {hasChildren && (
-          <g
-            style={{ cursor: 'pointer', userSelect: 'none' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleNode(nodeDatum.attributes?.id || nodeDatum.title);
-              toggleNode();
-            }}
-          >
-            <ellipse
-              cx={width / 2 - iconSize / 2}
-              cy={0}
-              rx={iconSize / 2}
-              ry={iconSize / 2}
-              fill="#fff"
-              stroke="#022AFF"
-              strokeWidth={2}
-            />
-            <text
-              x={width / 2 - iconSize / 2}
-              y={2}
-              textAnchor="middle"
-              alignmentBaseline="middle"
-              fontSize={22}
-              fill="#022AFF"
-            >
-              {collapsedNodes[nodeDatum.attributes?.id || nodeDatum.title] ? '+' : '-'}
-            </text>
-          </g>
-        )}
-      </g>
-    );
-  };
-
-  const applyCollapsedState = useCallback((node: NodeData, collapsedMap: { [key: string]: boolean }): NodeData => {
-    const id = node.id || node.title;
-    if (!id) return node;
-    const newNode: NodeData & { _collapsed?: boolean; children?: NodeData[] } = { ...node };
-    if (node.children && node.children.length > 0) {
-      newNode._collapsed = !!collapsedMap[id];
-      newNode.children = node.children.map((child) => applyCollapsedState(child, collapsedMap));
-    }
-    return newNode;
-  }, []);
-
-  const mapToTreeNode = useCallback((node: NodeData & { _collapsed?: boolean; children?: NodeData[] }): any => {
-    return {
-      name: node.title,
-      title: node.title,
-      description: node.description,
-      status: node.status,
-      projectId: node.projectId,
-      epicId: node.epicId,
-      featureId: node.featureId,
-      users: node.userIds,
-      attributes: { 
-        type: node.type, 
-        id: node.id,
-        projectId: node.projectId,
-        epicId: node.epicId,
-        featureId: node.featureId,
-      },
-      children: node.children?.map(mapToTreeNode),
-      _collapsed: node._collapsed,
-    };
-  }, []);
-
-  const treeDataWithCollapse = useMemo(() => {
-    if (!treeData || treeData.length === 0) return [];
-    return treeData.map((node: NodeData) => applyCollapsedState(node, collapsedNodes));
-  }, [treeData, collapsedNodes, applyCollapsedState]);
-
-  const treeDataForTree = useMemo(() => treeDataWithCollapse.map(mapToTreeNode), [treeDataWithCollapse, mapToTreeNode]);
-
   return (
-    <div
-      ref={treeContainerRef}
-      style={{ width: '100%', height: '700px', background: 'rgba(230,230,240,0.96)', borderRadius: 12 }}
-    >
-      <Tree
-        data={treeDataForTree}
-        orientation="vertical"
-        translate={translate}
-        renderCustomNodeElement={renderCustomNode}
-        separation={{ siblings: 2, nonSiblings: 2.5 }}
-        nodeSize={{ x: 100, y: 90 }}
-        zoomable
-        collapsible
-        onNodeClick={handleNodeClick as any}
-      />
+    <div style={{
+      background: 'rgba(230,230,240,0.96)',
+      borderRadius: 12,
+      padding: '40px',
+      minHeight: '400px',
+      width: '100%',
+      overflow: 'visible'
+    }}>
+      <div style={{
+        marginBottom: '20px',
+        textAlign: 'center'
+      }}>
+        <h3 style={{
+          color: '#022AFF',
+          margin: 0,
+          fontSize: '18px',
+          fontWeight: '600'
+        }}>
+          Project Tree Structure
+        </h3>
+        <div style={{
+          fontSize: '12px',
+          color: '#666',
+          marginTop: '4px'
+        }}>
+          Click nodes to edit • Use +/− to expand/collapse
+        </div>
+      </div>
+      
+      {treeData.map((rootNode: NodeData, index: number) => (
+        <TreeNode
+          key={rootNode.id || rootNode.title}
+          node={rootNode}
+          level={0}
+          collapsed={collapsedNodes}
+          onToggle={handleToggleNode}
+          onNodeClick={handleNodeClick}
+        />
+      ))}
       
       <ProjectViewModal
         editNode={editNode}

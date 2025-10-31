@@ -81,9 +81,6 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
 
   return (
     <div style={{
-      maxHeight: '70vh',
-      overflowY: 'auto',
-      overflowX: 'hidden',
       padding: '20px 500px 10px 50px',
       backgroundColor: '#f8f9fa',
       borderRadius: '12px',
