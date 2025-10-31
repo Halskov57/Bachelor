@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config/environment';
 
-const LoginBox: React.FC = () => {
+const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -325,4 +325,4 @@ const LoginBox: React.FC = () => {
   );
 };
 
-export default LoginBox;
+export default Login;

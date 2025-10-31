@@ -12,13 +12,13 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) =
   
   if (!token) {
     console.log('PrivateRoute: No token found, redirecting to login');
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
   
   const payload = parseJwt(token);
   if (!payload) {
     console.log('PrivateRoute: Invalid token payload, redirecting to login');
-    return <Navigate to="/" />;
+    return <Navigate to="/login" />;
   }
   
   // Check role requirements
@@ -27,11 +27,11 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) =
       // Allow both ADMIN and SUPERADMIN to access admin routes
       if (payload.role !== 'ADMIN' && payload.role !== 'SUPERADMIN') {
         console.log('PrivateRoute: Access denied. User role:', payload.role, 'Required: ADMIN or SUPERADMIN');
-        return <Navigate to="/" />;
+        return <Navigate to="/login" />;
       }
     } else if (payload.role !== requiredRole) {
       console.log('PrivateRoute: Access denied. User role:', payload.role, 'Required:', requiredRole);
-      return <Navigate to="/" />;
+      return <Navigate to="/login" />;
     }
   }
   return children;

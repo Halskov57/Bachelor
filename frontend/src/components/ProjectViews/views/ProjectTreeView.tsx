@@ -1,24 +1,24 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useApolloClient } from '@apollo/client/react';
-import EditFanout from './EditFanout';
 import Tree from 'react-d3-tree';
-import { NodeData } from '../utils/types';
-
+import { NodeData } from '../../../utils/types';
+import { useProjectViewState } from '../hooks/useProjectViewState';
+import { ProjectViewModal } from '../components/ProjectViewModal';
+import { createNodeFromTreeData } from '../utils/nodeHelpers';
 
 const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, project?: any }> = ({ treeData, fetchProjectById, project }) => {
   const treeContainerRef = useRef<HTMLDivElement>(null);
   const [translate, setTranslate] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [editNode, setEditNode] = useState<NodeData | null>(null);
-  const [createNode, setCreateNode] = useState<{ type: string; parentIds: any; parentNode?: NodeData } | null>(null);
   const [collapsedNodes, setCollapsedNodes] = useState<{ [id: string]: boolean }>({});
 
-  const client = useApolloClient();
-
-  const refetchProject = async () => {
-    await client.refetchQueries({
-      include: ['ProjectById'], // Match the query name in Project.tsx
-    });
-  };
+  const {
+    editNode,
+    createNode,
+    handleEditNode,
+    handleCloseEdit,
+    handleCloseCreate,
+    handleSave,
+    handleSaveCreate,
+  } = useProjectViewState(fetchProjectById);
 
   useEffect(() => {
     if (treeContainerRef.current) {
@@ -28,18 +28,8 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
   }, [treeData]);
 
   const handleNodeClick = (nodeDatum: any, event: React.MouseEvent<SVGGElement, MouseEvent>) => {
-    const node: NodeData = {
-      type: nodeDatum.attributes?.type || 'project',
-      id: nodeDatum.attributes?.id,
-      title: nodeDatum.title,
-      description: nodeDatum.description,
-      status: nodeDatum.status,
-      userIds: nodeDatum.users,
-      projectId: nodeDatum.projectId,
-      epicId: nodeDatum.epicId,
-      featureId: nodeDatum.featureId,
-    };
-    setEditNode(node);
+    const node = createNodeFromTreeData(nodeDatum);
+    handleEditNode(node);
   };
 
   const handleToggleNode = (nodeId: string) =>
@@ -194,45 +184,16 @@ const ProjectTreeView: React.FC<{ treeData: any, fetchProjectById: () => void, p
         collapsible
         onNodeClick={handleNodeClick as any}
       />
-      {editNode && project && (
-  <EditFanout
-    node={editNode}
-    mode="edit"
-    project={{
-      ...project,
-      type: 'project',
-      courseLevel: project.courseLevel || 0,
-      owners: project.owners || [],
-    }}
-    onClose={() => {
-      setEditNode(null);
-      refetchProject();
-    }}
-    onSave={async () => {
-      setEditNode(null);
-      await refetchProject();
-    }}
-  />
-)}
-
-{createNode && project && (
-  <EditFanout
-    createNode={createNode}
-    mode="create"
-    project={{
-      ...project,
-      type: 'project',
-      courseLevel: project.courseLevel || 0,
-      owners: project.owners || [],
-    }}
-    onClose={() => setCreateNode(null)}
-    onSave={async () => {
-      setCreateNode(null);
-      await refetchProject();
-    }}
-  />
-)}
-
+      
+      <ProjectViewModal
+        editNode={editNode}
+        createNode={createNode}
+        project={project}
+        onCloseEdit={handleCloseEdit}
+        onCloseCreate={handleCloseCreate}
+        onSave={handleSave}
+        onSaveCreate={handleSaveCreate}
+      />
     </div>
   );
 };

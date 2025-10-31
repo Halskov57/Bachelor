@@ -1,89 +1,34 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import EditFanout from './EditFanout';
+import { useProjectViewState } from '../hooks/useProjectViewState';
+import { ProjectViewModal } from '../components/ProjectViewModal';
+import { getAllTasksWithContext, getUniqueStatuses, getUniqueUsernames, getStatusColor } from '../utils/nodeHelpers';
 
 type FilterCategory = 'none' | 'status' | 'username';
 
 const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> = ({ project, fetchProjectById }) => {
   const [expandedEpic, setExpandedEpic] = useState<string | null>(null);
   const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
-  const [editNode, setEditNode] = useState<any>(null);
-  const [createNode, setCreateNode] = useState<{
-    type: string;
-    parentIds: any;
-    parentNode?: any;
-  } | null>(null);
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('none');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedUsername, setSelectedUsername] = useState<string>('');
 
-  // Collect all tasks from the entire project with their context
-  const getAllTasksWithContext = () => {
-    const allTasks: any[] = [];
-    
-    if (!project.epics) return allTasks;
+  const {
+    editNode,
+    createNode,
+    handleEditNode,
+    handleCloseEdit,
+    handleCloseCreate,
+    handleSave,
+    handleSaveCreate,
+  } = useProjectViewState(fetchProjectById);
 
-    project.epics.forEach((epic: any) => {
-      if (epic.features) {
-        epic.features.forEach((feature: any) => {
-          if (feature.tasks) {
-            feature.tasks.forEach((task: any) => {
-              allTasks.push({
-                ...task,
-                epicTitle: epic.title,
-                featureTitle: feature.title,
-                epicId: epic.epicId || epic.id,
-                featureId: feature.featureId || feature.id,
-                projectId: project.projectId || project.id
-              });
-            });
-          }
-        });
-      }
-    });
-
-    return allTasks;
-  };
-
-  // Get unique statuses from all tasks
-  const availableStatuses = useMemo(() => {
-    const allTasks: any[] = [];
-    
-    if (!project.epics) return [];
-
-    project.epics.forEach((epic: any) => {
-      if (epic.features) {
-        epic.features.forEach((feature: any) => {
-          if (feature.tasks) {
-            feature.tasks.forEach((task: any) => {
-              allTasks.push(task);
-            });
-          }
-        });
-      }
-    });
-
-    const statuses = new Set<string>();
-    allTasks.forEach(task => {
-      if (task.status) statuses.add(task.status);
-    });
-    return Array.from(statuses).sort();
-  }, [project]);
-
-  // Get unique usernames from project owners
-  const availableUsernames = useMemo(() => {
-    if (!project.owners || !Array.isArray(project.owners)) return [];
-
-    const usernames = project.owners
-      .map((owner: any) => owner.username || owner.name)
-      .filter((username: string) => username) // Remove any undefined/null values
-      .sort();
-
-    return usernames;
-  }, [project]);
+  // Get unique statuses and usernames using shared utility functions
+  const availableStatuses = useMemo(() => getUniqueStatuses(project), [project]);
+  const availableUsernames = useMemo(() => getUniqueUsernames(project), [project]);
 
   // Filter tasks based on selected criteria
   const getFilteredTasks = () => {
-    const allTasks = getAllTasksWithContext();
+    const allTasks = getAllTasksWithContext(project);
 
     if (filterCategory === 'status' && selectedStatus) {
       return allTasks.filter(task => task.status === selectedStatus);
@@ -114,18 +59,6 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
     setFilterCategory(newCategory);
     setSelectedStatus('');
     setSelectedUsername('');
-  };
-
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Done': return '#4CAF50';
-      case 'In progress': return '#FF9800';
-      case 'Need help': return '#E91E63';
-      case 'Todo': return '#757575';
-      case 'Blocked': return '#757575';
-      default: return '#757575';
-    }
   };
 
   // State for custom dropdown
@@ -382,7 +315,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     e.currentTarget.style.backgroundColor = isCompleted ? '#e8f5e9' : '#f8f9fa';
                     e.currentTarget.style.borderColor = isCompleted ? '#a5d6a7' : '#e0e6ed';
                   }}
-                  onClick={() => setEditNode({
+                  onClick={() => handleEditNode({
                     ...task,
                     type: 'task',
                     id: task.id || task.taskId,
@@ -403,8 +336,9 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     {task.status && (
                       <span style={{
                         fontSize: '0.75rem',
-                        backgroundColor: taskStatus === 'Done' ? '#4CAF50' : taskStatus === 'In progress' ? '#FF9800' : taskStatus === 'Need help' ? '#E91E63' : '#757575',
-                        color: '#fff',
+                        backgroundColor: taskStatus === 'Done' ? '#e8f5e8' : taskStatus === 'In progress' ? '#fff3e0' : taskStatus === 'Need help' ? '#fce4ec' : '#f5f5f5',
+                        color: '#000',
+                        border: `1px solid ${taskStatus === 'Done' ? '#4CAF50' : taskStatus === 'In progress' ? '#FF9800' : taskStatus === 'Need help' ? '#E91E63' : '#757575'}`,
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontWeight: '500'
@@ -416,8 +350,9 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     {(task.users || task.assignedUsers) && (task.users || task.assignedUsers).length > 0 && (
                       <span style={{
                         fontSize: '0.75rem',
-                        backgroundColor: '#2196F3',
-                        color: '#fff',
+                        backgroundColor: isCompleted ? '#e8f5e9' : '#f8f9fa',
+                        color: '#000',
+                        border: `1px solid ${isCompleted ? '#a5d6a7' : '#e0e6ed'}`,
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontWeight: '500'
@@ -461,7 +396,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       }}
       onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#001a66'}
       onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#022AFF'}
-      onClick={() => setEditNode({...project, type: 'project'})}
+      onClick={() => handleEditNode({...project, type: 'project'})}
       >
         📋 {project.title || project.name}
       </div>
@@ -492,7 +427,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
               onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#2456e6'}
               >
                 <span 
-                  onClick={() => setEditNode({ ...epic, type: 'epic', projectId: project.projectId || project.id })}
+                  onClick={() => handleEditNode({ ...epic, type: 'epic', projectId: project.projectId || project.id })}
                   style={{ flex: 1, fontSize: '1rem', fontWeight: '500', textAlign: 'left' }}
                 >
                   📚 {epic.title}
@@ -553,7 +488,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                         }}
                         >
                           <span 
-                            onClick={() => setEditNode({ ...feature, type: 'feature', projectId: project.projectId || project.id, epicId: epic.epicId || epic.id })}
+                            onClick={() => handleEditNode({ ...feature, type: 'feature', projectId: project.projectId || project.id, epicId: epic.epicId || epic.id })}
                             style={{ flex: 1, fontSize: '0.9rem', fontWeight: '500', textAlign: 'left' }}
                           >
                             🎯 {feature.title}
@@ -609,7 +544,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                   (e.target as HTMLElement).style.backgroundColor = isCompleted ? '#e8f5e9' : '#e6f0ff';
                                   (e.target as HTMLElement).style.transform = 'translateX(0px)';
                                 }}
-                                onClick={() => setEditNode({
+                                onClick={() => handleEditNode({
                                   ...task,
                                   type: 'task',
                                   id: task.id || task.taskId,
@@ -623,8 +558,9 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                   <span style={{
                                     marginLeft: '8px',
                                     fontSize: '0.75rem',
-                                    backgroundColor: task.status === 'Done' ? '#4CAF50' : task.status === 'In progress' ? '#FF9800' : task.status === 'Need help' ? '#E91E63' : '#757575',
-                                    color: '#fff',
+                                    backgroundColor: task.status === 'Done' ? '#e8f5e8' : task.status === 'In progress' ? '#fff3e0' : task.status === 'Need help' ? '#fce4ec' : '#f5f5f5',
+                                    color: '#000',
+                                    border: `1px solid ${task.status === 'Done' ? '#4CAF50' : task.status === 'In progress' ? '#FF9800' : task.status === 'Need help' ? '#E91E63' : '#757575'}`,
                                     padding: '2px 6px',
                                     borderRadius: '3px'
                                   }}>
@@ -635,8 +571,9 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                   <span style={{
                                     marginLeft: '8px',
                                     fontSize: '0.75rem',
-                                    backgroundColor: '#2196F3',
-                                    color: '#fff',
+                                    backgroundColor: isCompleted ? '#e8f5e9' : '#e6f0ff',
+                                    color: '#000',
+                                    border: `1px solid ${isCompleted ? '#a5d6a7' : '#b3d1ff'}`,
                                     padding: '2px 6px',
                                     borderRadius: '3px'
                                   }}>
@@ -658,38 +595,15 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
         })}
       </div>
 
-      {editNode && (
-        <EditFanout
-          node={editNode}
-          mode="edit"
-          project={project}
-          onClose={() => setEditNode(null)}
-          onSave={async (data?: any) => {
-            if (data?.action === 'create') {
-              setCreateNode({
-                type: data.nodeType,
-                parentIds: data.parentIds,
-                parentNode: data.parentNode
-              });
-            } else {
-              await fetchProjectById();
-            }
-            setEditNode(null);
-          }}
-        />
-      )}
-      {createNode && (
-        <EditFanout
-          createNode={createNode}
-          mode="create"
-          project={project}
-          onClose={() => setCreateNode(null)}
-          onSave={async () => {
-            await fetchProjectById();
-            setCreateNode(null);
-          }}
-        />
-      )}
+      <ProjectViewModal
+        editNode={editNode}
+        createNode={createNode}
+        project={project}
+        onCloseEdit={handleCloseEdit}
+        onCloseCreate={handleCloseCreate}
+        onSave={handleSave}
+        onSaveCreate={handleSaveCreate}
+      />
     </div>
   );
 };

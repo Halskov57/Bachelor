@@ -1,10 +1,10 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ApolloProvider } from "@apollo/client/react";
 import { client } from './utils/apolloClientSetup';
 import { ToastProvider } from './utils/toastContext';
 import Beams from './components/Beams';
-import LoginBox from './components/LoginBox';
+import Login from './pages/Login';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
@@ -43,7 +43,8 @@ const AppContent: React.FC = () => {
           </div>
         )}
         <Routes>
-          <Route path="/" element={<LoginBox />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/project" element={
             <PrivateRoute>

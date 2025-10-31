@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ProjectTreeView from '../components/ProjectTreeView';
-import ProjectListView from '../components/ProjectListView';
+import { ProjectTreeView, ProjectListView } from '../components/ProjectViews';
 import { isAdmin } from '../utils/jwt';
 import { NodeData } from '../utils/types';
 import { getGraphQLUrl } from '../config/environment';
@@ -123,8 +122,8 @@ const Project: React.FC = () => {
           setProjectId(null);
           localStorage.removeItem('token');
           // Use both navigation methods to ensure redirect
-          navigate('/', { replace: true });
-          window.location.href = '/';
+          navigate('/login', { replace: true });
+          window.location.href = '/login';
           return;
         }
         
@@ -147,8 +146,8 @@ const Project: React.FC = () => {
       setProject(null);
       setProjectId(null);
       localStorage.removeItem('token');
-      navigate('/', { replace: true });
-      window.location.href = '/';
+      navigate('/login', { replace: true });
+      window.location.href = '/login';
     }
   };
 
