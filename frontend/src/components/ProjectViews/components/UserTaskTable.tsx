@@ -5,6 +5,7 @@ import { TaskForPDF } from '../../../utils/pdfExport';
 interface TaskWithUsers {
   taskId: string;
   taskTitle: string;
+  taskStatus: string;
   assignedUsers: { id: string; username: string }[];
   epicTitle: string;
   featureTitle: string;
@@ -31,6 +32,7 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
                 tasks.push({
                   taskId: task.id,
                   taskTitle: task.title,
+                  taskStatus: task.status,
                   assignedUsers: task.users || [],
                   epicTitle: epic.title || 'Unknown Epic',
                   featureTitle: feature.title || 'Unknown Feature'
@@ -50,7 +52,7 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
     return taskUserData.map(task => ({
       id: task.taskId || '',
       title: task.taskTitle || 'Untitled',
-      status: 'Done', // All tasks in this view are completed
+      status: task.taskStatus,
       assignedUsers: task.assignedUsers.map(user => user.username || 'Unknown'),
       epicTitle: task.epicTitle,
       featureTitle: task.featureTitle,
@@ -78,7 +80,7 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
           fontSize: '1.2rem',
           fontWeight: 'bold'
         }}>
-          📊 Completed Task Assignments
+          Completed Task Assignments
         </h3>
         
         <PDFExportButton
@@ -118,78 +120,112 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
             <thead>
               <tr style={{ backgroundColor: '#022AFF', color: '#fff' }}>
                 <th style={{ 
-                  padding: '16px', 
+                  padding: '12px 16px', 
                   textAlign: 'left',
                   fontWeight: 600,
-                  fontSize: '16px',
-                  width: '40%'
+                  fontSize: '14px',
+                  width: '35%'
                 }}>
                   Task Title
                 </th>
                 <th style={{ 
-                  padding: '16px', 
+                  padding: '12px 16px', 
                   textAlign: 'left',
                   fontWeight: 600,
-                  fontSize: '16px',
-                  width: '60%'
+                  fontSize: '14px',
+                  width: '12%'
                 }}>
-                  Assigned Users
+                  Status
+                </th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'left',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  width: '28%'
+                }}>
+                  Users
+                </th>
+                <th style={{ 
+                  padding: '12px 16px', 
+                  textAlign: 'left',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  width: '25%'
+                }}>
+                  Part Of
                 </th>
               </tr>
             </thead>
             <tbody>
               {taskUserData.map((task, index) => (
                 <tr key={task.taskId} style={{ 
-                  backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#fff'
+                  backgroundColor: index % 2 === 0 ? '#f8f9fa' : '#fff'
                 }}>
                   <td style={{ 
-                    padding: '16px', 
+                    padding: '12px 16px', 
                     verticalAlign: 'top',
-                    borderBottom: '1px solid #eee'
+                    textAlign: 'left',
+                    borderBottom: '1px solid #eee',
+                    fontSize: '14px',
+                    color: '#333'
                   }}>
-                    <div style={{ 
-                      fontWeight: 600, 
-                      color: '#022AFF',
-                      fontSize: '14px'
-                    }}>
-                      {task.taskTitle}
-                    </div>
+                    {task.taskTitle}
                   </td>
                   <td style={{ 
-                    padding: '16px',
+                    padding: '12px 16px', 
+                    verticalAlign: 'top',
+                    textAlign: 'left',
+                    borderBottom: '1px solid #eee'
+                  }}>
+                    <span style={{
+                      backgroundColor: '#4caf50',
+                      color: '#fff',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      display: 'inline-block'
+                    }}>
+                      {task.taskStatus}
+                    </span>
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    verticalAlign: 'top',
+                    textAlign: 'left',
                     borderBottom: '1px solid #eee'
                   }}>
                     {task.assignedUsers.length === 0 ? (
                       <span style={{ 
                         color: '#999', 
                         fontStyle: 'italic',
-                        fontSize: '14px'
+                        fontSize: '13px'
                       }}>
-                        No users assigned
+                        Unassigned
                       </span>
                     ) : (
-                      <div style={{ 
-                        display: 'flex', 
-                        flexWrap: 'wrap', 
-                        gap: '8px' 
-                      }}>
-                        {task.assignedUsers.map((user, userIndex) => (
-                          <span key={user.id} style={{
-                            backgroundColor: '#e3f2fd',
-                            color: '#1976d2',
-                            padding: '6px 12px',
-                            borderRadius: '16px',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            border: '1px solid #bbdefb',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                            👤 {user.username}
+                      <div style={{ fontSize: '13px', color: '#555' }}>
+                        {task.assignedUsers.map((user, idx) => (
+                          <span key={user.id}>
+                            {user.username}
+                            {idx < task.assignedUsers.length - 1 ? ', ' : ''}
                           </span>
                         ))}
                       </div>
+                    )}
+                  </td>
+                  <td style={{ 
+                    padding: '12px 16px',
+                    verticalAlign: 'top',
+                    textAlign: 'left',
+                    borderBottom: '1px solid #eee',
+                    fontSize: '13px',
+                    color: '#666'
+                  }}>
+                    {task.epicTitle}
+                    {task.featureTitle && (
+                      <span style={{ color: '#999' }}> / {task.featureTitle}</span>
                     )}
                   </td>
                 </tr>
