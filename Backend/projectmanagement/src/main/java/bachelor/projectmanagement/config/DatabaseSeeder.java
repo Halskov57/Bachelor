@@ -1,5 +1,6 @@
 package bachelor.projectmanagement.config;
 import bachelor.projectmanagement.model.Project;
+import bachelor.projectmanagement.repository.ProjectRepository;
 import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.service.ProjectService;
 import bachelor.projectmanagement.service.UserService;
@@ -12,8 +13,20 @@ import org.springframework.context.annotation.Configuration;
 public class DatabaseSeeder {
 
 @Bean
-CommandLineRunner seedUsers(UserRepository userRepository, UserService userService, ProjectService projectService) {
+CommandLineRunner seedUsers(UserRepository userRepository, ProjectRepository projectRepository, UserService userService, ProjectService projectService) {
     return args -> {
+        // 🗑️ Clear existing database
+        System.out.println("🗑️  Clearing existing database...");
+        projectRepository.deleteAll();
+        System.out.println("   ✓ Deleted all projects");
+        userRepository.deleteAll();
+        System.out.println("   ✓ Deleted all users");
+        System.out.println("✅ Database cleared successfully!");
+        System.out.println();
+        
+        // 🌱 Start seeding
+        System.out.println("🌱 Starting database seeding...");
+        System.out.println();
         // Create users if they don't exist (password = name + "12345")
         if (userRepository.findByUsername("alice").isEmpty()) {
             userService.createUser("alice", "Alice12345");
@@ -50,6 +63,9 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
         } else {
             System.out.println("ℹ️ Super admin user already exists, skipping creation.");
         }
+        
+        System.out.println();
+        System.out.println("✅ Database seeding completed successfully!");
     };
 } 
 
