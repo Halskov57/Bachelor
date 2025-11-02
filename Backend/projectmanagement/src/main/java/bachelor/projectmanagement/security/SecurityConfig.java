@@ -9,11 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -21,17 +17,22 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CorsConfigurationSource corsConfigurationSource) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(headers -> headers
+                .frameOptions(frameOptions -> frameOptions.deny()) // Security header
+            )
             .authorizeHttpRequests(authz -> authz
                 
                 // 1. CRITICAL FIX: Allow OPTIONS pre-flight requests globally
@@ -41,36 +42,15 @@ public class SecurityConfig {
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
                 
-                // 2. TEMPORARY FIX: Permit all authenticated endpoints to check if any of them are the issue
-                // Remove these temporary lines once the 403 is gone.
-                // .requestMatchers("/graphql").authenticated()
-                // .requestMatchers("/users/**").authenticated()
-                // .requestMatchers("/projects/**").authenticated()
-                // .anyRequest().authenticated()
-                .anyRequest().authenticated() // TEMPORARILY OPEN ALL PATHS
+                // SSE endpoints for real-time updates (JWT passed as query param)
+                .requestMatchers(HttpMethod.GET, "/api/sse/**").permitAll() // SSE connections
+                .requestMatchers(HttpMethod.POST, "/graphql").authenticated() // GraphQL HTTP queries
                 
-                // The rest of the authorization block remains the same, but the final .anyRequest().authenticated() 
-                // is replaced by the temporary .permitAll() to rule out authorization logic.
-                // Admin-only endpoints
-                // .requestMatchers("/users/all").hasRole("ADMIN") 
-                // This line will be removed if you use .anyRequest().permitAll()
+                // All other requests require authentication
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Uses the corrected specific origin
-        configuration.setAllowedOrigins(Arrays.asList("https://frontend-production-ded6.up.railway.app"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
-        
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

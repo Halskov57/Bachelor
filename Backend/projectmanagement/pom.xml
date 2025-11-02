@@ -71,6 +71,22 @@
             <artifactId>spring-boot-starter-graphql</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- WebSocket Support for GraphQL Subscriptions -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-websocket</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-messaging</artifactId>
+        </dependency>
+
         <!-- GraphiQL UI (handy for testing) -->
         <dependency>
             <groupId>com.graphql-java-kickstart</groupId>

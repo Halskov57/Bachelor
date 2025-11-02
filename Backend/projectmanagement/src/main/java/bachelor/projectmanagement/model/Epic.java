@@ -27,7 +27,7 @@ public class Epic {
         this.title = title;
         this.description = description;
         this.depth = depth;
-        this.status = EpicStatus.NOT_STARTED;
+        this.status = EpicStatus.TODO;
         this.owner = owner;
         this.features = new ArrayList<>();
     }

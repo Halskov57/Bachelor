@@ -8,6 +8,8 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
+
 
 @Controller
 public class UserResolver {
@@ -23,14 +25,21 @@ public class UserResolver {
         return userService.findByUsername(username);
     }
 
-     @MutationMapping
+    @QueryMapping
+    public List<User> users() {
+        return userService.getAllUsers();
+    }
+
+    @MutationMapping
     public User updateUsername(@Argument String oldUsername, @Argument String newUsername) {
         User user = userService.findByUsername(oldUsername);
         if (user == null) {
             throw new RuntimeException("User not found");
         }
         user.setUsername(newUsername);
-        return userService.save(user); 
+        User updatedUser = userService.save(user); 
+        
+        return updatedUser;
     }
 
     @MutationMapping
@@ -39,7 +48,22 @@ public class UserResolver {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
+        // Assuming updatePassword handles saving the user object
         userService.updatePassword(user, newPassword); 
+        
         return user;
     }
+    
+    @QueryMapping
+    public List<User> nonSuperAdminUsers() {
+        return userService.getAllNonSuperAdminUsers();
+    }
+
+    @MutationMapping
+    public User updateUserRole(@Argument String username, @Argument String newRole) {
+        User updatedUser = userService.updateUserRole(username, newRole);
+        
+        return updatedUser;
+    }
+
 }

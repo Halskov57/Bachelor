@@ -23,7 +23,7 @@ public class Feature {
         this.title = title;
         this.description = description;
         this.depth = depth;
-        this.status = FeatureStatus.NOT_STARTED;
+        this.status = FeatureStatus.TODO;
         this.tasks = new ArrayList<>();
     }
 

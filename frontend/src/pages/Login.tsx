@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config/environment';
 
-const LoginBox: React.FC = () => {
+const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -26,7 +27,7 @@ const LoginBox: React.FC = () => {
     setError('');
     if (mode === 'login') {
       try {
-        const res = await fetch('/api/users/verify', {
+        const res = await fetch(getApiUrl('/users/verify'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -58,10 +59,26 @@ const LoginBox: React.FC = () => {
         return;
       }
 
+      // Validate password requirements
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters long');
+        return;
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        setError('Password must contain at least one uppercase letter');
+        return;
+      }
+
+      if (!/\d/.test(password)) {
+        setError('Password must contain at least one number');
+        return;
+      }
+
       // Registration logic with cooldown
       try {
         setIsCreatingUser(true);
-        const res = await fetch('/api/users/create', {
+        const res = await fetch(getApiUrl('/users/create'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -74,11 +91,17 @@ const LoginBox: React.FC = () => {
           // Start 10-second cooldown
           setCooldownSeconds(10);
         } else {
-          const data = await res.json();
-          setError(data.message || 'Account creation failed');
+          // Try to parse error message from backend
+          try {
+            const data = await res.json();
+            setError(data.message || 'Account creation failed');
+          } catch {
+            // If parsing fails, show generic error
+            setError('Account creation failed');
+          }
         }
       } catch (err) {
-        setError('Network error');
+        setError('Network error: Could not connect to server');
       } finally {
         setIsCreatingUser(false);
       }
@@ -118,7 +141,7 @@ const LoginBox: React.FC = () => {
       </h2>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '28px', gap: '18px' }}>
         <span style={{ color: mode === 'login' ? '#022AFF' : '#888', fontWeight: 600, fontSize: '1.1rem' }}>Login</span>
-        <label style={{ display: 'inline-block', position: 'relative', width: '54px', height: '28px' }}>
+        <label style={{ display: 'inline-block', position: 'relative', width: '54px', height: '30px' }}>
           <input
             type="checkbox"
             checked={mode === 'create'}
@@ -204,27 +227,53 @@ const LoginBox: React.FC = () => {
           }}
         />
         {mode === 'create' && (
-          <input
-            type="password"
-            placeholder="Repeat Password"
-            value={password2}
-            onChange={e => setPassword2(e.target.value)}
-            style={{
-              width: '100%',
-              marginBottom: '28px',
-              paddingLeft: '12px',
-              paddingRight: '12px',
-              paddingTop: '12px',
-              paddingBottom: '12px',
-              borderRadius: '8px',
-              border: '1px solid #022AFF',
-              background: 'rgba(240,240,255,0.95)',
-              color: '#222',
-              fontSize: '1.05rem',
-              boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
-              boxSizing: 'border-box', // <-- add this line
-            }}
-          />
+          <>
+            <input
+              type="password"
+              placeholder="Repeat Password"
+              value={password2}
+              onChange={e => setPassword2(e.target.value)}
+              style={{
+                width: '100%',
+                marginBottom: '12px',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                paddingTop: '12px',
+                paddingBottom: '12px',
+                borderRadius: '8px',
+                border: '1px solid #022AFF',
+                background: 'rgba(240,240,255,0.95)',
+                color: '#222',
+                fontSize: '1.05rem',
+                boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
+                boxSizing: 'border-box', // <-- add this line
+              }}
+            />
+            <div
+              style={{
+                fontSize: '0.85rem',
+                color: '#666',
+                marginBottom: '20px',
+                padding: '8px 12px',
+                background: 'rgba(2,42,255,0.05)',
+                borderRadius: '6px',
+                border: '1px solid rgba(2,42,255,0.15)',
+              }}
+            >
+              <strong>Password requirements:</strong>
+              <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px' }}>
+                <li style={{ color: password.length >= 8 ? '#388e3c' : '#666' }}>
+                  At least 8 characters
+                </li>
+                <li style={{ color: /[A-Z]/.test(password) ? '#388e3c' : '#666' }}>
+                  At least one uppercase letter
+                </li>
+                <li style={{ color: /\d/.test(password) ? '#388e3c' : '#666' }}>
+                  At least one number
+                </li>
+              </ul>
+            </div>
+          </>
         )}
         {error && (
           <div
@@ -276,4 +325,4 @@ const LoginBox: React.FC = () => {
   );
 };
 
-export default LoginBox;
+export default Login;

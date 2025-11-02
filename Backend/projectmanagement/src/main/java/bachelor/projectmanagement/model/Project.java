@@ -31,7 +31,7 @@ public class Project {
         this.description = description;
         this.depth = depth;
         this.courseLevel = courseLevel;
-        this.status = ProjectStatus.NOT_STARTED;
+        this.status = ProjectStatus.TODO;
         this.owners = new ArrayList<>();
         this.owners.add(owner);  // Add the initial owner to the list
         this.epics = new ArrayList<>();

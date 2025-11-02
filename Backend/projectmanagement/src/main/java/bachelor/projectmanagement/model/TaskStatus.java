@@ -4,12 +4,11 @@ package bachelor.projectmanagement.model;
  * Enum representing the possible statuses for a Task.
  */
 public enum TaskStatus {
-    TODO("To Do"),           // Add this line
-    NOT_STARTED("Not Started"),
-    IN_PROGRESS("In Progress"),
-    COMPLETED("Completed"),
+    TODO("Todo"),
+    IN_PROGRESS("In progress"),
+    DONE("Done"),
     BLOCKED("Blocked"),
-    CANCELLED("Cancelled");
+    NEED_HELP("Need help");
 
     private final String displayName;
 

@@ -2,6 +2,7 @@ package bachelor.projectmanagement.graphql;
 
 import bachelor.projectmanagement.model.*;
 import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.util.TestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,9 @@ class ProjectResolverTest {
 
     @Mock
     private ProjectService projectService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private ProjectResolver projectResolver;
@@ -267,7 +271,7 @@ class ProjectResolverTest {
     @Test
     void updateTaskStatus_ShouldUpdateTaskStatusSuccessfully() {
         // Given
-        TaskStatus newStatus = TaskStatus.COMPLETED; // Changed from COMPLETED to DONE
+        TaskStatus newStatus = TaskStatus.DONE;
         Task updatedTask = TestDataBuilder.createTestTask();
         updatedTask.setTaskId(testTask.getTaskId());
         updatedTask.setStatus(newStatus);
@@ -317,7 +321,7 @@ class ProjectResolverTest {
         // Task mutations
         projectResolver.updateTaskTitle(testProject.getProjectId(), testEpic.getEpicId(), testFeature.getFeatureId(), testTask.getTaskId(), "New Task Title");
         projectResolver.updateTaskDescription(testProject.getProjectId(), testEpic.getEpicId(), testFeature.getFeatureId(), testTask.getTaskId(), "New Task Description");
-        projectResolver.updateTaskStatus(testProject.getProjectId(), testEpic.getEpicId(), testFeature.getFeatureId(), testTask.getTaskId(), TaskStatus.COMPLETED.name());
+        projectResolver.updateTaskStatus(testProject.getProjectId(), testEpic.getEpicId(), testFeature.getFeatureId(), testTask.getTaskId(), TaskStatus.DONE.name());
 
         // Verify all service calls
         verify(projectService, times(2)).getProjectById(testProject.getProjectId());

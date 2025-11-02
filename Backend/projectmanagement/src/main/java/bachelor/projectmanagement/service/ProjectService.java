@@ -1,5 +1,6 @@
 package bachelor.projectmanagement.service;
 
+import bachelor.projectmanagement.exception.UnauthorizedException;
 import bachelor.projectmanagement.model.*;
 import bachelor.projectmanagement.repository.ProjectRepository;
 import bachelor.projectmanagement.repository.UserRepository;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,10 +43,14 @@ public class ProjectService {
 
     public List<Project> getProjectsByUsername(String username) {
         // Fetch the user by username to get their String ID
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-
-        // Query projects by the user's String ID
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        
+        // If user doesn't exist, return empty list instead of throwing exception
+        if (userOptional.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        User user = userOptional.get();
         return projectRepository.findByOwnersContaining(user.getId());
     }
 
@@ -148,6 +154,11 @@ public class ProjectService {
         if (task.getStatus() == null) {
             task.setStatus(TaskStatus.TODO);
         }
+        
+        // Set parent IDs for subscription filtering
+        task.setProjectId(projectId);
+        task.setEpicId(epicId);
+        task.setFeatureId(featureId);
         feature.getTasks().add(task);
         projectRepository.save(project);
         return task;
@@ -276,10 +287,19 @@ public class ProjectService {
     public Task getTaskById(String projectId, String epicId, String featureId, String taskId) {
         Feature feature = getFeatureById(projectId, epicId, featureId);
         if (feature == null) return null;
-        return feature.getTasks().stream()
+        Task task = feature.getTasks().stream()
             .filter(t -> t.getTaskId().equals(taskId))
             .findFirst()
             .orElse(null);
+        
+        // Ensure parent IDs are set for subscription filtering
+        if (task != null) {
+            task.setProjectId(projectId);
+            task.setEpicId(epicId);
+            task.setFeatureId(featureId);
+        }
+        
+        return task;
     }
 
     public Project save(Project project) {
@@ -356,6 +376,12 @@ public class ProjectService {
                                     System.out.println("Updating task users from: " + task.getUsers() + " to: " + updatedTask.getUsers());
                                     task.setUsers(updatedTask.getUsers());
                                 }
+                                
+                                // Ensure parent IDs are set for subscription filtering
+                                task.setProjectId(projectId);
+                                task.setEpicId(epicId);
+                                task.setFeatureId(featureId);
+                                
                                 // Add more fields as needed
                                 projectRepository.save(project);
                                 return task;
@@ -392,14 +418,14 @@ public class ProjectService {
         }
     }
 
-    public void addUserToProject(String projectId, String username) {
+    public Project addUserToProject(String projectId, String username) {
         // Fetch the project
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
 
         // Fetch the user
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new bachelor.projectmanagement.exception.UserNotFoundException("User '" + username + "' does not exist"));
 
         // Add the user to the project's owners list if not already present
         if (!project.getOwners().contains(user)) {
@@ -412,9 +438,117 @@ public class ProjectService {
             user.getProjects().add(project);
             userRepository.save(user);
         }
+
+        return project;
+    }
+
+    public Project removeUserFromProject(String projectId, String username) {
+        // Fetch the project
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+
+        // Fetch the user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new bachelor.projectmanagement.exception.UserNotFoundException("User '" + username + "' does not exist"));
+
+        // Remove the user from the project's owners list
+        project.getOwners().remove(user);
+        projectRepository.save(project);
+
+        // Remove the project from the user's projects list
+        user.getProjects().removeIf(p -> p.getProjectId().equals(projectId));
+        userRepository.save(user);
+
+        return project;
+    }
+
+    /**
+     * Check if a user has access to a project (is an owner)
+     * @param projectId The project ID to check
+     * @param username The username to check
+     * @return true if user is an owner or superadmin, false otherwise
+     */
+    public boolean hasProjectAccess(String projectId, String username) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+        
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        
+        // SuperAdmins have access to all projects
+        if ("SUPERADMIN".equals(user.getRole())) {
+            return true;
+        }
+        
+        // Check if user is in the project's owners list
+        return project.getOwners().stream()
+                .anyMatch(owner -> owner.getUsername().equals(username));
+    }
+
+    /**
+     * Verify that a user has access to a project, throws exception if not
+     * @param projectId The project ID to check
+     * @param username The username to check
+     * @throws RuntimeException if user does not have access
+     */
+    public void verifyProjectAccess(String projectId, String username) {
+        if (!hasProjectAccess(projectId, username)) {
+            throw new UnauthorizedException("Access denied: You are not authorized to access this project");
+        }
     }
 
     public String getId(Project project) {
         return project.getProjectId();
+    }
+
+    public Project copyProjectStructure(Project template, String newTitle, String newDescription, int courseLevel, String username) {
+        System.out.println("DEBUG: Copying project structure from template: " + template.getTitle());
+        
+        // Create new project with basic info
+        Project newProject = new Project();
+        newProject.setTitle(newTitle);
+        newProject.setDescription(newDescription);
+        newProject.setCourseLevel(courseLevel);
+        
+        // Copy epics structure
+        List<Epic> newEpics = new ArrayList<>();
+        if (template.getEpics() != null) {
+            for (Epic templateEpic : template.getEpics()) {
+                Epic newEpic = new Epic();
+                newEpic.setTitle(templateEpic.getTitle());
+                newEpic.setDescription(templateEpic.getDescription());
+                
+                // Copy features structure
+                List<Feature> newFeatures = new ArrayList<>();
+                if (templateEpic.getFeatures() != null) {
+                    for (Feature templateFeature : templateEpic.getFeatures()) {
+                        Feature newFeature = new Feature();
+                        newFeature.setTitle(templateFeature.getTitle());
+                        newFeature.setDescription(templateFeature.getDescription());
+                        
+                        // Copy tasks structure
+                        List<Task> newTasks = new ArrayList<>();
+                        if (templateFeature.getTasks() != null) {
+                            for (Task templateTask : templateFeature.getTasks()) {
+                                Task newTask = new Task();
+                                newTask.setTitle(templateTask.getTitle());
+                                newTask.setDescription(templateTask.getDescription());
+                                newTask.setStatus(TaskStatus.TODO); // Start with default status
+                                newTask.setUsers(new ArrayList<>()); // Start with no assigned users
+                                newTasks.add(newTask);
+                            }
+                        }
+                        newFeature.setTasks(newTasks);
+                        newFeatures.add(newFeature);
+                    }
+                }
+                newEpic.setFeatures(newFeatures);
+                newEpics.add(newEpic);
+            }
+        }
+        newProject.setEpics(newEpics);
+        
+        // Assign IDs and save the project with current user as owner
+        return createProject(newProject, username); // This will assign IDs and save
     }
 }

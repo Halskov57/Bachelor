@@ -22,7 +22,7 @@ public class User {
     @DBRef
     @JsonIgnore
     private List<Project> projects = new ArrayList<>(); // Initialized
-    private String role; // "USER" or "ADMIN"
+    private String role; // "USER", "ADMIN", or "SUPERADMIN"
 
     public User() {}
 
@@ -53,5 +53,18 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return id != null && id.equals(user.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

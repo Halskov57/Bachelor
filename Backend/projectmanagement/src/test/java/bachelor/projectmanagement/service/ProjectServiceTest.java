@@ -80,7 +80,8 @@ class ProjectServiceTest {
     void getProjectsByUsername_ShouldReturnUserProjects() {
         // Given
         List<Project> projects = List.of(testProject);
-        when(projectRepository.findByOwnersContaining("testuser")).thenReturn(projects);
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(projectRepository.findByOwnersContaining(testUser.getId())).thenReturn(projects);
 
         // When
         List<Project> result = projectService.getProjectsByUsername("testuser");
@@ -93,8 +94,8 @@ class ProjectServiceTest {
 
     @Test
     void getProjectsByUsername_ShouldHandleEmptyResult() {
-        // Given
-        when(projectRepository.findByOwnersContaining("nonexistent")).thenReturn(List.of());
+        // Given - Mock that user doesn't exist
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
         // When
         List<Project> result = projectService.getProjectsByUsername("nonexistent");
@@ -391,7 +392,7 @@ class ProjectServiceTest {
         
         Task partialUpdate = new Task();
         partialUpdate.setTaskId(testTask.getTaskId());
-        partialUpdate.setStatus(TaskStatus.COMPLETED);
+        partialUpdate.setStatus(TaskStatus.DONE);
 
         when(projectRepository.findById(testProject.getProjectId())).thenReturn(Optional.of(testProject));
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
@@ -402,7 +403,7 @@ class ProjectServiceTest {
 
         // Then
         assertNotNull(result);
-        assertEquals(TaskStatus.COMPLETED, result.getStatus());
+        assertEquals(TaskStatus.DONE, result.getStatus());
         assertEquals(testTask.getTitle(), result.getTitle()); // Should retain original title
         verify(projectRepository).save(testProject);
     }

@@ -1,31 +1,25 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ApolloProvider } from "@apollo/client/react";
+import { client } from './utils/apolloClientSetup';
+import { ToastProvider } from './utils/toastContext';
 import Beams from './components/Beams';
-import LoginBox from './components/LoginBox';
+import Login from './pages/Login';
 import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
 import Admin from './pages/Admin';
+import DebugAuth from './pages/DebugAuth';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
-
-const PageTitle: React.FC = () => {
-  const location = useLocation();
-  let title = "Welcome to Aarhus university's project management system";
-  if (location.pathname === '/dashboard') title = 'Select a project';
-  else if (location.pathname === '/project') title = 'Projects';
-  else if (location.pathname === '/admin') title = 'Admin';
-  return <h1 className="page-title">{title}</h1>;
-};
 
 const AppContent: React.FC = () => {
   const location = useLocation();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>
       <Header />
       <main style={{ flex: 1, position: 'relative', width: '100%' }}>
-        {/* Only show Beams if not on /project */}
         {location.pathname !== '/project' && (
           <div style={{
             position: 'fixed',
@@ -48,10 +42,9 @@ const AppContent: React.FC = () => {
             />
           </div>
         )}
-        {/* Main content below */}
-        <PageTitle />
         <Routes>
-          <Route path="/" element={<LoginBox />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/project" element={
             <PrivateRoute>
@@ -63,6 +56,7 @@ const AppContent: React.FC = () => {
               <Admin />
             </PrivateRoute>
           } />
+          <Route path="/debug" element={<DebugAuth />} />
         </Routes>
       </main>
     </div>
@@ -70,11 +64,13 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-  <BrowserRouter>
-    <AppContent />
-  </BrowserRouter>
+  <ApolloProvider client={client}>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ToastProvider>
+  </ApolloProvider>
 );
-
-
 
 export default App;
