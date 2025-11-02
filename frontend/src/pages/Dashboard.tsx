@@ -222,21 +222,26 @@ const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* Main content with top margin */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 2,
-          margin: 'auto',
-          padding: '20px 20px 20px 20px',
-          maxWidth: '800px',
-          textAlign: 'center',
-          background: 'rgba(230,230,240,0.92)',
-          borderRadius: '18px',
-          boxShadow: '0 8px 32px 0 rgba(2,42,255,0.18), 0 0 32px 8px rgba(255,255,255,0.10)',
-          marginTop: '100px', // Increased margin to account for fixed header
-        }}
-      >
+      {/* Main content with scrollable area */}
+      <div style={{ 
+        paddingTop: '80px',
+        paddingBottom: '40px',
+        minHeight: '100vh'
+      }}>
+        <div
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            margin: 'auto',
+            padding: '20px',
+            maxWidth: '800px',
+            textAlign: 'center',
+            background: 'rgba(230,230,240,0.92)',
+            borderRadius: '18px',
+            boxShadow: '0 8px 32px 0 rgba(2,42,255,0.18), 0 0 32px 8px rgba(255,255,255,0.10)',
+            marginTop: '20px',
+          }}
+        >
       <button
         style={{
           marginBottom: 24,
@@ -331,6 +336,7 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
       )}
+        </div>
       </div>
     </>
   );

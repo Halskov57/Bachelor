@@ -406,7 +406,11 @@ function toTreeData(project: any): NodeData | null {
   if (!project) return <div>Loading...</div>;
 
   return (
-    <div style={{ minHeight: '100vh', overflow: 'visible' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      overflow: 'visible',
+      paddingBottom: '40px'
+    }}>
       {/* Top navigation bar */}
       <div
         style={{
@@ -546,7 +550,11 @@ function toTreeData(project: any): NodeData | null {
       )}
 
       {/* Add top margin to account for fixed header */}
-      <div style={{ marginTop: '80px', paddingBottom: '40px' }}>
+      <div style={{ 
+        marginTop: '80px', 
+        paddingBottom: '40px',
+        minHeight: 'calc(100vh - 80px)'
+      }}>
         <div
         style={{
           textAlign: 'center',

@@ -169,6 +169,9 @@ const EditFanout: React.FC<EditFanoutProps> = ({
 
 
     const renderCourseLevelSection = () => {
+        // Only show course level for projects
+        if (nodeType !== 'project') return null;
+        
         if (!isAdminUser && mode === 'edit') return null;
 
         return (

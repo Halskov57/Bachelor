@@ -81,11 +81,15 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
 
   return (
     <div style={{
-      padding: '20px 500px 10px 50px',
+      padding: '20px',
       backgroundColor: '#f8f9fa',
       borderRadius: '12px',
       border: '1px solid #e0e6ed',
-      textAlign: 'left'
+      textAlign: 'left',
+      maxWidth: '1200px',
+      margin: '0 auto',
+      minHeight: 'calc(100vh - 120px)',
+      overflow: 'visible'
     }}>
       {/* Filter Controls */}
       <div style={{

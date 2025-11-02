@@ -17,7 +17,7 @@ const AppContent: React.FC = () => {
   const location = useLocation();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>
       <Header />
       <main style={{ flex: 1, position: 'relative', width: '100%' }}>
         {location.pathname !== '/project' && (

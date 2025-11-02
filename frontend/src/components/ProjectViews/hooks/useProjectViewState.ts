@@ -27,10 +27,14 @@ export const useProjectViewState = (fetchProjectById?: () => void | Promise<void
   }, [client, fetchProjectById]);
 
   const handleEditNode = useCallback((node: NodeData) => {
+    // Close any existing create fanout when opening edit fanout
+    setCreateNode(null);
     setEditNode(node);
   }, []);
 
   const handleCreateNode = useCallback((nodeData: CreateNodeData) => {
+    // Close any existing edit fanout when opening create fanout
+    setEditNode(null);
     setCreateNode(nodeData);
   }, []);
 
