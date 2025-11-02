@@ -44,7 +44,7 @@ const Project: React.FC = () => {
   }, [pendingNotifications]);
 
 
-  const fetchProjectById = async () => {
+  const fetchProjectById = useCallback(async () => {
     try {
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
@@ -149,7 +149,7 @@ const Project: React.FC = () => {
       navigate('/login', { replace: true });
       window.location.href = '/login';
     }
-  };
+  }, [navigate, setProject, setProjectId]);
 
   // Real-time updates using Server-Sent Events (SSE)
   useEffect(() => {
@@ -340,7 +340,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
-  }, []); // Only run once on mount
+  }, [fetchProjectById]); // Include fetchProjectById dependency
 
 function toTreeData(project: any): NodeData | null {
   if (!project || !(project.title || project.name)) return null;

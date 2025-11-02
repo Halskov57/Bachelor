@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useProjectViewState } from '../hooks/useProjectViewState';
 import { ProjectViewModal } from '../components/ProjectViewModal';
 import { getAllTasksWithContext, getUniqueStatuses, getUniqueUsernames, getStatusColor } from '../utils/nodeHelpers';
+import PDFExportButton from '../../PDFExportButton';
+import { TaskForPDF } from '../../../utils/pdfExport';
 
 type FilterCategory = 'none' | 'status' | 'username';
 
@@ -59,6 +61,21 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
     setFilterCategory(newCategory);
     setSelectedStatus('');
     setSelectedUsername('');
+  };
+
+  // Prepare filtered tasks for PDF export
+  const getFilteredTasksForPDF = (): TaskForPDF[] => {
+    return getFilteredTasks().map(task => ({
+      id: task.id || task._id || '',
+      title: task.title || task.name || 'Untitled',
+      status: task.status || 'No Status',
+      assignedUsers: (task.users || task.assignedUsers || []).map((user: any) => 
+        user.username || user.name || 'Unknown'
+      ),
+      epicTitle: task.epicTitle,
+      featureTitle: task.featureTitle,
+      description: task.description
+    }));
   };
 
   // State for custom dropdown
@@ -271,19 +288,40 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
           maxHeight: '400px',
           overflowY: 'auto'
         }}>
-          <h3 style={{
-            margin: '0 0 12px 0',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            color: '#022AFF',
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: '12px',
             borderBottom: '2px solid #e0e6ed',
             paddingBottom: '8px'
           }}>
-            📊 Filtered Tasks 
-            {filterCategory === 'status' && selectedStatus && ` - Status: ${selectedStatus}`}
-            {filterCategory === 'username' && selectedUsername && ` - User: ${selectedUsername}`}
-            {` (${getFilteredTasks().length} found)`}
-          </h3>
+            <div style={{ flex: 1 }}>
+              <h3 style={{
+                margin: 0,
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                color: '#022AFF',
+                marginBottom: 0
+              }}>
+                📊 Filtered Tasks 
+                {filterCategory === 'status' && selectedStatus && ` - Status: ${selectedStatus}`}
+                {filterCategory === 'username' && selectedUsername && ` - User: ${selectedUsername}`}
+                {` (${getFilteredTasks().length} found)`}
+              </h3>
+            </div>
+            
+            {getFilteredTasks().length > 0 && (
+              <div style={{ marginTop: '-12px', marginBottom: '8px' }}>
+                <PDFExportButton
+                  tasks={getFilteredTasksForPDF()}
+                  projectTitle={project.title || project.name || 'Project'}
+                  filterType={filterCategory === 'status' ? 'Status' : filterCategory === 'username' ? 'User' : undefined}
+                  filterValue={selectedStatus || selectedUsername}
+                />
+              </div>
+            )}
+          </div>
           
           {getFilteredTasks().length === 0 ? (
             <p style={{ color: '#666', fontStyle: 'italic', margin: '12px 0' }}>

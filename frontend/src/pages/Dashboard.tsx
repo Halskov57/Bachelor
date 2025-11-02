@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { parseJwt, isAdmin } from '../utils/jwt';
 import EditFanout from '../components/EditFanout'; // Import your fanout component
-import { getApiUrl, getGraphQLUrl } from '../config/environment';
+import { getApiUrl } from '../config/environment';
 
 interface Project {
   id: string;

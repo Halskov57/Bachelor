@@ -1,9 +1,13 @@
 import React, { useMemo } from 'react';
+import PDFExportButton from '../../PDFExportButton';
+import { TaskForPDF } from '../../../utils/pdfExport';
 
 interface TaskWithUsers {
   taskId: string;
   taskTitle: string;
   assignedUsers: { id: string; username: string }[];
+  epicTitle: string;
+  featureTitle: string;
 }
 
 interface UserTaskTableProps {
@@ -28,6 +32,8 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
                   taskId: task.id,
                   taskTitle: task.title,
                   assignedUsers: task.users || [],
+                  epicTitle: epic.title || 'Unknown Epic',
+                  featureTitle: feature.title || 'Unknown Feature'
                 });
               }
             });
@@ -39,6 +45,19 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
     return tasks;
   }, [project]);
 
+  // Prepare tasks data for PDF export
+  const tasksForPDF: TaskForPDF[] = useMemo(() => {
+    return taskUserData.map(task => ({
+      id: task.taskId || '',
+      title: task.taskTitle || 'Untitled',
+      status: 'Done', // All tasks in this view are completed
+      assignedUsers: task.assignedUsers.map(user => user.username || 'Unknown'),
+      epicTitle: task.epicTitle,
+      featureTitle: task.featureTitle,
+      description: undefined
+    }));
+  }, [taskUserData]);
+
   return (
     <div style={{ 
       background: 'rgba(230,230,240,0.96)', 
@@ -46,13 +65,28 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
       padding: '20px',
       margin: '20px 0'
     }}>
-      <h3 style={{ 
-        margin: '0 0 20px 0', 
-        color: '#022AFF',
-        textAlign: 'center'
+      {/* Header with export button */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px'
       }}>
-        Completed Task Assignments
-      </h3>
+        <h3 style={{ 
+          margin: 0, 
+          color: '#022AFF',
+          fontSize: '1.2rem',
+          fontWeight: 'bold'
+        }}>
+          📊 Completed Task Assignments
+        </h3>
+        
+        <PDFExportButton
+          tasks={tasksForPDF}
+          projectTitle={project.title || project.name || 'Project'}
+          tableElementId="completed-tasks-table"
+        />
+      </div>
 
       {taskUserData.length === 0 ? (
         <div style={{ 
@@ -64,7 +98,15 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
           No completed tasks found in this project
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div 
+          id="completed-tasks-table"
+          style={{ 
+            overflowX: 'auto',
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            border: '1px solid #e0e6ed'
+          }}
+        >
           <table style={{ 
             width: '100%', 
             borderCollapse: 'collapse',
