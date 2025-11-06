@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useProjectViewState } from '../hooks/useProjectViewState';
 import { ProjectViewModal } from '../components/ProjectViewModal';
-import { getAllTasksWithContext, getUniqueStatuses, getUniqueUsernames, getStatusColor } from '../utils/nodeHelpers';
+import { getAllTasksWithContext, getUniqueStatuses, getUniqueUsernames, getStatusColor, getStatusBackgroundColor, getStatusDisplayName } from '../utils/nodeHelpers';
 import PDFExportButton from '../../PDFExportButton';
 import { TaskForPDF } from '../../../utils/pdfExport';
 
@@ -238,7 +238,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                             backgroundColor: getStatusColor(status)
                           }}
                         />
-                        {status}
+                        {getStatusDisplayName(status)}
                       </div>
                     ))}
                   </div>
@@ -331,7 +331,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {getFilteredTasks().map((task: any, index: number) => {
                 const taskStatus = task.status;
-                const isCompleted = taskStatus === 'Done';
+                const isCompleted = taskStatus === 'DONE' || taskStatus === 'Done';
                 return (
                 <div
                   key={task.id || task._id || `${task.title}-${index}`}
@@ -375,14 +375,14 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     {task.status && (
                       <span style={{
                         fontSize: '0.75rem',
-                        backgroundColor: taskStatus === 'Done' ? '#e8f5e8' : taskStatus === 'In progress' ? '#fff3e0' : taskStatus === 'Need help' ? '#fce4ec' : '#f5f5f5',
+                        backgroundColor: getStatusBackgroundColor(taskStatus),
                         color: '#000',
-                        border: `1px solid ${taskStatus === 'Done' ? '#4CAF50' : taskStatus === 'In progress' ? '#FF9800' : taskStatus === 'Need help' ? '#E91E63' : '#757575'}`,
+                        border: `1px solid ${getStatusColor(taskStatus)}`,
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontWeight: '500'
                       }}>
-                        {task.status}
+                        {getStatusDisplayName(task.status)}
                       </span>
                     )}
                     
@@ -559,7 +559,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                           <div style={{ marginLeft: '30px', marginTop: '6px' }}>
                             {feature.tasks.map((task: any) => {
                               const taskStatus = task.status;
-                              const isCompleted = taskStatus === 'Done';
+                              const isCompleted = taskStatus === 'DONE' || taskStatus === 'Done';
                               return (
                               <div
                                 key={task.id || task._id || task.title}
@@ -597,13 +597,13 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                   <span style={{
                                     marginLeft: '8px',
                                     fontSize: '0.75rem',
-                                    backgroundColor: task.status === 'Done' ? '#e8f5e8' : task.status === 'In progress' ? '#fff3e0' : task.status === 'Need help' ? '#fce4ec' : '#f5f5f5',
+                                    backgroundColor: getStatusBackgroundColor(task.status),
                                     color: '#000',
-                                    border: `1px solid ${task.status === 'Done' ? '#4CAF50' : task.status === 'In progress' ? '#FF9800' : task.status === 'Need help' ? '#E91E63' : '#757575'}`,
+                                    border: `1px solid ${getStatusColor(task.status)}`,
                                     padding: '2px 6px',
                                     borderRadius: '3px'
                                   }}>
-                                    {task.status}
+                                    {getStatusDisplayName(task.status)}
                                   </span>
                                 )}
                                 {(task.users || task.assignedUsers) && (task.users || task.assignedUsers).length > 0 && (
