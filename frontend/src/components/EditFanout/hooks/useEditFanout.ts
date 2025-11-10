@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { updateNode, addNode, deleteNode, getCourseLevelConfig, addUserToProject, removeUserFromProject } from '../../../utils/graphqlMutations';
 import { isAdmin } from '../../../utils/jwt';
 import { useToast } from '../../../utils/toastContext';
@@ -12,6 +12,10 @@ export const useEditFanout = ({
   mode = 'edit',
   project
 }: EditFanoutProps) => {
+  // Track previous node to detect changes
+  const previousNodeRef = useRef<any>(null);
+  const formDataRef = useRef<FormData | null>(null);
+  
   // Form data state
   const [formData, setFormData] = useState<FormData>({
     title: mode === 'create' ? '' : (node?.title || node?.name || ''),
@@ -54,6 +58,79 @@ export const useEditFanout = ({
   });
 
   const { showSuccess, showError } = useToast();
+
+  // Keep formDataRef in sync
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
+  // Auto-save when node changes (switching to another node)
+  useEffect(() => {
+    const saveCurrentNode = async () => {
+      const previousNode = previousNodeRef.current;
+      const currentFormData = formDataRef.current;
+      
+      // Only save if we had a previous node in edit mode and we're switching to a different node
+      if (mode === 'edit' && previousNode && node && currentFormData) {
+        const previousNodeId = previousNode.id || previousNode.projectId || previousNode.epicId || previousNode.featureId || previousNode.taskId;
+        const currentNodeId = node.id || node.projectId || node.epicId || node.featureId || node.taskId;
+        
+        // If the node changed, save the previous one
+        if (previousNodeId !== currentNodeId) {
+          try {
+            // Build data object for previous node
+            const changedTitle = currentFormData.title !== (previousNode.title || previousNode.name || '');
+            const changedDescription = currentFormData.description !== (previousNode.description || '');
+            const changedCourseLevel = previousNode.type === 'project' && currentFormData.courseLevel !== (previousNode.courseLevel ?? 0);
+
+            let data: any = {};
+            if (changedTitle) data.title = currentFormData.title;
+            if (changedDescription) data.description = currentFormData.description;
+            if (changedCourseLevel) data.courseLevel = currentFormData.courseLevel;
+
+            data.type = previousNode.type;
+            if (previousNode.type === 'project') data.id = previousNode.id || previousNode.projectId;
+            if (previousNode.type === 'epic') data.id = previousNode.id || previousNode.epicId;
+            if (previousNode.type === 'feature') data.id = previousNode.id || previousNode.featureId;
+            if (previousNode.type === 'task') data.id = previousNode.id || previousNode.taskId;
+
+            if (previousNode.type === 'task') {
+              const changedStatus = currentFormData.status !== (previousNode.status || '');
+              const changedDepth = currentFormData.depth !== (previousNode.depth ?? 0);
+              const nodeUsernames = (previousNode.users || []).map((user: any) => 
+                typeof user === 'string' ? user : user.username
+              );
+              const changedUsers = JSON.stringify(currentFormData.selectedUsers.sort()) !== JSON.stringify(nodeUsernames.sort());
+
+              if (changedStatus) data.status = currentFormData.status;
+              if (changedDepth) data.depth = currentFormData.depth;
+              if (changedUsers) data.users = currentFormData.selectedUsers;
+            }
+
+            const parentIds = {
+              projectId: previousNode.projectId || previousNode.id || previousNode.parentProjectId,
+              epicId: previousNode.epicId || previousNode.parentEpicId,
+              featureId: previousNode.featureId || previousNode.parentFeatureId,
+            };
+
+            const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
+            if (changedKeys.length > 0) {
+              await updateNode(data, parentIds);
+              onSave?.();
+            }
+          } catch (error: any) {
+            console.error('Auto-save error when switching nodes:', error);
+            // Don't show error to user since this is background save
+          }
+        }
+      }
+    };
+
+    saveCurrentNode();
+    
+    // Update previous node reference
+    previousNodeRef.current = node;
+  }, [node, mode, onSave]);
 
   // Update form data when node changes
   useEffect(() => {

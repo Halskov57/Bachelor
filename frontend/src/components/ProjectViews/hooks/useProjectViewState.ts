@@ -29,11 +29,12 @@ export const useProjectViewState = (fetchProjectById?: () => void | Promise<void
   const handleEditNode = useCallback((node: NodeData) => {
     // Close any existing create fanout when opening edit fanout
     setCreateNode(null);
+    // Just switch to the new node - don't close the edit fanout
     setEditNode(node);
   }, []);
 
   const handleCreateNode = useCallback((nodeData: CreateNodeData) => {
-    // Close any existing edit fanout when opening create fanout
+    // Close edit fanout when opening create fanout
     setEditNode(null);
     setCreateNode(nodeData);
   }, []);
@@ -50,15 +51,17 @@ export const useProjectViewState = (fetchProjectById?: () => void | Promise<void
 
   const handleSave = useCallback(async (data?: any) => {
     if (data?.action === 'create') {
+      // If user wants to create a child, open the create fanout
+      setEditNode(null);
       setCreateNode({
         type: data.nodeType,
         parentIds: data.parentIds,
         parentNode: data.parentNode
       });
     } else {
+      // Just refetch - don't close the edit fanout
       await refetchProject();
     }
-    setEditNode(null);
   }, [refetchProject]);
 
   const handleSaveCreate = useCallback(async () => {
