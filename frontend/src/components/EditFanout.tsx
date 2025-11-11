@@ -238,9 +238,10 @@ const EditFanout: React.FC<EditFanoutProps> = ({
     return (
         <div style={{
             position: 'absolute',
-            right: 0,
+            right: 75,
             top: 0,
             width: 360,
+            maxWidth: 'calc(100vw - 40px)',
             background: '#fff',
             boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
             borderRadius: 12,

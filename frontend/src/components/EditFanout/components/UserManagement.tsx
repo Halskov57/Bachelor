@@ -58,7 +58,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     padding: '8px',
                     backgroundColor: '#f8f9fa',
                     borderRadius: '4px',
-                    border: '1px solid #e0e6ed'
+                    border: '1px solid #e0e6ed',
+                    textAlign: 'left'
                 }}>
                     {selectedUsers.length > 0 ? (
                         <div>
@@ -225,7 +226,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e0e6ed',
                         borderRadius: '4px',
-                        marginBottom: '8px'
+                        marginBottom: '8px',
+                        textAlign: 'left'
                     }}>
                         {selectedUsers.length === 0 ? (
                             <span style={{ color: '#666', fontStyle: 'italic' }}>No users assigned</span>

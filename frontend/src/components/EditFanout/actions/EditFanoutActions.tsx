@@ -43,11 +43,11 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
             marginTop: 20, 
             display: 'flex', 
             gap: 8, 
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
             justifyContent: 'space-between'
         }}>
             {/* Left side - Close and Save */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button 
                     onClick={onClose}
                     disabled={loading}
@@ -56,7 +56,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                         backgroundColor: '#f5f5f5',
                         border: '1px solid #ddd',
                         borderRadius: '4px',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap'
                     }}
                 >
                     Close
@@ -72,7 +73,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                         border: 'none',
                         borderRadius: '4px',
                         cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.6 : 1
+                        opacity: loading ? 0.6 : 1,
+                        whiteSpace: 'nowrap'
                     }}
                 >
                     {loading ? 'Saving...' : (mode === 'create' ? 'Create' : 'Save')}
@@ -80,7 +82,7 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
             </div>
 
             {/* Right side - Add and Delete */}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 {showAddButton && onAddChild && (
                     <button 
                         onClick={onAddChild}
@@ -92,7 +94,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                             border: 'none',
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '14px'
+                            fontSize: '14px',
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         ✕ {getAddButtonText()}
@@ -110,7 +113,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                             border: 'none',
                             borderRadius: '4px',
                             cursor: loading ? 'not-allowed' : 'pointer',
-                            opacity: loading ? 0.6 : 1
+                            opacity: loading ? 0.6 : 1,
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         🗑️ Delete
