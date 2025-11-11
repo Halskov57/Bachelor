@@ -28,7 +28,7 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
           if (feature.tasks) {
             feature.tasks.forEach((task: any) => {
               // Only include tasks with "Done" status
-              if (task.status === 'Done') {
+              if (task.status === 'DONE' || task.status === 'Done') {
                 tasks.push({
                   taskId: task.id,
                   taskTitle: task.title,

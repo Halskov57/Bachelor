@@ -22,7 +22,6 @@ export const StatusSelect: React.FC<StatusSelectProps> = ({
                 disabled={disabled}
                 style={{ width: '100%', marginBottom: '12px' }}
             >
-                <option value="">Select status</option>
                 <option value="TODO">Todo</option>
                 <option value="IN_PROGRESS">In progress</option>
                 <option value="DONE">Done</option>

@@ -20,7 +20,18 @@ export const useEditFanout = ({
   const [formData, setFormData] = useState<FormData>({
     title: mode === 'create' ? '' : (node?.title || node?.name || ''),
     description: mode === 'create' ? '' : (node?.description || ''),
-    status: node?.status || '',
+    status: (() => {
+      // If creating a task, default to 'TODO'
+      if (mode === 'create' && createNode?.type === 'task') {
+        return 'TODO';
+      }
+      // If editing a task, use the node's current status or default to 'TODO'
+      if (mode === 'edit' && node?.type === 'task') {
+        return node?.status || 'TODO';
+      }
+      // For other node types, use their status or empty string
+      return node?.status || '';
+    })(),
     depth: node?.depth ?? 0,
     courseLevel: (() => {
       // If editing, use the node's course level
@@ -138,7 +149,7 @@ export const useEditFanout = ({
       setFormData({
         title: node.title || node.name || '',
         description: node.description || '',
-        status: node.status || '',
+        status: node.status || (node.type === 'task' ? 'TODO' : ''),
         depth: node.depth ?? 0,
         courseLevel: node.courseLevel ?? 0,
         selectedUsers: Array.isArray(node.users) 
@@ -152,14 +163,14 @@ export const useEditFanout = ({
       setFormData({
         title: '',
         description: '',
-        status: '',
+        status: createNode?.type === 'task' ? 'TODO' : '',
         depth: 0,
         courseLevel: isAdmin() ? 0 : 1,
         selectedUsers: [],
         selectedOwners: []
       });
     }
-  }, [node, mode]);
+  }, [node, mode, createNode]);
 
   // Load course level configuration
   useEffect(() => {
