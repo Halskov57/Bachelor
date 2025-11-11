@@ -304,7 +304,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                 color: '#022AFF',
                 marginBottom: 0
               }}>
-                📊 Filtered Tasks 
+                Filtered Tasks 
                 {filterCategory === 'status' && selectedStatus && ` - Status: ${selectedStatus}`}
                 {filterCategory === 'username' && selectedUsername && ` - User: ${selectedUsername}`}
                 {` (${getFilteredTasks().length} found)`}
