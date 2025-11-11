@@ -369,7 +369,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                       color: '#022AFF',
                       fontSize: '0.9rem'
                     }}>
-                      ✓ {task.title}
+                      <span style={{ fontSize: '1.0rem' }}>📌</span> {task.title}
                     </span>
                     
                     {task.status && (
@@ -408,9 +408,9 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     gap: '8px',
                     alignItems: 'center'
                   }}>
-                    <span>📚 {task.epicTitle}</span>
+                    <span><span style={{ fontSize: '1.0rem' }}>📚</span> {task.epicTitle}</span>
                     <span>→</span>
-                    <span>🎯 {task.featureTitle}</span>
+                    <span><span style={{ fontSize: '1.0rem' }}>📝</span> {task.featureTitle}</span>
                   </div>
                 </div>
               );
@@ -437,11 +437,11 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#022AFF'}
       onClick={() => handleEditNode({...project, type: 'project'})}
       >
-        📋 {project.title || project.name}
+        <span style={{ fontSize: '1.3rem' }}>🎓</span> {project.title || project.name}
       </div>
 
       {/* Epics Container */}
-      <div style={{ marginLeft: '30px', width: '28%', maxWidth: '350px', minWidth: '260px' }}>
+      <div style={{ marginLeft: '50px', width: '40.0%', maxWidth: '520px', minWidth: '522px' }}>
         {project.epics && project.epics.map((epic: any) => {
           const epicId = epic.id || epic._id || epic.title;
           const hasFeatures = Array.isArray(epic.features) && epic.features.length > 0;
@@ -469,7 +469,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                   onClick={() => handleEditNode({ ...epic, type: 'epic', projectId: project.projectId || project.id })}
                   style={{ flex: 1, fontSize: '1rem', fontWeight: '500', textAlign: 'left' }}
                 >
-                  📚 {epic.title}
+                  <span style={{ fontSize: '1.2rem' }}>📚</span> {epic.title}
                 </span>
                 
                 {hasFeatures && (
@@ -495,7 +495,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
 
               {/* Features */}
               {hasFeatures && isEpicExpanded && (
-                <div style={{ marginLeft: '30px', marginTop: '8px' }}>
+                <div style={{ marginLeft: '50px', marginTop: '8px' }}>
                   {epic.features.map((feature: any) => {
                     const featureId = feature.id || feature._id || feature.title;
                     const hasTasks = Array.isArray(feature.tasks) && feature.tasks.length > 0;
@@ -526,14 +526,12 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                           (e.target as HTMLElement).style.transform = 'translateX(0px)';
                         }}
                         >
-                          <span 
+                          <span
                             onClick={() => handleEditNode({ ...feature, type: 'feature', projectId: project.projectId || project.id, epicId: epic.epicId || epic.id })}
                             style={{ flex: 1, fontSize: '0.9rem', fontWeight: '500', textAlign: 'left' }}
                           >
-                            🎯 {feature.title}
-                          </span>
-                          
-                          {hasTasks && (
+                            <span style={{ fontSize: '1.1rem' }}>📝</span> {feature.title}
+                          </span>                          {hasTasks && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setExpandedFeature(isFeatureExpanded ? null : featureId); }}
                               style={{
@@ -556,7 +554,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
 
                         {/* Tasks */}
                         {hasTasks && isFeatureExpanded && (
-                          <div style={{ marginLeft: '30px', marginTop: '6px' }}>
+                          <div style={{ marginLeft: '50px', marginTop: '6px' }}>
                             {feature.tasks.map((task: any) => {
                               const taskStatus = task.status;
                               const isCompleted = taskStatus === 'Done';
@@ -592,7 +590,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                                   featureId: feature.featureId || feature.id,
                                 })}
                               >
-                                ✓ {task.title}
+                                <span style={{ fontSize: '1.0rem' }}>📌</span> {task.title}
                                 {task.status && (
                                   <span style={{
                                     marginLeft: '8px',
