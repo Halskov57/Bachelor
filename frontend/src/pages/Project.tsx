@@ -612,7 +612,7 @@ function toTreeData(project: any): NodeData | null {
             cursor: 'pointer'
           }}
         >
-          👤 User Tasks
+          Task Distribution
         </button>
       </div>
       
