@@ -26,12 +26,15 @@ public class Application {
 
             try {
                 Document ping = mongoTemplate.executeCommand("{ ping: 1 }");
-                System.out.println("✅ Connection successful! Ping response: " + ping.toJson());
+                System.out.println("Connection successful! Ping response: " + ping.toJson());
+
+                databaseCleaner.clearDatabase();
+                System.out.println("Database cleared.");
 
                 System.out.println("Collections in database: " + mongoTemplate.getCollectionNames());
 
             } catch (Exception e) {
-                System.out.println("❌ Connection failed. Check MongoDB configuration.");
+                System.out.println("Connection failed. Check MongoDB configuration.");
                 e.printStackTrace();
             }
         };

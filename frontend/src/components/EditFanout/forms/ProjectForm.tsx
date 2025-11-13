@@ -17,7 +17,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
 }) => {
     return (
         <div className="project-form">
-            <h3>Project Details</h3>
             <form onSubmit={(e) => { e.preventDefault(); onProjectSubmit(); }}>
                 <BasicForm
                     title={project.title || ''}

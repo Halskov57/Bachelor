@@ -14,6 +14,7 @@ interface UserManagementProps {
     onToggleManaging: () => void;
     project?: any;
     availableUsers?: User[];
+    isEnabled?: boolean;
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({
@@ -26,7 +27,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     onSearchChange,
     isManaging,
     onToggleManaging,
-    project
+    project,
+    isEnabled = true
 }) => {
     
     if (type === 'owners' && project) {
@@ -56,7 +58,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                     padding: '8px',
                     backgroundColor: '#f8f9fa',
                     borderRadius: '4px',
-                    border: '1px solid #e0e6ed'
+                    border: '1px solid #e0e6ed',
+                    textAlign: 'left'
                 }}>
                     {selectedUsers.length > 0 ? (
                         <div>
@@ -146,6 +149,47 @@ export const UserManagement: React.FC<UserManagementProps> = ({
 
     if (type === 'assignees') {
         // Task User Assignment
+        
+        // If disabled, show info message
+        if (!isEnabled) {
+            return (
+                <React.Fragment>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <label style={{ margin: 0 }}>Assigned Users</label>
+                        <span 
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '50%',
+                                backgroundColor: '#6c757d',
+                                color: 'white',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                cursor: 'help'
+                            }}
+                            title="Task user assignment is disabled for this course level"
+                        >
+                            i
+                        </span>
+                    </div>
+                    <div style={{
+                        padding: '12px',
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        color: '#6c757d',
+                        fontSize: '14px',
+                        fontStyle: 'italic'
+                    }}>
+                        User assignment is disabled for this course level
+                    </div>
+                </React.Fragment>
+            );
+        }
+        
         const getProjectOwners = () => {
             if (project?.owners) return project.owners;
             return [];
@@ -182,7 +226,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                         backgroundColor: '#f8f9fa',
                         border: '1px solid #e0e6ed',
                         borderRadius: '4px',
-                        marginBottom: '8px'
+                        marginBottom: '8px',
+                        textAlign: 'left'
                     }}>
                         {selectedUsers.length === 0 ? (
                             <span style={{ color: '#666', fontStyle: 'italic' }}>No users assigned</span>

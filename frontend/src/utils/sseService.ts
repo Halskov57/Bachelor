@@ -5,9 +5,18 @@ export interface SSEEvent {
   data: any;
 }
 
+interface ReconnectionState {
+  attempts: number;
+  maxAttempts: number;
+  baseDelay: number;
+  maxDelay: number;
+  timeoutId?: NodeJS.Timeout;
+}
+
 class SSEService {
   private eventSources: Map<string, EventSource> = new Map();
   private listeners: Map<string, ((event: SSEEvent) => void)[]> = new Map();
+  private reconnectionStates: Map<string, ReconnectionState> = new Map();
 
   /**
    * Subscribe to Server-Sent Events for a project
@@ -17,6 +26,16 @@ class SSEService {
     const projectListeners = this.listeners.get(projectId) || [];
     projectListeners.push(onEvent);
     this.listeners.set(projectId, projectListeners);
+
+    // Initialize reconnection state
+    if (!this.reconnectionStates.has(projectId)) {
+      this.reconnectionStates.set(projectId, {
+        attempts: 0,
+        maxAttempts: 10,
+        baseDelay: 1000,
+        maxDelay: 30000
+      });
+    }
 
     // Create EventSource if not exists
     if (!this.eventSources.has(projectId)) {
@@ -41,6 +60,7 @@ class SSEService {
       if (projectListeners.length === 0) {
         this.listeners.delete(projectId);
         this.closeEventSource(projectId);
+        this.clearReconnectionState(projectId);
       } else {
         this.listeners.set(projectId, projectListeners);
       }
@@ -48,6 +68,7 @@ class SSEService {
       // Remove all listeners
       this.listeners.delete(projectId);
       this.closeEventSource(projectId);
+      this.clearReconnectionState(projectId);
     }
   }
 
@@ -69,10 +90,24 @@ class SSEService {
 
     eventSource.onopen = () => {
       console.log(`🔗 SSE connected for project: ${projectId}`);
+      // Reset reconnection attempts on successful connection
+      const state = this.reconnectionStates.get(projectId);
+      if (state) {
+        state.attempts = 0;
+      }
     };
 
     eventSource.onerror = (error) => {
       console.error(`❌ SSE error for project ${projectId}:`, error);
+      
+      // Close the current connection
+      eventSource.close();
+      this.eventSources.delete(projectId);
+      
+      // Attempt to reconnect if there are still listeners
+      if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+        this.attemptReconnection(projectId);
+      }
     };
 
     // Handle different event types
@@ -164,9 +199,66 @@ class SSEService {
   }
 
   /**
+   * Attempt to reconnect with exponential backoff
+   */
+  private attemptReconnection(projectId: string): void {
+    const state = this.reconnectionStates.get(projectId);
+    if (!state) return;
+
+    // Check if we've exceeded max attempts
+    if (state.attempts >= state.maxAttempts) {
+      console.error(`❌ SSE max reconnection attempts (${state.maxAttempts}) reached for project ${projectId}`);
+      return;
+    }
+
+    // Clear any existing timeout
+    if (state.timeoutId) {
+      clearTimeout(state.timeoutId);
+    }
+
+    // Calculate delay with exponential backoff
+    const delay = Math.min(
+      state.baseDelay * Math.pow(2, state.attempts),
+      state.maxDelay
+    );
+
+    state.attempts++;
+    console.log(`🔄 SSE attempting reconnection ${state.attempts}/${state.maxAttempts} for project ${projectId} in ${delay}ms...`);
+
+    state.timeoutId = setTimeout(() => {
+      // Only reconnect if there are still listeners
+      if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+        this.createEventSource(projectId);
+      }
+    }, delay);
+
+    this.reconnectionStates.set(projectId, state);
+  }
+
+  /**
+   * Clear reconnection state for a project
+   */
+  private clearReconnectionState(projectId: string): void {
+    const state = this.reconnectionStates.get(projectId);
+    if (state?.timeoutId) {
+      clearTimeout(state.timeoutId);
+    }
+    this.reconnectionStates.delete(projectId);
+  }
+
+  /**
    * Close all EventSource connections
    */
   closeAll(): void {
+    // Clear all reconnection timers
+    this.reconnectionStates.forEach((state, projectId) => {
+      if (state.timeoutId) {
+        clearTimeout(state.timeoutId);
+      }
+    });
+    this.reconnectionStates.clear();
+
+    // Close all connections
     this.eventSources.forEach((eventSource, projectId) => {
       eventSource.close();
       console.log(`🔌 SSE disconnected for project: ${projectId}`);

@@ -69,7 +69,7 @@ const PDFExportButton: React.FC<PDFExportButtonProps> = ({
         }
       }}
     >
-      📄 {isExporting ? 'Generating PDF...' : 'Export as PDF'}
+      {isExporting ? 'Generating PDF...' : 'Export as PDF'}
     </button>
   );
 };

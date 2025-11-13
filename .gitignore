@@ -3,3 +3,4 @@
 **/obj
 **/publish
 **/.env
+./nginx.conf

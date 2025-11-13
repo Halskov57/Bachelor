@@ -1,5 +1,7 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
 import { getGraphQLUrl } from '../config/environment';
 
 // --- 1. HTTP Link (Queries and Mutations) ---
@@ -7,7 +9,84 @@ const httpLink = createHttpLink({
   uri: getGraphQLUrl(),
 });
 
-// --- 2. Authentication Link (HTTP) ---
+// --- 2. Retry Link (Reconnection Logic) ---
+const retryLink = new RetryLink({
+  delay: {
+    initial: 300,
+    max: 5000,
+    jitter: true
+  },
+  attempts: {
+    max: 5,
+    retryIf: (error, _operation) => {
+      // Retry on network errors but not on GraphQL errors
+      return !!error;
+    }
+  }
+});
+
+// --- 3. Error Handling Link ---
+const errorLink = onError(({ graphQLErrors, networkError }: any) => {
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path, extensions }: any) => {
+      console.error(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+        extensions
+      );
+
+      // Check if it's an authentication error (token expired, invalid, etc.)
+      if (
+        extensions?.code === 'UNAUTHENTICATED' ||
+        message.includes('JWT') ||
+        message.includes('Unauthorized') ||
+        message.toLowerCase().includes('not authenticated')
+      ) {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        console.log('Authentication error, redirecting to login');
+        window.location.href = '/login';
+        return;
+      }
+      
+      // Check if it's a project access denied error (user removed from project or no permission)
+      if (
+        extensions?.code === 'FORBIDDEN' ||
+        message.includes('Access denied') ||
+        message.includes('not a member') ||
+        message.includes('permission') ||
+        message.toLowerCase().includes('forbidden')
+      ) {
+        // If currently on a project page, redirect to dashboard
+        if (window.location.pathname.startsWith('/project/')) {
+          console.log('Access denied to project, redirecting to dashboard');
+          window.location.href = '/dashboard';
+        }
+      }
+    });
+  }
+
+  if (networkError) {
+    console.error(`[Network error]:`, networkError);
+    
+    // Only redirect to login for actual authentication errors (401)
+    if ('statusCode' in networkError && networkError.statusCode === 401) {
+      localStorage.removeItem('token');
+      console.log('401 Unauthorized, redirecting to login');
+      window.location.href = '/login';
+      return;
+    }
+    
+    // For 403 (Forbidden) on project pages, redirect to dashboard
+    if ('statusCode' in networkError && networkError.statusCode === 403) {
+      if (window.location.pathname.startsWith('/project/')) {
+        console.log('403 Forbidden on project page, redirecting to dashboard');
+        window.location.href = '/dashboard';
+      }
+    }
+  }
+});
+
+// --- 4. Authentication Link (HTTP) ---
 const authLink = setContext((_, { headers } = {}) => {
   const token = localStorage.getItem('token');
   return {
@@ -18,10 +97,10 @@ const authLink = setContext((_, { headers } = {}) => {
   };
 });
 
-// --- 3. Combined Link (No WebSocket) ---
-const combinedLink = authLink.concat(httpLink);
+// --- 5. Combined Link (Error -> Auth -> Retry -> HTTP) ---
+const combinedLink = errorLink.concat(authLink).concat(retryLink).concat(httpLink);
 
-// --- 4. Apollo Client ---
+// --- 6. Apollo Client ---
 export const client = new ApolloClient({
   link: combinedLink,
   cache: new InMemoryCache({

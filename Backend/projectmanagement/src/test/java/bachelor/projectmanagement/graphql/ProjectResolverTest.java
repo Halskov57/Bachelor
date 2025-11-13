@@ -2,14 +2,20 @@ package bachelor.projectmanagement.graphql;
 
 import bachelor.projectmanagement.model.*;
 import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.service.SSEService;
+import bachelor.projectmanagement.service.CourseLevelConfigService;
 import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.util.TestDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -25,6 +31,18 @@ class ProjectResolverTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private SSEService sseService;
+
+    @Mock
+    private CourseLevelConfigService courseLevelConfigService;
+
+    @Mock
+    private SecurityContext securityContext;
+
+    @Mock
+    private Authentication authentication;
 
     @InjectMocks
     private ProjectResolver projectResolver;
@@ -42,6 +60,21 @@ class ProjectResolverTest {
         testEpic = TestDataBuilder.createTestEpic("Test Epic");
         testFeature = TestDataBuilder.createTestFeature("Test Feature");
         testTask = TestDataBuilder.createTestTask("Test Task");
+
+        // Mock Spring Security context to provide authenticated user (lenient for tests that don't use it)
+        lenient().when(authentication.isAuthenticated()).thenReturn(true);
+        lenient().when(authentication.getName()).thenReturn("testuser");
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        // Mock verifyProjectAccess to do nothing (allow access) - lenient for tests that don't need it
+        lenient().doNothing().when(projectService).verifyProjectAccess(anyString(), anyString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Clear the security context after each test
+        SecurityContextHolder.clearContext();
     }
 
     @Test

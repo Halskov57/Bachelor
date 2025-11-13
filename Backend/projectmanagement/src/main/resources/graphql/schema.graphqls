@@ -10,7 +10,6 @@ type Project {
     title: String!
     description: String
     courseLevel: Int
-    depth: Int
     createdOn: String
     owner: User!
     owners: [User!]!

@@ -76,11 +76,53 @@ export const getUniqueUsernames = (project: any): string[] => {
 
 export const getStatusColor = (status: string): string => {
   switch (status) {
-    case 'Done': return '#4CAF50';
-    case 'In progress': return '#FF9800';
-    case 'Need help': return '#E91E63';
-    case 'Todo': return '#757575';
-    case 'Blocked': return '#757575';
-    default: return '#757575';
+    case 'DONE':
+    case 'Done': 
+      return '#4CAF50';
+    case 'IN_PROGRESS':
+    case 'In progress': 
+      return '#FF9800';
+    case 'NEED_HELP':
+    case 'Need help': 
+      return '#E91E63';
+    case 'TODO':
+    case 'Todo': 
+      return '#757575';
+    case 'BLOCKED':
+    case 'Blocked': 
+      return '#757575';
+    default: 
+      return '#757575';
+  }
+};
+
+export const getStatusBackgroundColor = (status: string): string => {
+  switch (status) {
+    case 'DONE':
+    case 'Done': 
+      return '#e8f5e8';
+    case 'IN_PROGRESS':
+    case 'In progress': 
+      return '#fff3e0';
+    case 'NEED_HELP':
+    case 'Need help': 
+      return '#fce4ec';
+    case 'TODO':
+    case 'Todo':
+    case 'BLOCKED':
+    case 'Blocked':
+    default: 
+      return '#f5f5f5';
+  }
+};
+
+export const getStatusDisplayName = (status: string): string => {
+  switch (status) {
+    case 'DONE': return 'Done';
+    case 'IN_PROGRESS': return 'In progress';
+    case 'NEED_HELP': return 'Need help';
+    case 'TODO': return 'Todo';
+    case 'BLOCKED': return 'Blocked';
+    default: return status;
   }
 };

@@ -377,7 +377,8 @@ function toTreeData(project: any): NodeData | null {
           projectId: project.id,
           epicId: epic.id,
           featureId: feature.id,
-        })),
+          users: task.users, // Include full user objects for display
+        } as any)),
       })),
     })),
   };
@@ -612,11 +613,11 @@ function toTreeData(project: any): NodeData | null {
             cursor: 'pointer'
           }}
         >
-          👤 User Tasks
+          Task Distribution
         </button>
       </div>
       
-      <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2 }}>
+      <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2, overflow: 'visible' }}>
         {view === 'list' ? (
           <ProjectListView project={project} fetchProjectById={fetchProjectById} />
         ) : view === 'tree' ? (

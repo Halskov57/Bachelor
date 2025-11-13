@@ -31,7 +31,7 @@ public class FieldResolver {
 
     @SchemaMapping
     public String status(Task task) {
-        return task.getStatus() != null ? task.getStatus().toString() : "TODO";
+        return task.getStatus() != null ? task.getStatus().name() : "TODO";
     }
 
     @SchemaMapping

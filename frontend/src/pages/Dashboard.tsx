@@ -193,7 +193,7 @@ const Dashboard: React.FC = () => {
                 gap: '8px'
               }}
             >
-              ⚙️ Admin
+              Admin
             </button>
           )}
         </div>
@@ -330,7 +330,7 @@ const Dashboard: React.FC = () => {
                   handleDelete(project.id);
                 }}
               >
-                🗑
+                ×
               </span>
             </div>
           ))}

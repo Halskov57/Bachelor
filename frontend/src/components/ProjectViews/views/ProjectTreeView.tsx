@@ -34,17 +34,17 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, o
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      marginTop: level > 0 ? '60px' : '0'
+      paddingTop: level > 0 ? '60px' : '0'
     }}>
       {/* Connection line from parent (comes from above) */}
       {level > 0 && (
         <div style={{
           position: 'absolute',
-          top: '-40px',
+          top: '0px',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '2px',
-          height: '40px',
+          height: '60px',
           backgroundColor: '#999',
           pointerEvents: 'none',
           zIndex: 1
@@ -115,27 +115,29 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, o
         )}
       </div>
       
+      {/* Vertical line extending down from this node to children */}
       {hasChildren && !isCollapsed && (
-        <div style={{ position: 'relative' }}>
+        <div style={{
+          position: 'absolute',
+          bottom: '0px',
+          left: '50%',
+          transform: 'translateX(-50%) translateY(100%)',
+          width: '2px',
+          height: '60px',
+          backgroundColor: '#999',
+          pointerEvents: 'none',
+          zIndex: 1
+        }} />
+      )}
+      
+      {hasChildren && !isCollapsed && (
+        <div style={{ position: 'relative', paddingTop: '60px' }}>
           {/* Check if children are tasks (show as list) or other types (show as tree) */}
           {node.children![0]?.type === 'task' ? (
             /* Tasks as vertical list */
             <div>
-              {/* Vertical line down from feature to task list */}
-              <div style={{
-                position: 'absolute',
-                top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '2px',
-                height: '40px',
-                backgroundColor: '#999',
-                zIndex: 1
-              }} />
-              
               {/* Tasks container */}
               <div style={{
-                marginTop: '60px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -179,23 +181,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, o
           ) : (
             /* Non-tasks as horizontal tree */
             <div>
-              {/* Vertical line down from this node */}
-              <div style={{
-                position: 'absolute',
-                top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '2px',
-                height: '40px',
-                backgroundColor: '#999',
-                zIndex: 1
-              }} />
-              
               {/* Horizontal line connecting all children */}
               {node.children!.length > 1 && (
                 <div style={{
                   position: 'absolute',
-                  top: '60px',
+                  top: '0px',
                   left: '50%',
                   transform: 'translateX(-50%)',
                   width: `${(node.children!.length - 1) * 120}px`,
@@ -215,11 +205,11 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, o
                     key={`connector-${child.id || child.title}`}
                     style={{
                       position: 'absolute',
-                      top: '60px',
+                      top: '0px',
                       left: '50%',
                       transform: `translateX(${offsetFromCenter - 1}px)`,
                       width: '2px',
-                      height: '40px',
+                      height: '60px',
                       backgroundColor: '#999',
                       zIndex: 1
                     }}
@@ -233,7 +223,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, collapsed, onToggle, o
                 flexDirection: 'row',
                 justifyContent: 'center',
                 gap: '120px',
-                marginTop: '100px',
+                paddingTop: '60px',
                 position: 'relative'
               }}>
                 {node.children!.map((child, index) => (

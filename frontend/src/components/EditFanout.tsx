@@ -56,7 +56,17 @@ const EditFanout: React.FC<EditFanoutProps> = ({
     };
 
     const showDeleteButton = mode === 'edit' && canCreateDelete(nodeType);
-    const showAddButton = mode === 'edit' && (nodeType === 'project' || nodeType === 'epic' || nodeType === 'feature');
+    
+    // Determine what child type can be added and check permissions
+    const getChildType = () => {
+        if (nodeType === 'project') return 'epic';
+        if (nodeType === 'epic') return 'feature';
+        if (nodeType === 'feature') return 'task';
+        return null;
+    };
+    
+    const childType = getChildType();
+    const showAddButton = mode === 'edit' && childType !== null && canCreateDelete(childType);
 
     // User management handlers
     const handleAddUser = async (username: string) => {
@@ -228,9 +238,10 @@ const EditFanout: React.FC<EditFanoutProps> = ({
     return (
         <div style={{
             position: 'absolute',
-            right: 0,
+            right: 75,
             top: 0,
             width: 360,
+            maxWidth: 'calc(100vw - 40px)',
             background: '#fff',
             boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
             borderRadius: 12,
@@ -241,6 +252,49 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                 <h3 style={{ margin: 0 }}>
                     {getNodeTitle()}
                 </h3>
+                
+                {/* Info icons for disabled features */}
+                {mode === 'edit' && !canCreateDelete(nodeType) && (
+                    <span 
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'help'
+                        }}
+                        title={`Creating and deleting ${nodeType}s is disabled for this course level`}
+                    >
+                        i
+                    </span>
+                )}
+                
+                {mode === 'edit' && childType !== null && !canCreateDelete(childType) && (
+                    <span 
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'help'
+                        }}
+                        title={`Creating ${childType}s is disabled for this course level`}
+                    >
+                        i
+                    </span>
+                )}
             </div>
 
             <div>

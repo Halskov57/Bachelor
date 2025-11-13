@@ -10,7 +10,6 @@ public class Feature {
     private String featureId;
     private String title;
     private String description;
-    private int depth;
     private FeatureStatus status;
 
     private List<Task> tasks = new ArrayList<>();
@@ -19,10 +18,9 @@ public class Feature {
         this.tasks = new ArrayList<>();
     }
 
-    public Feature(String title, String description, int depth) {
+    public Feature(String title, String description) {
         this.title = title;
         this.description = description;
-        this.depth = depth;
         this.status = FeatureStatus.TODO;
         this.tasks = new ArrayList<>();
     }
@@ -36,9 +34,6 @@ public class Feature {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
-    public int getDepth() { return depth; }
-    public void setDepth(int depth) { this.depth = depth; }
 
     public FeatureStatus getStatus() { return status; }
     public void setStatus(FeatureStatus status) { this.status = status; }

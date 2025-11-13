@@ -14,7 +14,6 @@ public class Project {
     private String projectId;
     private String title;
     private String description;
-    private int depth;
     private int courseLevel;
     private ProjectStatus status;
     private Instant createdOn = Instant.now();
@@ -26,10 +25,9 @@ public class Project {
 
     public Project() {}
 
-    public Project(String title, String description, int depth, int courseLevel, User owner) {
+    public Project(String title, String description, int courseLevel, User owner) {
         this.title = title;
         this.description = description;
-        this.depth = depth;
         this.courseLevel = courseLevel;
         this.status = ProjectStatus.TODO;
         this.owners = new ArrayList<>();
@@ -47,9 +45,6 @@ public class Project {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
-    public int getDepth() { return depth; }
-    public void setDepth(int depth) { this.depth = depth; }
 
     public int getCourseLevel() { return courseLevel; }
     public void setCourseLevel(int courseLevel) { this.courseLevel = courseLevel; }
