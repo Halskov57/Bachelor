@@ -599,5 +599,6 @@ export async function removeUserFromProject(projectId: string, username: string)
     throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
 
+  // Return null if project was deleted (last owner removed), otherwise return project
   return json.data.removeUserFromProject;
 }

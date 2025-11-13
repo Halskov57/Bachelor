@@ -55,7 +55,8 @@ const EditFanout: React.FC<EditFanoutProps> = ({
         return `Edit ${nodeType}`;
     };
 
-    const showDeleteButton = mode === 'edit' && canCreateDelete(nodeType);
+    // Don't show delete button for projects in edit fanout
+    const showDeleteButton = mode === 'edit' && nodeType !== 'project' && canCreateDelete(nodeType);
     
     // Determine what child type can be added and check permissions
     const getChildType = () => {

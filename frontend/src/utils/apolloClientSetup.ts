@@ -26,7 +26,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
       ) {
         // Clear token and redirect to login
         localStorage.removeItem('token');
-        console.log('Authentication error, redirecting to login');
         window.location.href = '/login';
         return;
       }
@@ -41,7 +40,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
       ) {
         // If currently on a project page, redirect to dashboard
         if (window.location.pathname.startsWith('/project/')) {
-          console.log('Access denied to project, redirecting to dashboard');
           window.location.href = '/dashboard';
         }
       }
@@ -54,7 +52,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
     // Only redirect to login for actual authentication errors (401)
     if ('statusCode' in networkError && networkError.statusCode === 401) {
       localStorage.removeItem('token');
-      console.log('401 Unauthorized, redirecting to login');
       window.location.href = '/login';
       return;
     }
@@ -62,7 +59,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
     // For 403 (Forbidden) on project pages, redirect to dashboard
     if ('statusCode' in networkError && networkError.statusCode === 403) {
       if (window.location.pathname.startsWith('/project/')) {
-        console.log('403 Forbidden on project page, redirecting to dashboard');
         window.location.href = '/dashboard';
       }
     }

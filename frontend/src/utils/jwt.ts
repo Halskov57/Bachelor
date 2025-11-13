@@ -41,15 +41,10 @@ export function getUserRole(): string | null {
 export function debugToken(): void {
   const token = localStorage.getItem('token');
   if (!token) {
-    console.log('No token found in localStorage');
     return;
   }
   
-  console.log('Token exists:', token.substring(0, 50) + '...');
   const payload = parseJwt(token);
-  console.log('Token payload:', payload);
-  console.log('User role:', payload?.role);
-  console.log('Token expiry:', payload?.exp ? new Date(payload.exp * 1000) : 'No expiry');
 }
 
 export function getCurrentUsername(): string {

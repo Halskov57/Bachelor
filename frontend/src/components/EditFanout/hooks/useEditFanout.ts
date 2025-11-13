@@ -270,7 +270,19 @@ export const useEditFanout = ({
     
     try {
       setUiState(prev => ({ ...prev, loading: true }));
-      await removeUserFromProject(node.id || node.projectId, username);
+      const result = await removeUserFromProject(node.id || node.projectId, username);
+      
+      // If result is null, the project was deleted (last owner removed)
+      if (result === null) {
+        showSuccess(`User "${username}" was the last owner. Project has been deleted.`);
+        onClose();
+        // Trigger a refresh of the project list
+        if (onSave) {
+          onSave();
+        }
+        return;
+      }
+      
       updateFormData({ 
         selectedOwners: formData.selectedOwners.filter(u => u !== username) 
       });

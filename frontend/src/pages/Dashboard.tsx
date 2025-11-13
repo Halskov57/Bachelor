@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { parseJwt, isAdmin } from '../utils/jwt';
+import { parseJwt, isAdmin, getCurrentUsername } from '../utils/jwt';
 import EditFanout from '../components/EditFanout'; // Import your fanout component
 import { getApiUrl } from '../config/environment';
 
@@ -21,7 +21,6 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const fetchProjects = () => {
-    console.log('🔍 Fetching projects from:', getApiUrl('/projects'));
     const token = localStorage.getItem('token');
     if (!token) {
       setError('No authentication token found');
@@ -37,22 +36,18 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    console.log('👤 Fetching projects for user:', username);
-
     fetch(getApiUrl(`/projects/user/${username}`), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then(res => {
-        console.log('📡 API Response status:', res.status);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
       .then(data => {
-        console.log('📦 Projects data received:', data);
         const mappedProjects = Array.isArray(data)
           ? data.map((p: any) => ({
               id: p.projectId || p.id,
@@ -70,17 +65,26 @@ const Dashboard: React.FC = () => {
       });
   };
 
-  const handleDelete = (projectId: string) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
-    const token = localStorage.getItem('token');
-    fetch(getApiUrl(`/projects/${projectId}`), {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }).then(() => {
+  const handleDelete = async (projectId: string) => {
+    if (!window.confirm('Are you sure you want to leave this project? If you are the last owner, the project will be deleted.')) return;
+    
+    try {
+      const username = getCurrentUsername();
+      if (!username) {
+        alert('Unable to determine current user');
+        return;
+      }
+
+      // Import removeUserFromProject dynamically to avoid circular dependencies
+      const { removeUserFromProject } = await import('../utils/graphqlMutations');
+      await removeUserFromProject(projectId, username);
+      
+      // Remove project from local state
       setProjects(projects => projects.filter(p => p.id !== projectId));
-    });
+    } catch (error: any) {
+      console.error('Error leaving project:', error);
+      alert(`Error leaving project: ${error.message}`);
+    }
   };
 
   const handleAdminPage = () => {
@@ -306,7 +310,7 @@ const Dashboard: React.FC = () => {
                 {project.name}
               </button>
               <span
-                title="Delete project"
+                title="Leave project"
                 style={{
                   position: 'absolute',
                   top: 8,

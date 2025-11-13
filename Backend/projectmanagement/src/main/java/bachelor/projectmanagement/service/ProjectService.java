@@ -454,6 +454,21 @@ public class ProjectService {
 
         // Remove the user from the project's owners list
         project.getOwners().remove(user);
+        
+        // Check if this was the last owner
+        if (project.getOwners().isEmpty()) {
+            // Delete the project if no owners remain
+            projectRepository.deleteById(projectId);
+            
+            // Remove the project from the user's projects list
+            user.getProjects().removeIf(p -> p.getProjectId().equals(projectId));
+            userRepository.save(user);
+            
+            // Return null to indicate project was deleted
+            return null;
+        }
+        
+        // Save project with updated owners list
         projectRepository.save(project);
 
         // Remove the project from the user's projects list

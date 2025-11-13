@@ -50,7 +50,7 @@ const Project: React.FC = () => {
       const id = params.get('id');
       if (!id) return;
       
-      setProjectId(id); // Store project ID for subscriptions
+      setProjectId(id); // Store project ID for SSE real-time updates
       
       const token = localStorage.getItem('token');
       const query = `
@@ -99,24 +99,16 @@ const Project: React.FC = () => {
       
       const result = await response.json();
       
-      console.log('🔍 Full GraphQL result:', result);
-      
       // Check for authorization errors
       if (result.errors) {
-        console.log('🔍 Errors found:', result.errors);
-        
         const authError = result.errors.find((error: any) => {
-          console.log('🔍 Checking error message:', error.message);
           return error.message?.includes('Access denied') || 
                  error.message?.includes('not authorized') ||
                  error.message?.includes('Unauthorized');
         });
         
-        console.log('🔍 Auth error found?', authError);
-        
         if (authError) {
           console.error('❌ Authorization error:', authError.message);
-          console.log('🔄 Redirecting to login...');
           // Clear everything and redirect
           setProject(null);
           setProjectId(null);
@@ -133,7 +125,6 @@ const Project: React.FC = () => {
       
       if (result.data?.projectById) {
         setProject(result.data.projectById);
-        console.log('📊 Project loaded:', result.data.projectById.title);
       } else if (!result.errors) {
         // Project not found or other issue
         console.error('Project not found');
@@ -182,7 +173,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Task updated`, `task-${data.id}`);
-          console.log('🔄 Real-time task update:', data);
           break;
 
         case 'taskCreated':
@@ -207,7 +197,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Task created`);
-          console.log('🔄 Real-time task created:', data);
           break;
 
         case 'taskUserAssigned':
@@ -235,7 +224,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`User assigned to task`);
-          console.log('🔄 Real-time user assigned:', data);
           break;
 
         case 'epicUpdate':
@@ -251,7 +239,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Epic updated`, `epic-${data.id}`);
-          console.log('🔄 Real-time epic update:', data);
           break;
 
         case 'epicCreated':
@@ -265,7 +252,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Epic created`);
-          console.log('🔄 Real-time epic created:', data);
           break;
 
         case 'featureUpdate':
@@ -284,7 +270,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Feature updated`, `feature-${data.id}`);
-          console.log('🔄 Real-time feature update:', data);
           break;
 
         case 'featureCreated':
@@ -302,7 +287,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Feature created`);
-          console.log('🔄 Real-time feature created:', data);
           break;
 
         case 'projectUpdate':
@@ -320,11 +304,9 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Project updated`, `project-${projectId}`);
-          console.log('🔄 Real-time project update:', data);
           break;
 
         default:
-          console.log('🔄 Unhandled SSE event type:', type, data);
           break;
       }
     };

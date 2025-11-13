@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 
 /**
- * GraphQL Fragments for reusable field sets across queries and subscriptions.
+ * GraphQL Fragments for reusable field sets across queries and mutations.
  */
 
 export const TASK_FIELDS = gql`

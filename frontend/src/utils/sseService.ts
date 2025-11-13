@@ -68,7 +68,7 @@ class SSEService {
     const eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
-      console.log(`🔗 SSE connected for project: ${projectId}`);
+      // Connection established
     };
 
     eventSource.onerror = (error) => {
@@ -77,7 +77,6 @@ class SSEService {
 
     // Handle different event types
     eventSource.addEventListener('connected', (event) => {
-      console.log(`✅ SSE handshake completed for project: ${projectId}`);
     });
 
     eventSource.addEventListener('taskUpdate', (event) => {
@@ -129,8 +128,6 @@ class SSEService {
 
       // Update Apollo Client cache
       this.updateApolloCache(event);
-      
-      console.log(`📡 SSE ${type} event received for project ${projectId}:`, data);
     } catch (error) {
       console.error('Failed to parse SSE event data:', error);
     }
@@ -159,7 +156,6 @@ class SSEService {
     if (eventSource) {
       eventSource.close();
       this.eventSources.delete(projectId);
-      console.log(`🔌 SSE disconnected for project: ${projectId}`);
     }
   }
 
@@ -169,7 +165,6 @@ class SSEService {
   closeAll(): void {
     this.eventSources.forEach((eventSource, projectId) => {
       eventSource.close();
-      console.log(`🔌 SSE disconnected for project: ${projectId}`);
     });
     this.eventSources.clear();
     this.listeners.clear();
