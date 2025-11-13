@@ -41,12 +41,4 @@ public class SSEController {
         
         return sseService.createEmitter(projectId);
     }
-
-    /**
-     * Health check endpoint for SSE
-     */
-    @GetMapping("/health")
-    public String health() {
-        return "SSE Service is running";
-    }
 }

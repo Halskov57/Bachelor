@@ -12,7 +12,7 @@ class ConnectionMonitor {
   };
   
   private readonly CHECK_INTERVAL_NORMAL = 30000; // Check every 30 seconds when connected
-  private readonly CHECK_INTERVAL_DISCONNECTED = 5000; // Check every 5 seconds when disconnected
+  private readonly CHECK_INTERVAL_DISCONNECTED = 30000; // Check every 5 seconds when disconnected
   private readonly HEALTH_CHECK_ENDPOINT = '/sse/health';
 
   /**
@@ -76,7 +76,7 @@ class ConnectionMonitor {
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
 
-      console.log(`🔍 Health check response: ${response.status} ${response.statusText}`);
+      console.log(`🔍  check response: ${response.status} ${response.statusText}`);
 
       // Consider 2xx and 4xx as "backend is up" (4xx means backend responded, just rejected the request)
       // Only 5xx errors mean backend is down/unreachable

@@ -79,7 +79,7 @@ public class TestDataBuilder {
         task.setStatus(TaskStatus.IN_PROGRESS);
         return task;
     }
-
+    
     public static Project createFullTestProject() {
         User owner = createTestUser();
         Project project = createTestProject("Full Test Project", owner);
