@@ -12,7 +12,7 @@ class ConnectionMonitor {
   };
   
   private readonly CHECK_INTERVAL = 30000; // Check every 30 seconds
-  private readonly HEALTH_CHECK_ENDPOINT = '/actuator/health';
+  private readonly HEALTH_CHECK_ENDPOINT = '/sse/health';
 
   /**
    * Start monitoring backend connection
@@ -108,10 +108,10 @@ class ConnectionMonitor {
   private getHealthUrl(): string {
     // In production, the backend is proxied through /api
     if (window.location.hostname !== 'localhost') {
-      return '/api/actuator/health';
+      return '/api/sse/health';
     }
     // In development, direct connection
-    return 'http://localhost:8080/actuator/health';
+    return 'http://localhost:8080/sse/health';
   }
 
   /**
