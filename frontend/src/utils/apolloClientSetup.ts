@@ -1,6 +1,7 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { RetryLink } from '@apollo/client/link/retry';
 import { getGraphQLUrl } from '../config/environment';
 
 // --- 1. HTTP Link (Queries and Mutations) ---
@@ -8,7 +9,23 @@ const httpLink = createHttpLink({
   uri: getGraphQLUrl(),
 });
 
-// --- 2. Error Handling Link ---
+// --- 2. Retry Link (Reconnection Logic) ---
+const retryLink = new RetryLink({
+  delay: {
+    initial: 300,
+    max: 5000,
+    jitter: true
+  },
+  attempts: {
+    max: 5,
+    retryIf: (error, _operation) => {
+      // Retry on network errors but not on GraphQL errors
+      return !!error;
+    }
+  }
+});
+
+// --- 3. Error Handling Link ---
 const errorLink = onError(({ graphQLErrors, networkError }: any) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path, extensions }: any) => {
@@ -69,7 +86,7 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
   }
 });
 
-// --- 3. Authentication Link (HTTP) ---
+// --- 4. Authentication Link (HTTP) ---
 const authLink = setContext((_, { headers } = {}) => {
   const token = localStorage.getItem('token');
   return {
@@ -80,10 +97,10 @@ const authLink = setContext((_, { headers } = {}) => {
   };
 });
 
-// --- 4. Combined Link (Error -> Auth -> HTTP) ---
-const combinedLink = errorLink.concat(authLink).concat(httpLink);
+// --- 5. Combined Link (Error -> Auth -> Retry -> HTTP) ---
+const combinedLink = errorLink.concat(authLink).concat(retryLink).concat(httpLink);
 
-// --- 4. Apollo Client ---
+// --- 6. Apollo Client ---
 export const client = new ApolloClient({
   link: combinedLink,
   cache: new InMemoryCache({
