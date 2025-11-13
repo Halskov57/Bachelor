@@ -32,7 +32,6 @@ export const useEditFanout = ({
       // For other node types, use their status or empty string
       return node?.status || '';
     })(),
-    depth: node?.depth ?? 0,
     courseLevel: (() => {
       // If editing, use the node's course level
       if (mode === 'edit' && node?.courseLevel !== undefined) {
@@ -105,16 +104,14 @@ export const useEditFanout = ({
             if (previousNode.type === 'feature') data.id = previousNode.id || previousNode.featureId;
             if (previousNode.type === 'task') data.id = previousNode.id || previousNode.taskId;
 
-            if (previousNode.type === 'task') {
+            if (node.type === 'task') {
               const changedStatus = currentFormData.status !== (previousNode.status || '');
-              const changedDepth = currentFormData.depth !== (previousNode.depth ?? 0);
               const nodeUsernames = (previousNode.users || []).map((user: any) => 
                 typeof user === 'string' ? user : user.username
               );
               const changedUsers = JSON.stringify(currentFormData.selectedUsers.sort()) !== JSON.stringify(nodeUsernames.sort());
 
               if (changedStatus) data.status = currentFormData.status;
-              if (changedDepth) data.depth = currentFormData.depth;
               if (changedUsers) data.users = currentFormData.selectedUsers;
             }
 
@@ -150,7 +147,6 @@ export const useEditFanout = ({
         title: node.title || node.name || '',
         description: node.description || '',
         status: node.status || (node.type === 'task' ? 'TODO' : ''),
-        depth: node.depth ?? 0,
         courseLevel: node.courseLevel ?? 0,
         selectedUsers: Array.isArray(node.users) 
           ? node.users.map((user: any) => typeof user === 'string' ? user : user.username)
@@ -164,7 +160,6 @@ export const useEditFanout = ({
         title: '',
         description: '',
         status: createNode?.type === 'task' ? 'TODO' : '',
-        depth: 0,
         courseLevel: isAdmin() ? 0 : 1,
         selectedUsers: [],
         selectedOwners: []
@@ -329,14 +324,12 @@ export const useEditFanout = ({
 
         if (node.type === 'task') {
           const changedStatus = formData.status !== (node.status || '');
-          const changedDepth = formData.depth !== (node.depth ?? 0);
           const nodeUsernames = (node.users || []).map((user: any) => 
             typeof user === 'string' ? user : user.username
           );
           const changedUsers = JSON.stringify(formData.selectedUsers.sort()) !== JSON.stringify(nodeUsernames.sort());
 
           if (changedStatus) data.status = formData.status;
-          if (changedDepth) data.depth = formData.depth;
           if (changedUsers) data.users = formData.selectedUsers;
         }
 
