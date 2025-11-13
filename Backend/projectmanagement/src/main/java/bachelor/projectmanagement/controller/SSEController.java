@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
-@RequestMapping("/api/sse")
+@RequestMapping("/sse")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class SSEController {
 

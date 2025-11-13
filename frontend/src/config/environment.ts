@@ -7,8 +7,8 @@ export interface EnvironmentConfig {
 
 export const environments = {
   development: {
-    API_BASE_URL: 'http://localhost:8081',
-    GRAPHQL_ENDPOINT: 'http://localhost:8081/graphql',
+    API_BASE_URL: 'http://localhost:8080',
+    GRAPHQL_ENDPOINT: 'http://localhost:8080/graphql',
     APP_NAME: 'Project Management (Dev)',
     DEBUG: true,
   } as EnvironmentConfig,

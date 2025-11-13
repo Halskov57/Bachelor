@@ -43,7 +43,7 @@ public class SecurityConfig {
                 .requestMatchers("/hello/**").permitAll()
                 
                 // SSE endpoints for real-time updates (JWT passed as query param)
-                .requestMatchers(HttpMethod.GET, "/api/sse/**").permitAll() // SSE connections
+                .requestMatchers(HttpMethod.GET, "/sse/**").permitAll() // SSE connections
                 .requestMatchers(HttpMethod.POST, "/graphql").authenticated() // GraphQL HTTP queries
                 
                 // All other requests require authentication

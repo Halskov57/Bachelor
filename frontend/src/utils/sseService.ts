@@ -1,4 +1,5 @@
 import { client } from './apolloClientSetup';
+import { config } from '../config/environment';
 
 export interface SSEEvent {
   type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'epicUpdate' | 'epicCreated' | 'featureUpdate' | 'featureCreated' | 'projectUpdate';
@@ -84,7 +85,7 @@ class SSEService {
 
     // Note: EventSource doesn't support custom headers, so we'll pass the token as a query parameter
     // In production, consider using a temporary SSE token endpoint for better security
-    const url = `http://localhost:8081/api/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
+    const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
     
     const eventSource = new EventSource(url);
 
