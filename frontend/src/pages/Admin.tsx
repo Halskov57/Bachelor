@@ -595,29 +595,53 @@ const Admin: React.FC = () => {
             backgroundColor: '#f9f9f9',
             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
           }}>
-            {/* Task User Assignment Section */}
+            {/* Task User Configuration Section */}
             <div style={{ marginBottom: '20px' }}>
               <h3 style={{ color: '#333', fontSize: '16px', marginBottom: '10px', marginTop: '0' }}>
-                Task Assignment
+                Task Configuration
               </h3>
-              <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
-                <input
-                  type="checkbox"
-                  checked={taskUserAssignmentEnabled}
-                  onChange={(e) => setTaskUserAssignmentEnabled(e.target.checked)}
-                  style={{ marginRight: '10px', transform: 'scale(1.2)' }}
-                />
-                Enable Task User Assignment
-              </label>
-              <p style={{ 
-                fontSize: '14px', 
-                color: '#666', 
-                marginLeft: '30px',
-                marginTop: '5px',
-                marginBottom: '0'
-              }}>
-                When enabled, users can assign team members to specific tasks within projects.
-              </p>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={taskUserAssignmentEnabled}
+                    onChange={(e) => setTaskUserAssignmentEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Task User Assignment
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can assign team members to specific tasks within projects.
+                </p>
+              </div>
+
+              {/* Task Due Date */}
+              <div style={{ marginBottom: '0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={taskDueDateEnabled}
+                    onChange={(e) => setTaskDueDateEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Task Due Date
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can set and view due dates for tasks.
+                </p>
+              </div>
             </div>
 
             {/* Divider */}
@@ -674,7 +698,7 @@ const Admin: React.FC = () => {
               </div>
 
               {/* Task Create/Delete */}
-              <div style={{ marginBottom: '15px' }}>
+              <div style={{ marginBottom: '0' }}>
                 <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
                   <input
                     type="checkbox"
@@ -692,28 +716,6 @@ const Admin: React.FC = () => {
                   marginBottom: '0'
                 }}>
                   When enabled, users can create and delete tasks within features.
-                </p>
-              </div>
-
-              {/* Task Due Date */}
-              <div style={{ marginBottom: '0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
-                  <input
-                    type="checkbox"
-                    checked={taskDueDateEnabled}
-                    onChange={(e) => setTaskDueDateEnabled(e.target.checked)}
-                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
-                  />
-                  Enable Task Due Date
-                </label>
-                <p style={{ 
-                  fontSize: '14px', 
-                  color: '#666', 
-                  marginLeft: '30px',
-                  marginTop: '5px',
-                  marginBottom: '0'
-                }}>
-                  When enabled, users can set and view due dates for tasks.
                 </p>
               </div>
             </div>
