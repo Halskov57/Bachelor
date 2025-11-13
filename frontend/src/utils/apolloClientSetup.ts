@@ -13,17 +13,17 @@ const httpLink = createHttpLink({
 const retryLink = new RetryLink({
   delay: {
     initial: 1000,     // Start with 1 second delay
-    max: 10000,        // Max 10 seconds between retries
+    max: 30000,        // Max 30 seconds between retries (increased from 10s)
     jitter: true
   },
   attempts: {
-    max: 10,           // Retry up to 10 times
+    max: Infinity,     // Retry indefinitely (changed from 10)
     retryIf: (error, _operation) => {
       // Retry on network errors (server down, connection refused, etc.)
       // Don't retry on GraphQL errors (authentication, validation, etc.)
       const isNetworkError = !!error && !error.message?.includes('GraphQL');
       if (isNetworkError) {
-        console.log(`🔄 Apollo: Retrying after network error...`);
+        console.log(`🔄 Apollo: Network error detected, retrying...`);
       }
       return isNetworkError;
     }

@@ -12,12 +12,15 @@ interface ReconnectionState {
   baseDelay: number;
   maxDelay: number;
   timeoutId?: NodeJS.Timeout;
+  connectionCheckTimeoutId?: NodeJS.Timeout;
+  lastSuccessfulConnection?: number;
 }
 
 class SSEService {
   private eventSources: Map<string, EventSource> = new Map();
   private listeners: Map<string, ((event: SSEEvent) => void)[]> = new Map();
   private reconnectionStates: Map<string, ReconnectionState> = new Map();
+  private readonly CONNECTION_TIMEOUT = 15000; // 15 seconds to establish connection
 
   /**
    * Subscribe to Server-Sent Events for a project
@@ -34,7 +37,8 @@ class SSEService {
         attempts: 0,
         maxAttempts: 10,
         baseDelay: 1000,
-        maxDelay: 30000
+        maxDelay: 30000,
+        lastSuccessfulConnection: Date.now()
       });
     }
 
@@ -88,6 +92,31 @@ class SSEService {
     const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
     
     const eventSource = new EventSource(url);
+    
+    // Set up a connection timeout - if connection isn't established within timeout, force reconnection
+    const state = this.reconnectionStates.get(projectId);
+    if (state) {
+      // Clear any existing connection check timeout
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+      }
+      
+      // Start connection timeout
+      state.connectionCheckTimeoutId = setTimeout(() => {
+        console.log(`⏰ SSE connection timeout for project ${projectId} - forcing reconnection`);
+        
+        // Close the stuck connection
+        if (this.eventSources.get(projectId) === eventSource) {
+          eventSource.close();
+          this.eventSources.delete(projectId);
+          
+          // Attempt manual reconnection if listeners still exist
+          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+            this.attemptReconnection(projectId);
+          }
+        }
+      }, this.CONNECTION_TIMEOUT);
+    }
 
     eventSource.onopen = () => {
       console.log(`🔗 SSE connected for project: ${projectId}`);
@@ -95,6 +124,13 @@ class SSEService {
       const state = this.reconnectionStates.get(projectId);
       if (state) {
         state.attempts = 0;
+        state.lastSuccessfulConnection = Date.now();
+        
+        // Clear connection timeout since we're connected
+        if (state.connectionCheckTimeoutId) {
+          clearTimeout(state.connectionCheckTimeoutId);
+          state.connectionCheckTimeoutId = undefined;
+        }
       }
     };
 
@@ -102,21 +138,44 @@ class SSEService {
       console.error(`❌ SSE error for project ${projectId}:`, error);
       console.log(`Connection readyState: ${eventSource.readyState} (0=CONNECTING, 1=OPEN, 2=CLOSED)`);
       
-      // Don't immediately close - let EventSource handle its own reconnection first
-      // Only force close and manual reconnect if connection is completely dead
+      const state = this.reconnectionStates.get(projectId);
+      
+      // Clear connection timeout on error
+      if (state?.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+        state.connectionCheckTimeoutId = undefined;
+      }
+      
+      // If connection is closed or we've been trying to connect for too long, manually reconnect
       if (eventSource.readyState === EventSource.CLOSED) {
+        console.log(`🔄 Connection CLOSED, attempting manual reconnection for project ${projectId}`);
         this.eventSources.delete(projectId);
         
         // Attempt to reconnect if there are still listeners
         if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
-          console.log(`🔄 Connection closed, attempting manual reconnection for project ${projectId}`);
           this.attemptReconnection(projectId);
         } else {
           console.log(`❌ No listeners remaining for project ${projectId}, not reconnecting`);
         }
-      } else {
+      } else if (eventSource.readyState === EventSource.CONNECTING) {
         // EventSource is trying to reconnect automatically
-        console.log(`⏳ EventSource attempting automatic reconnection for project ${projectId}...`);
+        console.log(`⏳ EventSource in CONNECTING state for project ${projectId}...`);
+        
+        // Check how long we've been disconnected
+        const timeSinceLastConnection = state?.lastSuccessfulConnection 
+          ? Date.now() - state.lastSuccessfulConnection 
+          : Infinity;
+        
+        // If we've been disconnected for too long, force a manual reconnection
+        if (timeSinceLastConnection > this.CONNECTION_TIMEOUT) {
+          console.log(`⏰ Been disconnected for ${Math.round(timeSinceLastConnection / 1000)}s, forcing manual reconnection`);
+          eventSource.close();
+          this.eventSources.delete(projectId);
+          
+          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+            this.attemptReconnection(projectId);
+          }
+        }
       }
     };
 
@@ -250,8 +309,13 @@ class SSEService {
    */
   private clearReconnectionState(projectId: string): void {
     const state = this.reconnectionStates.get(projectId);
-    if (state?.timeoutId) {
-      clearTimeout(state.timeoutId);
+    if (state) {
+      if (state.timeoutId) {
+        clearTimeout(state.timeoutId);
+      }
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+      }
     }
     this.reconnectionStates.delete(projectId);
   }
@@ -264,6 +328,9 @@ class SSEService {
     this.reconnectionStates.forEach((state, projectId) => {
       if (state.timeoutId) {
         clearTimeout(state.timeoutId);
+      }
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
       }
     });
     this.reconnectionStates.clear();
