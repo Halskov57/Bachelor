@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ApolloProvider } from "@apollo/client/react";
 import { client } from './utils/apolloClientSetup';
 import { ToastProvider } from './utils/toastContext';
+import { connectionMonitor } from './utils/connectionMonitor';
 import Beams from './components/Beams';
 import Login from './pages/Login';
 import Header from './components/Header';
@@ -15,6 +16,15 @@ import './App.css';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
+
+  // Start connection monitoring when app loads
+  useEffect(() => {
+    connectionMonitor.startMonitoring();
+    
+    return () => {
+      connectionMonitor.stopMonitoring();
+    };
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>

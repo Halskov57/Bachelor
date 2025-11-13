@@ -14,6 +14,7 @@ interface ReconnectionState {
   timeoutId?: NodeJS.Timeout;
   connectionCheckTimeoutId?: NodeJS.Timeout;
   lastSuccessfulConnection?: number;
+  persistentRetryIntervalId?: NodeJS.Timeout; // For continuous 30s retry after max attempts
 }
 
 class SSEService {
@@ -35,7 +36,7 @@ class SSEService {
     if (!this.reconnectionStates.has(projectId)) {
       this.reconnectionStates.set(projectId, {
         attempts: 0,
-        maxAttempts: 10,
+        maxAttempts: 10, // Initial exponential backoff attempts
         baseDelay: 1000,
         maxDelay: 30000,
         lastSuccessfulConnection: Date.now()
@@ -130,6 +131,13 @@ class SSEService {
         if (state.connectionCheckTimeoutId) {
           clearTimeout(state.connectionCheckTimeoutId);
           state.connectionCheckTimeoutId = undefined;
+        }
+        
+        // Clear persistent retry interval on successful connection
+        if (state.persistentRetryIntervalId) {
+          clearInterval(state.persistentRetryIntervalId);
+          state.persistentRetryIntervalId = undefined;
+          console.log(`✅ Persistent retry stopped - connection restored for project ${projectId}`);
         }
       }
     };
@@ -274,9 +282,29 @@ class SSEService {
     const state = this.reconnectionStates.get(projectId);
     if (!state) return;
 
-    // Check if we've exceeded max attempts
+    // Check if we've exceeded max attempts for exponential backoff
     if (state.attempts >= state.maxAttempts) {
-      console.error(`❌ SSE max reconnection attempts (${state.maxAttempts}) reached for project ${projectId}`);
+      console.warn(`⚠️ SSE max exponential backoff attempts (${state.maxAttempts}) reached for project ${projectId}`);
+      
+      // Start persistent retry every 30 seconds if not already started
+      if (!state.persistentRetryIntervalId) {
+        console.log(`🔄 Starting persistent retry every 30 seconds for project ${projectId}`);
+        state.persistentRetryIntervalId = setInterval(() => {
+          // Only reconnect if there are still listeners
+          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+            console.log(`🔄 Persistent retry: attempting to reconnect to project ${projectId}...`);
+            this.createEventSource(projectId);
+          } else {
+            console.log(`❌ No listeners remaining for project ${projectId}, stopping persistent retry`);
+            if (state.persistentRetryIntervalId) {
+              clearInterval(state.persistentRetryIntervalId);
+              state.persistentRetryIntervalId = undefined;
+            }
+          }
+        }, 30000); // 30 seconds
+        
+        this.reconnectionStates.set(projectId, state);
+      }
       return;
     }
 
@@ -316,6 +344,9 @@ class SSEService {
       if (state.connectionCheckTimeoutId) {
         clearTimeout(state.connectionCheckTimeoutId);
       }
+      if (state.persistentRetryIntervalId) {
+        clearInterval(state.persistentRetryIntervalId);
+      }
     }
     this.reconnectionStates.delete(projectId);
   }
@@ -331,6 +362,9 @@ class SSEService {
       }
       if (state.connectionCheckTimeoutId) {
         clearTimeout(state.connectionCheckTimeoutId);
+      }
+      if (state.persistentRetryIntervalId) {
+        clearInterval(state.persistentRetryIntervalId);
       }
     });
     this.reconnectionStates.clear();

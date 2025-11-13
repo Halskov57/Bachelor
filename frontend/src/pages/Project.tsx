@@ -151,6 +151,20 @@ const Project: React.FC = () => {
     }
   }, [navigate, setProject, setProjectId]);
 
+  // Listen for backend reconnection events
+  useEffect(() => {
+    const handleReconnection = () => {
+      console.log('Backend reconnected, refreshing project...');
+      fetchProjectById();
+    };
+
+    window.addEventListener('backend-reconnected', handleReconnection);
+    
+    return () => {
+      window.removeEventListener('backend-reconnected', handleReconnection);
+    };
+  }, [fetchProjectById]);
+
   // Real-time updates using Server-Sent Events (SSE)
   useEffect(() => {
     if (!projectId) return;

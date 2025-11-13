@@ -20,6 +20,20 @@ const Dashboard: React.FC = () => {
     // eslint-disable-next-line
   }, []);
 
+  useEffect(() => {
+    const handleReconnection = () => {
+      console.log('Backend reconnected, refreshing projects...');
+      fetchProjects();
+    };
+
+    window.addEventListener('backend-reconnected', handleReconnection);
+    
+    return () => {
+      window.removeEventListener('backend-reconnected', handleReconnection);
+    };
+    // eslint-disable-next-line
+  }, []);
+
   const fetchProjects = () => {
     console.log('🔍 Fetching projects from:', getApiUrl('/projects'));
     const token = localStorage.getItem('token');

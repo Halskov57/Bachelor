@@ -7,6 +7,7 @@ interface RetryOptions {
   initialDelay?: number;
   maxDelay?: number;
   onRetry?: (attempt: number, delay: number, error: Error) => void;
+  persistentRetry?: boolean; // If true, after maxAttempts, continues retrying every maxDelay forever
 }
 
 export async function fetchWithRetry(
@@ -18,12 +19,15 @@ export async function fetchWithRetry(
     maxAttempts = 10,
     initialDelay = 1000,
     maxDelay = 30000,
-    onRetry
+    onRetry,
+    persistentRetry = false
   } = retryOptions || {};
 
   let lastError: Error | null = null;
+  let attempt = 0;
   
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  // Use while(true) for persistent retry, otherwise for loop with maxAttempts
+  while (persistentRetry ? true : attempt < maxAttempts) {
     try {
       const response = await fetch(url, options);
       
@@ -41,21 +45,26 @@ export async function fetchWithRetry(
       lastError = error instanceof Error ? error : new Error(String(error));
     }
     
-    // Don't retry if this was the last attempt
-    if (attempt < maxAttempts - 1) {
-      // Calculate delay with exponential backoff
-      const delay = Math.min(initialDelay * Math.pow(2, attempt), maxDelay);
-      
-      console.log(`🔄 Fetch retry attempt ${attempt + 1}/${maxAttempts} in ${delay}ms...`);
-      
-      if (onRetry) {
-        onRetry(attempt + 1, delay, lastError);
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, delay));
+    // Calculate delay with exponential backoff for initial attempts
+    // After maxAttempts, use constant maxDelay
+    const delay = attempt < maxAttempts 
+      ? Math.min(initialDelay * Math.pow(2, attempt), maxDelay)
+      : maxDelay;
+    
+    const retryMessage = persistentRetry && attempt >= maxAttempts
+      ? `🔄 Persistent retry attempt ${attempt + 1} in ${delay}ms...`
+      : `🔄 Fetch retry attempt ${attempt + 1}/${maxAttempts} in ${delay}ms...`;
+    
+    console.log(retryMessage);
+    
+    if (onRetry) {
+      onRetry(attempt + 1, delay, lastError);
     }
+    
+    await new Promise(resolve => setTimeout(resolve, delay));
+    attempt++;
   }
   
-  // All retries exhausted
+  // All retries exhausted (only reached if persistentRetry is false)
   throw lastError || new Error('Fetch failed after retries');
 }
