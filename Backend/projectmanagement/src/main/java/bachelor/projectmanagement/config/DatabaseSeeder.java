@@ -25,6 +25,7 @@ CommandLineRunner seedUsers(UserRepository userRepository, UserService userServi
         if (userRepository.findByUsername("admin").isEmpty()) {
             userService.createSuperAdminUser("admin", "JNprj12345");
         }
+        System.out.println("Database seeding completed.");
     };
 } 
 
