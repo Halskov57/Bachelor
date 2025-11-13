@@ -57,7 +57,7 @@ export async function fetchWithRetry(
     }
     
     // For gateway errors, use shorter delays to break through proxy cache faster
-    let delay;
+    let delay: number;
     if (lastError?.message.includes('Gateway error')) {
       // For gateway errors: try every 5 seconds to break through Railway proxy cache
       delay = 5000;
