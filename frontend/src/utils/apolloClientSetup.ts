@@ -12,15 +12,20 @@ const httpLink = createHttpLink({
 // --- 2. Retry Link (Reconnection Logic) ---
 const retryLink = new RetryLink({
   delay: {
-    initial: 300,
-    max: 5000,
+    initial: 1000,     // Start with 1 second delay
+    max: 10000,        // Max 10 seconds between retries
     jitter: true
   },
   attempts: {
-    max: 5,
+    max: 10,           // Retry up to 10 times
     retryIf: (error, _operation) => {
-      // Retry on network errors but not on GraphQL errors
-      return !!error;
+      // Retry on network errors (server down, connection refused, etc.)
+      // Don't retry on GraphQL errors (authentication, validation, etc.)
+      const isNetworkError = !!error && !error.message?.includes('GraphQL');
+      if (isNetworkError) {
+        console.log(`🔄 Apollo: Retrying after network error...`);
+      }
+      return isNetworkError;
     }
   }
 });

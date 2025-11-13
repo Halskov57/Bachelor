@@ -99,14 +99,23 @@ class SSEService {
 
     eventSource.onerror = (error) => {
       console.error(`❌ SSE error for project ${projectId}:`, error);
+      console.log(`Connection readyState: ${eventSource.readyState} (0=CONNECTING, 1=OPEN, 2=CLOSED)`);
       
-      // Close the current connection
-      eventSource.close();
-      this.eventSources.delete(projectId);
-      
-      // Attempt to reconnect if there are still listeners
-      if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
-        this.attemptReconnection(projectId);
+      // Don't immediately close - let EventSource handle its own reconnection first
+      // Only force close and manual reconnect if connection is completely dead
+      if (eventSource.readyState === EventSource.CLOSED) {
+        this.eventSources.delete(projectId);
+        
+        // Attempt to reconnect if there are still listeners
+        if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+          console.log(`🔄 Connection closed, attempting manual reconnection for project ${projectId}`);
+          this.attemptReconnection(projectId);
+        } else {
+          console.log(`❌ No listeners remaining for project ${projectId}, not reconnecting`);
+        }
+      } else {
+        // EventSource is trying to reconnect automatically
+        console.log(`⏳ EventSource attempting automatic reconnection for project ${projectId}...`);
       }
     };
 
