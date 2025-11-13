@@ -17,12 +17,12 @@ public class JwtUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
     
-    @Value("${JWT_SECRET}")
+    @Value("${jwt.secret}")
     private String secretKey;
     private static final long EXPIRATION_MS = 86400000; // 1 day in milliseconds
     
     // Constructor to log JWT secret initialization
-    public JwtUtil(@Value("${JWT_SECRET}") String secretKey) {
+    public JwtUtil(@Value("${jwt.secret}") String secretKey) {
         this.secretKey = secretKey;
         logger.info("JWT Secret initialized with length: {} characters", secretKey.length());
         

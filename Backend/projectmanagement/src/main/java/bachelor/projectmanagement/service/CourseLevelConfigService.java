@@ -207,6 +207,13 @@ public class CourseLevelConfigService {
     }
 
     /**
+     * Check if task due date is enabled for a course level
+     */
+    public boolean isTaskDueDateEnabled(int courseLevel) {
+        return getConfigOrDefault(courseLevel).isTaskDueDateEnabled();
+    }
+
+    /**
      * Get all configurations
      */
     public List<CourseLevelConfig> getAllConfigs() {

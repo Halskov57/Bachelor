@@ -16,6 +16,7 @@ public class CourseLevelConfig {
     public static final String EPIC_CREATE_DELETE = "EPIC_CREATE_DELETE";
     public static final String FEATURE_CREATE_DELETE = "FEATURE_CREATE_DELETE";
     public static final String TASK_CREATE_DELETE = "TASK_CREATE_DELETE";
+    public static final String TASK_DUE_DATE = "TASK_DUE_DATE";
     
     @Id
     private String id;
@@ -47,6 +48,7 @@ public class CourseLevelConfig {
         features.put(EPIC_CREATE_DELETE, true);
         features.put(FEATURE_CREATE_DELETE, true);
         features.put(TASK_CREATE_DELETE, true);
+        features.put(TASK_DUE_DATE, true);
     }
 
     // Generic feature access methods (ready for future features)
@@ -91,6 +93,14 @@ public class CourseLevelConfig {
 
     public void setTaskCreateDeleteEnabled(boolean enabled) {
         setFeature(TASK_CREATE_DELETE, enabled);
+    }
+
+    public boolean isTaskDueDateEnabled() {
+        return isFeatureEnabled(TASK_DUE_DATE);
+    }
+
+    public void setTaskDueDateEnabled(boolean enabled) {
+        setFeature(TASK_DUE_DATE, enabled);
     }
 
     // Getters and setters

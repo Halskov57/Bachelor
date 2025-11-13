@@ -376,6 +376,8 @@ public class ProjectService {
                                     System.out.println("Updating task users from: " + task.getUsers() + " to: " + updatedTask.getUsers());
                                     task.setUsers(updatedTask.getUsers());
                                 }
+                                // Update dueDate - allow null to clear the date
+                                task.setDueDate(updatedTask.getDueDate());
                                 
                                 // Ensure parent IDs are set for subscription filtering
                                 task.setProjectId(projectId);

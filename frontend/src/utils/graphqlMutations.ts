@@ -117,6 +117,7 @@ export const ADD_TASK_MUTATION = gql`
       title
       description
       status
+      dueDate
     }
   }
 `;
@@ -211,6 +212,15 @@ export const UPDATE_TASK_STATUS_MUTATION = gql`
   }
 `;
 
+export const UPDATE_TASK_DUE_DATE_MUTATION = gql`
+  mutation UpdateTaskDueDate($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newDueDate: String) {
+    updateTaskDueDate(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newDueDate: $newDueDate) {
+      id
+      dueDate
+    }
+  }
+`;
+
 export const UPDATE_TASK_USERS_MUTATION = gql`
   mutation UpdateTaskUsers($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $userIds: [ID!]!) {
     updateTaskUsers(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, userIds: $userIds) {
@@ -270,6 +280,7 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
             title
             description
             status
+            dueDate
             users {
               id
               username
@@ -439,6 +450,10 @@ export const updateNode = async (data: any, parentIds: any) => {
         if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
         if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
         if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
+        if (data.dueDate !== undefined) {
+          console.log('Updating task due date:', data.dueDate); // Debug log
+          await client.mutate({ mutation: UPDATE_TASK_DUE_DATE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDueDate: data.dueDate || null } });
+        }
         if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
         break;
       default:

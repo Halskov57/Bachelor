@@ -5,7 +5,7 @@ import { getAllTasksWithContext, getUniqueStatuses, getUniqueUsernames, getStatu
 import PDFExportButton from '../../PDFExportButton';
 import { TaskForPDF } from '../../../utils/pdfExport';
 
-type FilterCategory = 'none' | 'status' | 'username';
+type FilterCategory = 'none' | 'status' | 'username' | 'dueDate';
 
 const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> = ({ project, fetchProjectById }) => {
   const [expandedEpic, setExpandedEpic] = useState<string | null>(null);
@@ -13,6 +13,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('none');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedUsername, setSelectedUsername] = useState<string>('');
+  const [selectedDueDate, setSelectedDueDate] = useState<string>(''); // New state for due date
 
   const {
     editNode,
@@ -53,6 +54,16 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       });
     }
 
+    // New: Filter by due date - show tasks due before or on the selected date
+    if (filterCategory === 'dueDate' && selectedDueDate) {
+      return allTasks.filter(task => {
+        if (!task.dueDate) return false;
+        const taskDueDate = new Date(task.dueDate);
+        const filterDate = new Date(selectedDueDate);
+        return taskDueDate <= filterDate;
+      });
+    }
+
     return allTasks;
   };
 
@@ -61,6 +72,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
     setFilterCategory(newCategory);
     setSelectedStatus('');
     setSelectedUsername('');
+    setSelectedDueDate(''); // Reset due date when changing category
   };
 
   // Prepare filtered tasks for PDF export
@@ -74,7 +86,8 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       ),
       epicTitle: task.epicTitle,
       featureTitle: task.featureTitle,
-      description: task.description
+      description: task.description,
+      dueDate: task.dueDate // Add dueDate to PDF export
     }));
   };
 
@@ -145,6 +158,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
             <option value="none">No filter</option>
             <option value="status">Status</option>
             <option value="username">Assigned User</option>
+            <option value="dueDate">Due Date</option>
           </select>
 
           {/* Status Selection */}
@@ -274,11 +288,35 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
               </select>
             </>
           )}
+
+          {/* Due Date Selection - NEW */}
+          {filterCategory === 'dueDate' && (
+            <>
+              <span style={{ color: '#666', fontSize: '0.9rem' }}>→ Show tasks due before:</span>
+              <input
+                type="date"
+                value={selectedDueDate}
+                onChange={(e) => setSelectedDueDate(e.target.value)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '2px solid #FF6B6B',
+                  backgroundColor: '#fff',
+                  color: '#FF6B6B',
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  fontWeight: '500'
+                }}
+              />
+            </>
+          )}
         </div>
       </div>
 
       {/* Filtered Tasks Window */}
-      {filterCategory !== 'none' && (selectedStatus || selectedUsername) && (
+      {filterCategory !== 'none' && (selectedStatus || selectedUsername || selectedDueDate) && (
         <div style={{
           backgroundColor: '#fff',
           padding: '16px 20px',
@@ -307,6 +345,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                 Filtered Tasks 
                 {filterCategory === 'status' && selectedStatus && ` - Status: ${selectedStatus}`}
                 {filterCategory === 'username' && selectedUsername && ` - User: ${selectedUsername}`}
+                {filterCategory === 'dueDate' && selectedDueDate && ` - Due before: ${new Date(selectedDueDate).toLocaleDateString()}`}
                 {` (${getFilteredTasks().length} found)`}
               </h3>
             </div>
@@ -316,8 +355,8 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                 <PDFExportButton
                   tasks={getFilteredTasksForPDF()}
                   projectTitle={project.title || project.name || 'Project'}
-                  filterType={filterCategory === 'status' ? 'Status' : filterCategory === 'username' ? 'User' : undefined}
-                  filterValue={selectedStatus || selectedUsername}
+                  filterType={filterCategory === 'status' ? 'Status' : filterCategory === 'username' ? 'User' : filterCategory === 'dueDate' ? 'Due Date' : undefined}
+                  filterValue={selectedStatus || selectedUsername || (selectedDueDate ? new Date(selectedDueDate).toLocaleDateString() : '')}
                 />
               </div>
             )}
@@ -332,12 +371,15 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
               {getFilteredTasks().map((task: any, index: number) => {
                 const taskStatus = task.status;
                 const isCompleted = taskStatus === 'DONE' || taskStatus === 'Done';
+                const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+                const isOverdue = dueDate && dueDate < new Date() && !isCompleted;
+                
                 return (
                 <div
                   key={task.id || task._id || `${task.title}-${index}`}
                   style={{
-                    backgroundColor: isCompleted ? '#e8f5e9' : '#f8f9fa',
-                    border: `1px solid ${isCompleted ? '#a5d6a7' : '#e0e6ed'}`,
+                    backgroundColor: isCompleted ? '#e8f5e9' : isOverdue ? '#ffebee' : '#f8f9fa',
+                    border: `1px solid ${isCompleted ? '#a5d6a7' : isOverdue ? '#ef5350' : '#e0e6ed'}`,
                     borderRadius: '6px',
                     padding: '10px 14px',
                     cursor: 'pointer',
@@ -347,12 +389,12 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     gap: '6px'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = isCompleted ? '#c8e6c9' : '#e6f0ff';
-                    e.currentTarget.style.borderColor = isCompleted ? '#81c784' : '#022AFF';
+                    e.currentTarget.style.backgroundColor = isCompleted ? '#c8e6c9' : isOverdue ? '#ffcdd2' : '#e6f0ff';
+                    e.currentTarget.style.borderColor = isCompleted ? '#81c784' : isOverdue ? '#e53935' : '#022AFF';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = isCompleted ? '#e8f5e9' : '#f8f9fa';
-                    e.currentTarget.style.borderColor = isCompleted ? '#a5d6a7' : '#e0e6ed';
+                    e.currentTarget.style.backgroundColor = isCompleted ? '#e8f5e9' : isOverdue ? '#ffebee' : '#f8f9fa';
+                    e.currentTarget.style.borderColor = isCompleted ? '#a5d6a7' : isOverdue ? '#ef5350' : '#e0e6ed';
                   }}
                   onClick={() => handleEditNode({
                     ...task,
@@ -386,6 +428,22 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                       </span>
                     )}
                     
+                    {/* Display Due Date Badge */}
+                    {dueDate && (
+                      <span style={{
+                        fontSize: '0.75rem',
+                        backgroundColor: isOverdue ? '#ffebee' : '#e3f2fd',
+                        color: isOverdue ? '#c62828' : '#1565c0',
+                        border: `1px solid ${isOverdue ? '#ef5350' : '#42a5f5'}`,
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontWeight: '500'
+                      }}>
+                        📅 Due: {dueDate.toLocaleDateString()}
+                        {isOverdue && ' ⚠️'}
+                      </span>
+                    )}
+                    
                     {(task.users || task.assignedUsers) && (task.users || task.assignedUsers).length > 0 && (
                       <span style={{
                         fontSize: '0.75rem',
@@ -401,17 +459,13 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
                     )}
                   </div>
                   
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    color: '#666',
-                    display: 'flex',
-                    gap: '8px',
-                    alignItems: 'center'
-                  }}>
-                    <span><span style={{ fontSize: '1.0rem' }}>📚</span> {task.epicTitle}</span>
-                    <span>→</span>
-                    <span><span style={{ fontSize: '1.0rem' }}>📝</span> {task.featureTitle}</span>
-                  </div>
+                  {task.epicTitle && task.featureTitle && (
+                    <div style={{ fontSize: '0.75rem', color: '#666', display: 'flex', gap: '4px' }}>
+                      <span>📁 {task.epicTitle}</span>
+                      <span>→</span>
+                      <span>{task.featureTitle}</span>
+                    </div>
+                  )}
                 </div>
               );
               })}

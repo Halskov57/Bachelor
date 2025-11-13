@@ -82,6 +82,7 @@ export interface Task {
   projectId: string;
   epicId: string;
   featureId: string;
+  dueDate?: string; // New field: ISO date string (YYYY-MM-DD)
 
   // Use IDs only
   userIds?: string[];

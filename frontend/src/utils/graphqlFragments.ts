@@ -11,6 +11,7 @@ export const TASK_FIELDS = gql`
     description
     users
     status
+    dueDate
     # Ensure all fields used in the toTreeData function are included here
   }
 `;

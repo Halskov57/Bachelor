@@ -130,17 +130,23 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                     <TaskForm
                         task={{
                             title: formData.title,
-                            description: formData.description
+                            description: formData.description,
+                            dueDate: formData.dueDate
                         }}
                         onTaskChange={(field: string, value: string | number) => {
+                            console.log(`TaskForm change: ${field} = ${value}`);
                             if (field === 'title') {
                                 updateFormData({ title: value as string });
                             } else if (field === 'description') {
                                 updateFormData({ description: value as string });
+                            } else if (field === 'dueDate') {
+                                console.log('Updating dueDate in formData:', value);
+                                updateFormData({ dueDate: value as string });
                             }
                         }}
                         onTaskSubmit={() => {}}
                         disabled={loading}
+                        isTaskDueDateEnabled={courseConfig.isTaskDueDateEnabled}
                     />
                 );
 

@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import bachelor.projectmanagement.config.DatabaseCleaner;
@@ -20,6 +21,7 @@ public class Application {
     }
 
     @Bean
+    @Order(1)
     public CommandLineRunner testMongoConnection(MongoTemplate mongoTemplate, DatabaseCleaner databaseCleaner) {
         return args -> {
             System.out.println("Testing MongoDB connection via Spring Boot...");
@@ -27,6 +29,8 @@ public class Application {
             try {
                 Document ping = mongoTemplate.executeCommand("{ ping: 1 }");
                 System.out.println("Connection successful! Ping response: " + ping.toJson());
+                
+                databaseCleaner.clearDatabase();
 
                 System.out.println("Collections in database: " + mongoTemplate.getCollectionNames());
 

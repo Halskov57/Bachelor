@@ -36,6 +36,7 @@ type Task {
     description: String
     status: String!
     users: [User!]!
+    dueDate: String
 }
 
 type CourseLevelConfig {
@@ -78,6 +79,7 @@ type Mutation {
     updateTaskTitle(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newTitle: String!): Task!
     updateTaskDescription(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDescription: String!): Task!
     updateTaskStatus(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newStatus: String!): Task!
+    updateTaskDueDate(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDueDate: String): Task!
     updateTaskUsers(
         projectId: ID!,
         epicId: ID!,

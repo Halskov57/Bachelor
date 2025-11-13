@@ -49,7 +49,8 @@ export const useEditFanout = ({
       : [],
     selectedOwners: mode === 'edit' && node?.type === 'project' && Array.isArray(node?.owners)
       ? node.owners.map((owner: any) => owner.username || owner.name)
-      : []
+      : [],
+    dueDate: mode === 'edit' && node?.type === 'task' ? (node?.dueDate || '') : '' // Add dueDate initialization
   });
 
   // UI state
@@ -64,7 +65,8 @@ export const useEditFanout = ({
     isTaskUserAssignmentEnabled: true,
     isEpicCreateDeleteEnabled: true,
     isFeatureCreateDeleteEnabled: true,
-    isTaskCreateDeleteEnabled: true
+    isTaskCreateDeleteEnabled: true,
+    isTaskDueDateEnabled: true
   });
 
   const { showSuccess, showError } = useToast();
@@ -153,7 +155,8 @@ export const useEditFanout = ({
           : [],
         selectedOwners: node.type === 'project' && Array.isArray(node.owners)
           ? node.owners.map((owner: any) => owner.username || owner.name)
-          : []
+          : [],
+        dueDate: node.type === 'task' ? (node.dueDate || '') : '' // Add dueDate
       });
     } else if (mode === 'create') {
       setFormData({
@@ -162,7 +165,8 @@ export const useEditFanout = ({
         status: createNode?.type === 'task' ? 'TODO' : '',
         courseLevel: isAdmin() ? 0 : 1,
         selectedUsers: [],
-        selectedOwners: []
+        selectedOwners: [],
+        dueDate: '' // Add dueDate
       });
     }
   }, [node, mode, createNode]);
@@ -188,12 +192,14 @@ export const useEditFanout = ({
           const epicCreateDeleteFeature = config.features.find((f: any) => f.key === 'EPIC_CREATE_DELETE');
           const featureCreateDeleteFeature = config.features.find((f: any) => f.key === 'FEATURE_CREATE_DELETE');
           const taskCreateDeleteFeature = config.features.find((f: any) => f.key === 'TASK_CREATE_DELETE');
+          const taskDueDateFeature = config.features.find((f: any) => f.key === 'TASK_DUE_DATE');
           
           setCourseConfig({
             isTaskUserAssignmentEnabled: taskUserFeature ? taskUserFeature.enabled : true,
             isEpicCreateDeleteEnabled: epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true,
             isFeatureCreateDeleteEnabled: featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true,
-            isTaskCreateDeleteEnabled: taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true
+            isTaskCreateDeleteEnabled: taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true,
+            isTaskDueDateEnabled: taskDueDateFeature ? taskDueDateFeature.enabled : true
           });
         } catch (error) {
           console.error('Failed to load course level config:', error);
@@ -201,7 +207,8 @@ export const useEditFanout = ({
             isTaskUserAssignmentEnabled: true,
             isEpicCreateDeleteEnabled: true,
             isFeatureCreateDeleteEnabled: true,
-            isTaskCreateDeleteEnabled: true
+            isTaskCreateDeleteEnabled: true,
+            isTaskDueDateEnabled: true
           });
         }
       }
@@ -296,13 +303,28 @@ export const useEditFanout = ({
           return;
         }
         
-        await addNode(
+        const result = await addNode(
           createNode.type,
           createNode.parentIds,
           formData.title,
           formData.description,
           createNode.type === 'project' ? formData.courseLevel : undefined
         );
+        
+        // If creating a task with a due date, update it immediately after creation
+        if (createNode.type === 'task' && formData.dueDate && result && 'data' in result) {
+          const newTaskId = (result.data as any)?.addTask?.id;
+          if (newTaskId) {
+            await updateNode(
+              {
+                type: 'task',
+                id: newTaskId,
+                dueDate: formData.dueDate
+              },
+              createNode.parentIds
+            );
+          }
+        }
         
         onSave?.();
         onClose();
@@ -328,9 +350,15 @@ export const useEditFanout = ({
             typeof user === 'string' ? user : user.username
           );
           const changedUsers = JSON.stringify(formData.selectedUsers.sort()) !== JSON.stringify(nodeUsernames.sort());
+          
+          // Compare dueDate properly - handle null/undefined/empty string cases
+          const nodeDueDate = node.dueDate || '';
+          const formDueDate = formData.dueDate || '';
+          const changedDueDate = formDueDate !== nodeDueDate;
 
           if (changedStatus) data.status = formData.status;
           if (changedUsers) data.users = formData.selectedUsers;
+          if (changedDueDate) data.dueDate = formData.dueDate || null;
         }
 
         const parentIds = {
@@ -341,6 +369,7 @@ export const useEditFanout = ({
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
         if (changedKeys.length > 0) {
+          console.log('Saving task with data:', data); // Debug log
           await updateNode(data, parentIds);
         }
 

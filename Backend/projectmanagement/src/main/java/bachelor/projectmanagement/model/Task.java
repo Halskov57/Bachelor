@@ -1,6 +1,7 @@
 package bachelor.projectmanagement.model;
 
 import org.springframework.data.annotation.Id;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ public class Task {
     private String description;
     private TaskStatus status;
     private List<String> users = new ArrayList<>(); // usernames assigned
+    private LocalDate dueDate; // New field for due date
     
     // Parent IDs for subscription filtering
     private String projectId;
@@ -54,6 +56,9 @@ public class Task {
 
     public TaskStatus getStatus() { return status; }
     public void setStatus(TaskStatus status) { this.status = status; }
+
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 
     public String getId() {
         return taskId;
