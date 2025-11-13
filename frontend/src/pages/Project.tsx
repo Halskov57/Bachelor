@@ -77,6 +77,7 @@ const Project: React.FC = () => {
                   title
                   description
                   status
+                  dueDate
                   users {
                     id
                     username

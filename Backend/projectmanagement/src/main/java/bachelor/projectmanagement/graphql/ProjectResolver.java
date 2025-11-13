@@ -301,6 +301,40 @@ public class ProjectResolver {
     }
 
     @MutationMapping
+    public Task updateTaskDueDate(
+            @Argument String projectId,
+            @Argument String epicId,
+            @Argument String featureId,
+            @Argument String taskId,
+            @Argument String newDueDate) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+
+        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
+        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+        
+        // Parse the date string to LocalDate (format: YYYY-MM-DD)
+        java.time.LocalDate dueDate = null;
+        if (newDueDate != null && !newDueDate.isEmpty()) {
+            try {
+                dueDate = java.time.LocalDate.parse(newDueDate);
+            } catch (Exception e) {
+                throw new RuntimeException("Invalid date format. Expected YYYY-MM-DD: " + newDueDate);
+            }
+        }
+        task.setDueDate(dueDate);
+        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+        
+        // Send SSE update with correct field mapping (taskId -> id)
+        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
+        taskUpdate.put("id", updatedTask.getTaskId());
+        taskUpdate.put("dueDate", updatedTask.getDueDate() != null ? updatedTask.getDueDate().toString() : null);
+        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
+        
+        return updatedTask;
+    }
+
+    @MutationMapping
     public Task updateTaskUsers(
             @Argument String projectId,
             @Argument String epicId,

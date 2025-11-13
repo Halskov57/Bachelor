@@ -10,6 +10,7 @@ const Admin: React.FC = () => {
   const [epicCreateDeleteEnabled, setEpicCreateDeleteEnabled] = useState<boolean>(true);
   const [featureCreateDeleteEnabled, setFeatureCreateDeleteEnabled] = useState<boolean>(true);
   const [taskCreateDeleteEnabled, setTaskCreateDeleteEnabled] = useState<boolean>(true);
+  const [taskDueDateEnabled, setTaskDueDateEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('');
   
@@ -49,6 +50,10 @@ const Admin: React.FC = () => {
         // Find task create/delete feature
         const taskCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_CREATE_DELETE');
         setTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
+        
+        // Find task due date feature
+        const taskDueDateFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_DUE_DATE');
+        setTaskDueDateEnabled(taskDueDateFeature ? taskDueDateFeature.enabled : true);
       } else {
         // Config is null, create default
         throw new Error('No configuration found');
@@ -64,7 +69,8 @@ const Admin: React.FC = () => {
           { key: 'TASK_USER_ASSIGNMENT', enabled: true },
           { key: 'EPIC_CREATE_DELETE', enabled: true },
           { key: 'FEATURE_CREATE_DELETE', enabled: true },
-          { key: 'TASK_CREATE_DELETE', enabled: true }
+          { key: 'TASK_CREATE_DELETE', enabled: true },
+          { key: 'TASK_DUE_DATE', enabled: true }
         ]
       };
       
@@ -73,6 +79,7 @@ const Admin: React.FC = () => {
       setEpicCreateDeleteEnabled(true);
       setFeatureCreateDeleteEnabled(true);
       setTaskCreateDeleteEnabled(true);
+      setTaskDueDateEnabled(true);
       setMessage(`Using default configuration for Course Level ${selectedCourseLevel}. Configuration will be created when you save.`);
     } finally {
       setLoading(false);
@@ -100,7 +107,8 @@ const Admin: React.FC = () => {
         { key: 'TASK_USER_ASSIGNMENT', enabled: taskUserAssignmentEnabled },
         { key: 'EPIC_CREATE_DELETE', enabled: epicCreateDeleteEnabled },
         { key: 'FEATURE_CREATE_DELETE', enabled: featureCreateDeleteEnabled },
-        { key: 'TASK_CREATE_DELETE', enabled: taskCreateDeleteEnabled }
+        { key: 'TASK_CREATE_DELETE', enabled: taskCreateDeleteEnabled },
+        { key: 'TASK_DUE_DATE', enabled: taskDueDateEnabled }
       ]);
       setConfig(updatedConfig);
       setMessage('Configuration saved successfully!');
@@ -666,7 +674,7 @@ const Admin: React.FC = () => {
               </div>
 
               {/* Task Create/Delete */}
-              <div style={{ marginBottom: '0' }}>
+              <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
                   <input
                     type="checkbox"
@@ -684,6 +692,28 @@ const Admin: React.FC = () => {
                   marginBottom: '0'
                 }}>
                   When enabled, users can create and delete tasks within features.
+                </p>
+              </div>
+
+              {/* Task Due Date */}
+              <div style={{ marginBottom: '0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: '16px', color: '#333', fontWeight: '500' }}>
+                  <input
+                    type="checkbox"
+                    checked={taskDueDateEnabled}
+                    onChange={(e) => setTaskDueDateEnabled(e.target.checked)}
+                    style={{ marginRight: '10px', transform: 'scale(1.2)' }}
+                  />
+                  Enable Task Due Date
+                </label>
+                <p style={{ 
+                  fontSize: '14px', 
+                  color: '#666', 
+                  marginLeft: '30px',
+                  marginTop: '5px',
+                  marginBottom: '0'
+                }}>
+                  When enabled, users can set and view due dates for tasks.
                 </p>
               </div>
             </div>

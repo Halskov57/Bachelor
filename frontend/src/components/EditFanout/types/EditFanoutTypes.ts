@@ -33,6 +33,7 @@ export interface FormData {
   courseLevel: number;
   selectedUsers: string[];
   selectedOwners: string[];
+  dueDate?: string; // Add dueDate field
 }
 
 export interface CourseConfig {
@@ -40,6 +41,7 @@ export interface CourseConfig {
   isEpicCreateDeleteEnabled: boolean;
   isFeatureCreateDeleteEnabled: boolean;
   isTaskCreateDeleteEnabled: boolean;
+  isTaskDueDateEnabled: boolean;
 }
 
 export interface EditFanoutState extends FormData {
