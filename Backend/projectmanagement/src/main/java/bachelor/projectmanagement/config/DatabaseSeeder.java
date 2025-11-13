@@ -5,12 +5,14 @@ import bachelor.projectmanagement.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 
 @Configuration
 public class DatabaseSeeder {
 
 @Bean
+@Order(2)
 CommandLineRunner seedUsers(UserRepository userRepository, UserService userService, ProjectService projectService) {
     return args -> {
         // Create User1 through User5 (no projects)
