@@ -9,7 +9,6 @@ export const TASK_FIELDS = gql`
     id
     title
     description
-    depth
     users
     status
     # Ensure all fields used in the toTreeData function are included here

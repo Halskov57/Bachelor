@@ -32,7 +32,6 @@ public class TestDataBuilder {
         project.setProjectId(UUID.randomUUID().toString());
         project.setTitle(title);
         project.setDescription("Test project description");
-        project.setDepth(1);
         project.setCourseLevel(100);
         project.setStatus(ProjectStatus.TODO);
         project.setOwner(owner);
@@ -49,7 +48,6 @@ public class TestDataBuilder {
         epic.setEpicId(UUID.randomUUID().toString());
         epic.setTitle(title);
         epic.setDescription("Test epic description");
-        epic.setDepth(2);
         epic.setStatus(EpicStatus.TODO);
         epic.setFeatures(new ArrayList<>());
         return epic;
@@ -64,7 +62,6 @@ public class TestDataBuilder {
         feature.setFeatureId(UUID.randomUUID().toString());
         feature.setTitle(title);
         feature.setDescription("Test feature description");
-        feature.setDepth(3);
         feature.setStatus(FeatureStatus.TODO);
         feature.setTasks(new ArrayList<>());
         return feature;
@@ -79,7 +76,6 @@ public class TestDataBuilder {
         task.setTaskId(UUID.randomUUID().toString());
         task.setTitle(title);
         task.setDescription("Test task description");
-        task.setDepth(4);
         task.setStatus(TaskStatus.IN_PROGRESS);
         return task;
     }

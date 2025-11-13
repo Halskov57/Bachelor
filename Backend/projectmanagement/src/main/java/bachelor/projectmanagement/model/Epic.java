@@ -13,7 +13,6 @@ public class Epic {
     private String epicId;
     private String title;
     private String description;
-    private int depth;
     private EpicStatus status;
 
     @DBRef
@@ -23,10 +22,9 @@ public class Epic {
 
     public Epic() {}
 
-    public Epic(String title, String description, int depth, User owner) {
+    public Epic(String title, String description, User owner) {
         this.title = title;
         this.description = description;
-        this.depth = depth;
         this.status = EpicStatus.TODO;
         this.owner = owner;
         this.features = new ArrayList<>();
@@ -41,9 +39,6 @@ public class Epic {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
-    public int getDepth() { return depth; }
-    public void setDepth(int depth) { this.depth = depth; }
 
     public EpicStatus getStatus() { return status; }
     public void setStatus(EpicStatus status) { this.status = status; }

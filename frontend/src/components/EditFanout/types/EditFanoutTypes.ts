@@ -30,7 +30,6 @@ export interface FormData {
   title: string;
   description: string;
   status: string;
-  depth: number;
   courseLevel: number;
   selectedUsers: string[];
   selectedOwners: string[];
