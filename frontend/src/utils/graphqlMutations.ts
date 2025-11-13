@@ -11,7 +11,6 @@ const handleAuthError = (error: any) => {
       errorMessage.includes('not authorized') || 
       errorMessage.includes('Unauthorized') ||
       errorMessage.includes('User not authenticated')) {
-    console.error('❌ Authorization error:', errorMessage);
     alert('Your session has expired or you do not have access. Redirecting to login...');
     localStorage.removeItem('token');
     window.location.href = '/';
@@ -294,7 +293,6 @@ export const GET_PROJECT_BY_ID_QUERY = gql`
 
 // --- Utility Functions ---
 
-
 export async function getCourseLevelConfig(courseLevel: number) {
   const query = `
     query($courseLevel: Int!) {
@@ -324,7 +322,6 @@ export async function getCourseLevelConfig(courseLevel: number) {
   const json = await res.json();
   
   if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
     throw new Error(json.errors[0]?.message || 'GraphQL error');
   }
   
@@ -414,7 +411,6 @@ export const getAllProjects = async (): Promise<Project[]> => {
   return result.data?.projects ?? [];
 };
 
-
 export const getProjectsByCurrentUser = async (): Promise<Project[]> => {
   const username = getCurrentUsername();
   if (!username) {
@@ -450,8 +446,7 @@ export const updateNode = async (data: any, parentIds: any) => {
         if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
         if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
         if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
-        if (data.dueDate !== undefined) {
-          console.log('Updating task due date:', data.dueDate); // Debug log
+        if (data.dueDate !== undefined) { // Debug log
           await client.mutate({ mutation: UPDATE_TASK_DUE_DATE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDueDate: data.dueDate || null } });
         }
         if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
@@ -570,7 +565,6 @@ export async function addUserToProject(projectId: string, username: string) {
   const json = await res.json();
 
   if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
     // Check for auth errors and redirect if needed
     if (json.errors.some((err: any) => handleAuthError(err))) {
       throw new Error('Authentication required');
@@ -606,7 +600,6 @@ export async function removeUserFromProject(projectId: string, username: string)
   const json = await res.json();
 
   if (json.errors) {
-    console.error('GraphQL errors:', json.errors);
     // Check for auth errors and redirect if needed
     if (json.errors.some((err: any) => handleAuthError(err))) {
       throw new Error('Authentication required');

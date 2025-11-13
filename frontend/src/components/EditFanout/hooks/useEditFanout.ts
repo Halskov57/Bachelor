@@ -129,7 +129,6 @@ export const useEditFanout = ({
               onSave?.();
             }
           } catch (error: any) {
-            console.error('Auto-save error when switching nodes:', error);
             // Don't show error to user since this is background save
           }
         }
@@ -202,7 +201,6 @@ export const useEditFanout = ({
             isTaskDueDateEnabled: taskDueDateFeature ? taskDueDateFeature.enabled : true
           });
         } catch (error) {
-          console.error('Failed to load course level config:', error);
           setCourseConfig({
             isTaskUserAssignmentEnabled: true,
             isEpicCreateDeleteEnabled: true,
@@ -253,7 +251,6 @@ export const useEditFanout = ({
         node.owners.push({ username });
       }
     } catch (error: any) {
-      console.error('Error adding owner:', error);
       const errorMessage = error.message || '';
       if (errorMessage.toLowerCase().includes('not found') || 
           errorMessage.toLowerCase().includes('does not exist') ||
@@ -284,7 +281,6 @@ export const useEditFanout = ({
         );
       }
     } catch (error: any) {
-      console.error('Error removing owner:', error);
       showError(`Error removing owner: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));
@@ -368,8 +364,7 @@ export const useEditFanout = ({
         };
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
-        if (changedKeys.length > 0) {
-          console.log('Saving task with data:', data); // Debug log
+        if (changedKeys.length > 0) { // Debug log
           await updateNode(data, parentIds);
         }
 
@@ -377,7 +372,6 @@ export const useEditFanout = ({
         onClose();
       }
     } catch (error: any) {
-      console.error('Save error:', error);
       showError(`Error: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));
@@ -415,7 +409,6 @@ export const useEditFanout = ({
       onSave?.();
       onClose();
     } catch (error: any) {
-      console.error('Delete error:', error);
       showError(`Error deleting ${node.type}: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));

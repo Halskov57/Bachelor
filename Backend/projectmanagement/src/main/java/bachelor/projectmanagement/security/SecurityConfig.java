@@ -42,9 +42,11 @@ public class SecurityConfig {
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
                 
-                // SSE endpoints for real-time updates (JWT passed as query param)
-                .requestMatchers(HttpMethod.GET, "/sse/**").permitAll() // SSE connections
-                .requestMatchers(HttpMethod.POST, "/graphql").authenticated() // GraphQL HTTP queries
+                // SSE endpoints for real-time updates (JWT passed as query param in SSEController)
+                .requestMatchers("/sse/**").permitAll() // All SSE endpoints including health check
+                
+                // GraphQL endpoint requires authentication
+                .requestMatchers(HttpMethod.POST, "/graphql").authenticated()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

@@ -47,7 +47,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                         type="date"
                         value={task.dueDate || ''}
                         onChange={(e) => {
-                            console.log('Date changed to:', e.target.value);
                             onTaskChange('dueDate', e.target.value);
                         }}
                         disabled={disabled}

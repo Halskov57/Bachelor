@@ -19,17 +19,11 @@ class ConnectionMonitor {
    * Start monitoring backend connection
    */
   startMonitoring(): void {
-    // Don't start multiple monitors
     if (this.state.checkIntervalId) {
       return;
     }
-
-    console.log('🔍 Connection monitor started');
     
-    // Initial check
     this.checkConnection();
-    
-    // Set up periodic checks - will adjust interval based on connection state
     this.scheduleNextCheck();
   }
 
@@ -69,26 +63,18 @@ class ConnectionMonitor {
     this.state.lastCheckTime = Date.now();
     
     try {
-      // Try to fetch health endpoint (or any simple endpoint)
       const response = await fetch(this.getHealthUrl(), {
         method: 'GET',
         cache: 'no-cache',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(5000),
       });
 
-      console.log(`🔍  check response: ${response.status} ${response.statusText}`);
-
-      // Consider 2xx and 4xx as "backend is up" (4xx means backend responded, just rejected the request)
-      // Only 5xx errors mean backend is down/unreachable
       if (response.ok || response.status < 500) {
         this.handleConnectionRestored();
       } else {
-        console.log(`⚠️ Backend returned 5xx error: ${response.status}`);
         this.handleConnectionLost();
       }
     } catch (error) {
-      // Network error or timeout - backend is definitely down
-      console.log(`⚠️ Health check failed:`, error instanceof Error ? error.message : error);
       this.handleConnectionLost();
     }
   }
@@ -98,21 +84,12 @@ class ConnectionMonitor {
    */
   private handleConnectionRestored(): void {
     if (!this.state.isConnected) {
-      console.log('✅ Backend connection restored! Resetting Apollo Client...');
-      
-      // Clear Apollo Client cache to force fresh queries
       client.resetStore().catch((error) => {
-        console.error('Failed to reset Apollo store:', error);
-        // If reset fails, try clearing the cache
-        client.clearStore().catch(console.error);
+        client.clearStore().catch(() => {});
       });
       
       this.state.isConnected = true;
-      
-      // Switch back to slower check interval
       this.scheduleNextCheck();
-      
-      // Trigger a custom event that components can listen to
       window.dispatchEvent(new CustomEvent('backend-reconnected'));
     }
   }
@@ -122,13 +99,8 @@ class ConnectionMonitor {
    */
   private handleConnectionLost(): void {
     if (this.state.isConnected) {
-      console.log('❌ Backend connection lost - switching to faster health checks (every 5s)');
       this.state.isConnected = false;
-      
-      // Switch to faster check interval to detect reconnection quickly
       this.scheduleNextCheck();
-      
-      // Trigger a custom event
       window.dispatchEvent(new CustomEvent('backend-disconnected'));
     }
   }

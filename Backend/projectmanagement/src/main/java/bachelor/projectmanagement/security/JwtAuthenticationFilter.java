@@ -27,9 +27,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip JWT processing for public endpoints
+        // Skip JWT processing for public endpoints and SSE endpoints
         String path = request.getRequestURI();
-        if (path.equals("/users/create") || path.equals("/users/verify") || path.startsWith("/hello")) {
+        if (path.equals("/users/create") || path.equals("/users/verify") || path.startsWith("/hello") || path.startsWith("/sse/")) {
             filterChain.doFilter(request, response);
             return;
         }

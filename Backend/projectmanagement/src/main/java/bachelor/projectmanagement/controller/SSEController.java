@@ -19,6 +19,15 @@ public class SSEController {
     private JwtUtil jwtUtil;
 
     /**
+     * Health check endpoint for SSE service
+     * @return Simple OK response
+     */
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
+
+    /**
      * Establish SSE connection for project updates
      * @param projectId The project ID to subscribe to updates for
      * @param token JWT token for authentication (passed as query param since EventSource doesn't support headers)

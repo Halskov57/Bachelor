@@ -39,7 +39,6 @@ export async function fetchWithRetry(
       // Gateway errors (502, 503, 504) - backend is restarting or proxy is stale
       if (response.status === 502 || response.status === 503 || response.status === 504) {
         lastError = new Error(`Gateway error ${response.status}: Backend restarting or proxy issue`);
-        console.log(`⚠️ Gateway error detected: ${response.status} - will retry`);
       }
       // Other 5xx server errors - also retriable
       else if (response.status >= 500) {
@@ -53,7 +52,6 @@ export async function fetchWithRetry(
     } catch (error) {
       // Network error (connection refused, timeout, DNS failure, etc.)
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.log(`⚠️ Network error:`, error instanceof Error ? error.message : error);
     }
     
     // For gateway errors, use shorter delays to break through proxy cache faster
@@ -61,7 +59,6 @@ export async function fetchWithRetry(
     if (lastError?.message.includes('Gateway error')) {
       // For gateway errors: try every 5 seconds to break through Railway proxy cache
       delay = 5000;
-      console.log(`🔄 Gateway error retry in ${delay}ms (attempt ${attempt + 1})`);
     } else if (attempt < maxAttempts) {
       // Normal exponential backoff for other errors
       delay = Math.min(initialDelay * Math.pow(2, attempt), maxDelay);
@@ -75,7 +72,6 @@ export async function fetchWithRetry(
       : `🔄 Fetch retry attempt ${attempt + 1}/${maxAttempts} in ${delay}ms...`;
     
     if (!lastError?.message.includes('Gateway error')) {
-      console.log(retryMessage);
     }
     
     if (onRetry) {

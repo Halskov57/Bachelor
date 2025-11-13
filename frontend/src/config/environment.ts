@@ -54,9 +54,4 @@ export const getWebSocketUrl = (): string => {
   
   // For relative paths in production
   return '/subscriptions';
-};
-
-console.log(`🚀 Running in ${CURRENT_ENV} mode`);
-console.log(`📡 API Base: ${config.API_BASE_URL}`);
-console.log(`🔗 GraphQL: ${config.GRAPHQL_ENDPOINT}`);
-console.log(`🔗 WebSocket: ${getWebSocketUrl()}`);
+};
