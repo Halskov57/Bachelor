@@ -233,6 +233,29 @@ const Project: React.FC = () => {
           addRealtimeNotification(`User assigned to task`);
           break;
 
+        case 'taskDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            const removeTaskFromFeature = (epics: any[]): any[] => {
+              return epics.map(epic => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) => ({
+                  ...feature,
+                  tasks: (feature.tasks || []).filter((task: any) => task.id !== data.taskId)
+                }))
+              }));
+            };
+
+            return {
+              ...prevProject,
+              epics: removeTaskFromFeature(prevProject.epics || [])
+            };
+          });
+
+          addRealtimeNotification(`Task deleted`);
+          break;
+
         case 'epicUpdate':
           setProject((prevProject: any) => {
             if (!prevProject) return prevProject;
@@ -259,6 +282,19 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Epic created`);
+          break;
+
+        case 'epicDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).filter((epic: any) => epic.id !== data.epicId)
+            };
+          });
+
+          addRealtimeNotification(`Epic deleted`);
           break;
 
         case 'featureUpdate':
@@ -294,6 +330,22 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Feature created`);
+          break;
+
+        case 'featureDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).map((epic: any) => ({
+                ...epic,
+                features: (epic.features || []).filter((feature: any) => feature.id !== data.featureId)
+              }))
+            };
+          });
+
+          addRealtimeNotification(`Feature deleted`);
           break;
 
         case 'projectUpdate':
