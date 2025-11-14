@@ -9,7 +9,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/sse")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class SSEController {
 
     @Autowired
