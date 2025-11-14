@@ -416,6 +416,13 @@ public class ProjectResolver {
         
         try {
             projectService.deleteEpicFromProject(projectId, epicId);
+            
+            // Send SSE event for epic deletion
+            java.util.Map<String, String> deletionData = new java.util.HashMap<>();
+            deletionData.put("epicId", epicId);
+            deletionData.put("projectId", projectId);
+            sseService.sendEpicDeleted(projectId, deletionData);
+            
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete epic: " + e.getMessage());
@@ -429,6 +436,14 @@ public class ProjectResolver {
         
         try {
             projectService.deleteFeatureFromEpic(projectId, epicId, featureId);
+            
+            // Send SSE event for feature deletion
+            java.util.Map<String, String> deletionData = new java.util.HashMap<>();
+            deletionData.put("featureId", featureId);
+            deletionData.put("epicId", epicId);
+            deletionData.put("projectId", projectId);
+            sseService.sendFeatureDeleted(projectId, deletionData);
+            
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete feature: " + e.getMessage());
@@ -446,6 +461,15 @@ public class ProjectResolver {
         
         try {
             projectService.deleteTaskFromFeature(projectId, epicId, featureId, taskId);
+            
+            // Send SSE event for task deletion
+            java.util.Map<String, String> deletionData = new java.util.HashMap<>();
+            deletionData.put("taskId", taskId);
+            deletionData.put("featureId", featureId);
+            deletionData.put("epicId", epicId);
+            deletionData.put("projectId", projectId);
+            sseService.sendTaskDeleted(projectId, deletionData);
+            
             return true;
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete task: " + e.getMessage());

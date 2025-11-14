@@ -2,7 +2,10 @@ import { client } from './apolloClientSetup';
 import { config } from '../config/environment';
 
 export interface SSEEvent {
-  type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'epicUpdate' | 'epicCreated' | 'featureUpdate' | 'featureCreated' | 'projectUpdate';
+  type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'taskDeleted' | 
+        'epicUpdate' | 'epicCreated' | 'epicDeleted' | 
+        'featureUpdate' | 'featureCreated' | 'featureDeleted' | 
+        'projectUpdate';
   data: any;
 }
 
@@ -174,6 +177,10 @@ class SSEService {
       this.handleSSEEvent(projectId, 'taskUserAssigned', event.data);
     });
 
+    eventSource.addEventListener('taskDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'taskDeleted', event.data);
+    });
+
     eventSource.addEventListener('epicUpdate', (event) => {
       this.handleSSEEvent(projectId, 'epicUpdate', event.data);
     });
@@ -182,12 +189,20 @@ class SSEService {
       this.handleSSEEvent(projectId, 'epicCreated', event.data);
     });
 
+    eventSource.addEventListener('epicDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'epicDeleted', event.data);
+    });
+
     eventSource.addEventListener('featureUpdate', (event) => {
       this.handleSSEEvent(projectId, 'featureUpdate', event.data);
     });
 
     eventSource.addEventListener('featureCreated', (event) => {
       this.handleSSEEvent(projectId, 'featureCreated', event.data);
+    });
+
+    eventSource.addEventListener('featureDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'featureDeleted', event.data);
     });
 
     eventSource.addEventListener('projectUpdate', (event) => {
