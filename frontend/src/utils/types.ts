@@ -5,6 +5,8 @@ export interface NodeData {
   description?: string;
   status?: 'TODO' | 'IN_PROGRESS' | 'DONE' | string;
   userIds?: string[];
+  users?: User[];
+  owners?: User[];
   courseLevel?: number;
   projectId?: string;
   epicId?: string;

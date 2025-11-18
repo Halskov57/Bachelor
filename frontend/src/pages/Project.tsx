@@ -353,6 +353,8 @@ function toTreeData(project: any): NodeData | null {
     courseLevel: project.courseLevel,
     type: 'project',
     projectId: project.id,
+    users: project.owners || [],
+    owners: project.owners || [],
     children: (project.epics || []).map((epic: any): NodeData => ({
       id: epic.id,
       title: epic.title,

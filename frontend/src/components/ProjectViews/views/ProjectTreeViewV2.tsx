@@ -41,6 +41,23 @@ styleSheet.textContent = `
       transform: translateY(0);
     }
   }
+  
+  .tree-node-label {
+    max-width: 150px;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.3;
+    text-align: center;
+  }
+  
+  .tree-task-title {
+    max-width: 130px;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.3;
+  }
 `;
 if (!document.head.querySelector('style[data-tree-animations]')) {
   styleSheet.setAttribute('data-tree-animations', 'true');
@@ -92,7 +109,7 @@ const TaskContainer: React.FC<TaskContainerProps> = ({ data }) => {
         borderRadius: '12px',
         padding: '12px 16px',
         border: '2px solid #ccc',
-        minWidth: '200px',
+        width: '150px',
         animation: 'expandDown 0.3s ease-out',
         transformOrigin: 'top center',
         marginTop: '-4px', // Pull it closer to the parent node
@@ -131,7 +148,7 @@ const TaskContainer: React.FC<TaskContainerProps> = ({ data }) => {
             }}
           >
             <div style={{ marginBottom: '4px' }}>
-              <span style={{ fontSize: '1.0rem' }}>📌</span> {task.title}
+              <span style={{ fontSize: '1.0rem' }}>📌</span> <span className="tree-task-title">{task.title}</span>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '10px' }}>
               {task.status && (
@@ -186,8 +203,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
         cursor: 'pointer',
         fontWeight: '600',
         fontSize: '14px',
-        minWidth: '120px',
-        textAlign: 'center',
+        width: '150px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         position: 'relative',
         transition: 'all 0.2s ease',
       }}
@@ -202,7 +221,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
-      {data.label}
+      <div className="tree-node-label">{data.label}</div>
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
       {data.hasChildren && data.onToggle && (
         <div
@@ -355,10 +374,35 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
         if (childrenAreTasks) {
           // Create a single task container node with all tasks (no edge connection)
           const taskContainerId = `task-container-${nodeId}`;
-          const taskContainerWidth = 220; // Approximate width of task container (minWidth 200px + padding)
-          const nodeWidth = 120; // Approximate width of parent node (minWidth from CustomNode)
-          const nodeHeight = 40; // Approximate height of parent node
-          const taskContainerGap = 4; // Minimal gap between feature and task container
+          const taskContainerWidth = 150; // Same width as parent node
+          const nodeWidth = 150; // Width of parent node
+          
+          // Calculate actual rendered height more accurately
+          // Create a temporary canvas context to measure text
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          let nodeHeight = 42; // Default minimum height
+          
+          if (context) {
+            context.font = '600 14px system-ui, -apple-system, sans-serif'; // Match the actual font
+            const metrics = context.measureText(node.title);
+            const textWidth = metrics.width;
+            
+            // Calculate how many lines the text will wrap to
+            // Available width: 150px (max-width from CSS) - small margin for safety
+            const maxTextWidth = 145; // Slightly less than max-width for word-break behavior
+            const lines = Math.max(1, Math.ceil(textWidth / maxTextWidth));
+            
+            // Calculate height: lines * line-height + padding + small buffer
+            const lineHeight = 18.2; // 14px * 1.3
+            const verticalPadding = 16; // 8px top + 8px bottom
+            const buffer = 2; // Small buffer for rendering variations
+            nodeHeight = (lines * lineHeight) + verticalPadding + buffer;
+            
+            canvas.remove(); // Clean up
+          }
+          
+          const taskContainerGap = 6; // Consistent gap between feature and task container
           
           flowNodes.push({
             id: taskContainerId,
