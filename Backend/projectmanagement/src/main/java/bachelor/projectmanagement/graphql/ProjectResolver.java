@@ -447,7 +447,7 @@ public class ProjectResolver {
             epic.setDescription(description);
             Epic newEpic = projectService.addEpicToProject(projectId, epic);
             
-            sseService.sendEpicCreated(projectId, newEpic); // SSE BROADCAST for creation
+            sseService.sendEpicCreated(projectId, newEpic);
             
             return newEpic;
         } catch (Exception e) {
@@ -475,7 +475,7 @@ public class ProjectResolver {
             featureWithEpicId.put("epicId", epicId);
             featureWithEpicId.put("tasks", newFeature.getTasks());
             
-            sseService.sendFeatureCreated(projectId, featureWithEpicId); // SSE BROADCAST for creation
+            sseService.sendFeatureCreated(projectId, featureWithEpicId);
             
             return newFeature;
         } catch (Exception e) {
@@ -494,7 +494,7 @@ public class ProjectResolver {
             task.setDescription(description);
             Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
             
-            sseService.sendTaskCreated(projectId, newTask); // SSE BROADCAST for creation
+            sseService.sendTaskCreated(projectId, newTask);
             
             return newTask;
         } catch (Exception e) {
