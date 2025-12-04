@@ -127,7 +127,7 @@ class SSEService {
       console.error('🔌 Failed to decode token:', e);
     }
 
-    // Update last attempt time
+    // FIX: Update last attempt time BEFORE creating EventSource
     if (state) {
       state.lastConnectionAttempt = Date.now();
       this.reconnectionStates.set(projectId, state);
@@ -137,6 +137,9 @@ class SSEService {
     console.log('🔌 SSE URL:', url);
     
     const eventSource = new EventSource(url);
+    
+    // Store EventSource immediately so it's tracked
+    this.eventSources.set(projectId, eventSource);
     if (state) {
       if (state.connectionCheckTimeoutId) {
         clearTimeout(state.connectionCheckTimeoutId);

@@ -27,17 +27,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip JWT processing for public endpoints and SSE endpoints
+        // Skip JWT processing for public endpoints (but NOT SSE endpoints)
         String path = request.getRequestURI();
-        if (path.equals("/users/create") || path.equals("/users/verify") || path.startsWith("/hello") || path.startsWith("/sse/")) {
+        if (path.equals("/users/create") || path.equals("/users/verify") || path.startsWith("/hello")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String authHeader = request.getHeader("Authorization");
+        String token = null;
         
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+        // For SSE endpoints, get token from query parameter
+        if (path.startsWith("/sse/")) {
+            token = request.getParameter("token");
+        } else {
+            // For regular endpoints, get token from Authorization header
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+        }
+        
+        if (token != null && !token.isEmpty()) {
             
             try {
                 Claims claims = jwtUtil.validateToken(token);

@@ -41,8 +41,8 @@ public class SecurityConfig {
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
                 
-            
-                .requestMatchers("/sse/**").permitAll()
+                // SSE endpoints require authentication (but handled via query param)
+                .requestMatchers("/sse/**").authenticated()
                 
                 // GraphQL endpoint requires authentication
                 .requestMatchers(HttpMethod.POST, "/graphql").authenticated()
