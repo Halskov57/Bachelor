@@ -147,19 +147,6 @@ const Project: React.FC = () => {
     };
   }, [fetchProjectById]);
 
-  // Listen for backend reconnection events
-  useEffect(() => {
-    const handleReconnection = () => {
-      fetchProjectById();
-    };
-
-    window.addEventListener('backend-reconnected', handleReconnection);
-    
-    return () => {
-      window.removeEventListener('backend-reconnected', handleReconnection);
-    };
-  }, [fetchProjectById]);
-
   useEffect(() => {
     if (!projectId) return;
 
