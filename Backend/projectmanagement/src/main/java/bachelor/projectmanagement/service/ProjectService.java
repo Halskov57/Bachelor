@@ -77,7 +77,6 @@ public class ProjectService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Epic not found: " + updatedEpic.getEpicId()));
 
-        // Only update fields that are not null
         if (updatedEpic.getTitle() != null) {
             epic.setTitle(updatedEpic.getTitle());
         }
@@ -310,7 +309,6 @@ public class ProjectService {
         Project project = getProjectById(projectId);
         for (Epic epic : project.getEpics()) {
             if (epic.getEpicId().equals(updatedEpic.getEpicId())) {
-                // Update fields in-place (partial update)
                 if (updatedEpic.getTitle() != null) {
                     epic.setTitle(updatedEpic.getTitle());
                 }
@@ -336,7 +334,6 @@ public class ProjectService {
             if (epic.getEpicId().equals(epicId)) {
                 for (Feature feature : epic.getFeatures()) {
                     if (feature.getFeatureId().equals(updatedFeature.getFeatureId())) {
-                        // Update fields in-place
                         if (updatedFeature.getTitle() != null) {
                             feature.setTitle(updatedFeature.getTitle());
                         }
@@ -362,7 +359,6 @@ public class ProjectService {
                     if (feature.getFeatureId().equals(featureId)) {
                         for (Task task : feature.getTasks()) {
                             if (task.getTaskId().equals(updatedTask.getTaskId())) {
-                                // Only update fields that are not null
                                 if (updatedTask.getTitle() != null) {
                                     task.setTitle(updatedTask.getTitle());
                                 }

@@ -13,7 +13,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('none');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedUsername, setSelectedUsername] = useState<string>('');
-  const [selectedDueDate, setSelectedDueDate] = useState<string>(''); // New state for due date
+  const [selectedDueDate, setSelectedDueDate] = useState<string>('');
 
   const {
     editNode,
@@ -72,7 +72,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
     setFilterCategory(newCategory);
     setSelectedStatus('');
     setSelectedUsername('');
-    setSelectedDueDate(''); // Reset due date when changing category
+    setSelectedDueDate('');
   };
 
   // Prepare filtered tasks for PDF export
@@ -87,7 +87,7 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
       epicTitle: task.epicTitle,
       featureTitle: task.featureTitle,
       description: task.description,
-      dueDate: task.dueDate // Add dueDate to PDF export
+      dueDate: task.dueDate
     }));
   };
 
@@ -95,7 +95,6 @@ const ProjectListView: React.FC<{ project: any, fetchProjectById: () => void }> 
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {

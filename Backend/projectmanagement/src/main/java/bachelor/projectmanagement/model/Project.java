@@ -76,7 +76,6 @@ public class Project {
         }
     }
     
-    // Method to remove an owner
     public void removeOwner(User owner) {
         if (owner != null) {
             owners.remove(owner);

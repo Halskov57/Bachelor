@@ -59,8 +59,6 @@ public class ProjectResolver {
         return projectService.getProjectById(id);
     }
 
-    // --- Project Update Mutations ---
-
     @MutationMapping
     public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
         String currentUsername = getCurrentUsername();
@@ -73,7 +71,6 @@ public class ProjectResolver {
         Project updatedProject = projectService.save(project);
         
         
-        // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
         projectUpdate.put("id", updatedProject.getProjectId());
         projectUpdate.put("title", updatedProject.getTitle());
@@ -95,7 +92,6 @@ public class ProjectResolver {
         Project updatedProject = projectService.save(project);
         
         
-        // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
         projectUpdate.put("id", updatedProject.getProjectId());
         projectUpdate.put("description", updatedProject.getDescription());
@@ -116,7 +112,6 @@ public class ProjectResolver {
         Project updatedProject = projectService.save(project);
         
         
-        // Send minimal update with just the changed fields
         java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
         projectUpdate.put("id", updatedProject.getProjectId());
         projectUpdate.put("courseLevel", updatedProject.getCourseLevel());
@@ -124,8 +119,6 @@ public class ProjectResolver {
         
         return updatedProject;
     }
-
-    // --- Epic Update Mutations ---
 
     @MutationMapping
     public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
@@ -166,8 +159,6 @@ public class ProjectResolver {
         
         return updatedEpic;
     }
-
-    // --- Feature Update Mutations ---
 
     @MutationMapping
     public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
@@ -220,8 +211,6 @@ public class ProjectResolver {
         
         return updatedFeature;
     }
-
-    // --- Task Update Mutations ---
 
     @MutationMapping
     public Task updateTaskTitle(
@@ -291,7 +280,6 @@ public class ProjectResolver {
         task.setStatus(status);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
-        // Send SSE update with correct field mapping (taskId -> id)
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
         taskUpdate.put("id", updatedTask.getTaskId());
         taskUpdate.put("status", updatedTask.getStatus().toString());
@@ -325,7 +313,6 @@ public class ProjectResolver {
         task.setDueDate(dueDate);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
-        // Send SSE update with correct field mapping (taskId -> id)
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
         taskUpdate.put("id", updatedTask.getTaskId());
         taskUpdate.put("dueDate", updatedTask.getDueDate() != null ? updatedTask.getDueDate().toString() : null);
@@ -378,7 +365,6 @@ public class ProjectResolver {
 
         System.out.println("Resolved user IDs: " + resolvedUserIds);
 
-        // Update the users assigned to the task
         task.setUsers(resolvedUserIds);
         Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
         
@@ -390,7 +376,6 @@ public class ProjectResolver {
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId)))
             .collect(Collectors.toList());
         
-        // Send SSE update with correct field mapping (taskId -> id) and include users
         java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
         taskUpdate.put("id", updatedTask.getTaskId());
         taskUpdate.put("users", assignedUsers.stream()
@@ -406,9 +391,6 @@ public class ProjectResolver {
         return updatedTask;
     }
     
-    // --- Deletion Mutations ---
-    // For deletion, we publish the updated parent entity (Project) since the children are nested.
-
     @MutationMapping
     public Boolean deleteEpic(@Argument String projectId, @Argument String epicId) {
         String currentUsername = getCurrentUsername();
@@ -489,9 +471,7 @@ public class ProjectResolver {
             epic.setDescription(description);
             Epic newEpic = projectService.addEpicToProject(projectId, epic);
             
-            sseService.sendEpicCreated(projectId, newEpic); // SSE BROADCAST for creation
-            
-            // Also publish the parent project change since the structure changed
+            sseService.sendEpicCreated(projectId, newEpic);
             
             return newEpic;
         } catch (Exception e) {
@@ -519,9 +499,7 @@ public class ProjectResolver {
             featureWithEpicId.put("epicId", epicId);
             featureWithEpicId.put("tasks", newFeature.getTasks());
             
-            sseService.sendFeatureCreated(projectId, featureWithEpicId); // SSE BROADCAST for creation
-            
-            // Also publish the parent project change since the structure changed
+            sseService.sendFeatureCreated(projectId, featureWithEpicId);
             
             return newFeature;
         } catch (Exception e) {
@@ -540,9 +518,7 @@ public class ProjectResolver {
             task.setDescription(description);
             Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
             
-            sseService.sendTaskCreated(projectId, newTask); // SSE BROADCAST for creation
-            
-            // Also publish the parent project change since the structure changed
+            sseService.sendTaskCreated(projectId, newTask);
             
             return newTask;
         } catch (Exception e) {

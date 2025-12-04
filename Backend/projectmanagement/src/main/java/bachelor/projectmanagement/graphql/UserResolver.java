@@ -48,7 +48,6 @@ public class UserResolver {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-        // Assuming updatePassword handles saving the user object
         userService.updatePassword(user, newPassword); 
         
         return user;

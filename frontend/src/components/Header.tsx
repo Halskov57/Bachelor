@@ -1,7 +1,5 @@
 import React from 'react';
 
-// We type the style objects as 'React.CSSProperties'
-// This gives you great autocomplete and type-checking in your IDE.
 const headerStyle: React.CSSProperties = {
   backgroundColor: '#1a1a1a',
   color: 'white',

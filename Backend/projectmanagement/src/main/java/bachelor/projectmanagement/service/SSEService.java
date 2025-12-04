@@ -158,7 +158,7 @@ public class SSEService {
                 return false; // Keep emitter
             } catch (IOException e) {
                 logger.warn("Failed to send SSE event to client, removing emitter: {}", e.getMessage());
-                return true; // Remove emitter
+                return true;
             }
         });
 

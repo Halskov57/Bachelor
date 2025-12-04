@@ -54,4 +54,4 @@ export const getWebSocketUrl = (): string => {
   
   // For relative paths in production
   return '/subscriptions';
-};
+};

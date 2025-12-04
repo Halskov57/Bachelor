@@ -46,7 +46,6 @@ class SSEService {
       });
     }
 
-    // Create EventSource if not exists
     if (!this.eventSources.has(projectId)) {
       this.createEventSource(projectId);
     }
@@ -60,7 +59,6 @@ class SSEService {
     if (!projectListeners) return;
 
     if (onEvent) {
-      // Remove specific listener
       const index = projectListeners.indexOf(onEvent);
       if (index > -1) {
         projectListeners.splice(index, 1);
@@ -74,7 +72,6 @@ class SSEService {
         this.listeners.set(projectId, projectListeners);
       }
     } else {
-      // Remove all listeners
       this.listeners.delete(projectId);
       this.closeEventSource(projectId);
       this.clearReconnectionState(projectId);
