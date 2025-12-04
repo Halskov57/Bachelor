@@ -31,6 +31,9 @@ class SSEService {
    * Subscribe to Server-Sent Events for a project
    */
   subscribeToProject(projectId: string, onEvent: (event: SSEEvent) => void): void {
+    // ADD DEBUG LINE
+    console.log('🔌 subscribeToProject called for:', projectId, 'existing connections:', this.eventSources.size);
+    
     // Add listener
     const projectListeners = this.listeners.get(projectId) || [];
     projectListeners.push(onEvent);
@@ -48,8 +51,14 @@ class SSEService {
     }
 
     const existingEventSource = this.eventSources.get(projectId);
+    // ADD MORE DEBUG INFO
+    console.log('🔌 EventSource state:', existingEventSource?.readyState, 'EventSource.CLOSED:', EventSource.CLOSED);
+    
     if (!existingEventSource || existingEventSource.readyState === EventSource.CLOSED) {
+      console.log('🔌 Creating new EventSource for:', projectId);
       this.createEventSource(projectId);
+    } else {
+      console.log('🔌 Reusing existing EventSource for:', projectId);
     }
   }
 
@@ -86,12 +95,18 @@ class SSEService {
   private createEventSource(projectId: string): void {
     const state = this.reconnectionStates.get(projectId);
     
+    // ADD DEBUG INFO
+    console.log('🔌 createEventSource - checking debounce for:', projectId, 'lastAttempt:', state?.lastConnectionAttempt, 'now:', Date.now());
+    
     // Prevent rapid reconnections
     if (state?.lastConnectionAttempt && 
         Date.now() - state.lastConnectionAttempt < 2000) {
+      console.log('🔌 DEBOUNCED - too soon to reconnect for:', projectId);
       return;
     }
 
+    console.log('🔌 Creating EventSource for:', projectId);
+    
     const token = localStorage.getItem('token');
     if (!token) {
       return;
