@@ -18,6 +18,7 @@ interface ReconnectionState {
   connectionCheckTimeoutId?: NodeJS.Timeout;
   lastSuccessfulConnection?: number;
   persistentRetryIntervalId?: NodeJS.Timeout; // For continuous 30s retry after max attempts
+  lastConnectionAttempt?: number;
 }
 
 class SSEService {
@@ -46,7 +47,8 @@ class SSEService {
       });
     }
 
-    if (!this.eventSources.has(projectId)) {
+    const existingEventSource = this.eventSources.get(projectId);
+    if (!existingEventSource || existingEventSource.readyState === EventSource.CLOSED) {
       this.createEventSource(projectId);
     }
   }
@@ -82,16 +84,28 @@ class SSEService {
    * Create an EventSource for a project
    */
   private createEventSource(projectId: string): void {
+    const state = this.reconnectionStates.get(projectId);
+    
+    // Prevent rapid reconnections
+    if (state?.lastConnectionAttempt && 
+        Date.now() - state.lastConnectionAttempt < 2000) {
+      return;
+    }
+
     const token = localStorage.getItem('token');
     if (!token) {
       return;
     }
 
+    // Update last attempt time
+    if (state) {
+      state.lastConnectionAttempt = Date.now();
+      this.reconnectionStates.set(projectId, state);
+    }
+
     const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
     
     const eventSource = new EventSource(url);
-    
-    const state = this.reconnectionStates.get(projectId);
     if (state) {
       if (state.connectionCheckTimeoutId) {
         clearTimeout(state.connectionCheckTimeoutId);
