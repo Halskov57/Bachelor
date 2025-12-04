@@ -40,6 +40,7 @@ public class SecurityConfig {
                 // Public endpoints (no authentication required)
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
+                .requestMatchers("/sse/health").permitAll()
                 
                 // SSE endpoints require authentication (but handled via query param)
                 .requestMatchers("/sse/**").authenticated()
