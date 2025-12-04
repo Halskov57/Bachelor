@@ -454,7 +454,7 @@ class ProjectServiceTest {
         assertEquals(1, copiedFeature.getTasks().size());
         Task copiedTask = copiedFeature.getTasks().get(0);
         assertEquals("Template Task", copiedTask.getTitle());
-        assertEquals(TaskStatus.TODO, copiedTask.getStatus()); // Should reset to TODO
+        assertEquals(TaskStatus.TODO, copiedTask.getStatus());
         assertTrue(copiedTask.getUsers().isEmpty()); // Should start with no assigned users
         
         verify(projectRepository).save(any(Project.class));
