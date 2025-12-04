@@ -40,7 +40,7 @@ class SSEService {
       this.reconnectionStates.set(projectId, {
         attempts: 0,
         maxAttempts: 10, // Initial exponential backoff attempts
-        baseDelay: 1000,
+        baseDelay: 3000,
         maxDelay: 30000,
         lastSuccessfulConnection: Date.now()
       });
