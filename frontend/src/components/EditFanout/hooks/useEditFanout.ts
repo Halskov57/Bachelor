@@ -319,6 +319,11 @@ export const useEditFanout = ({
       if (formData.dueDate) {
         taskUpdates.dueDate = formData.dueDate;
       }
+
+      // Add status if provided
+      if(formData.status){
+        taskUpdates.status = formData.status;
+      }
       
       // Add users if any were selected
       if (formData.selectedUsers && formData.selectedUsers.length > 0) {
