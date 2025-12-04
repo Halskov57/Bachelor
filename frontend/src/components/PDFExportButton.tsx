@@ -32,7 +32,6 @@ const PDFExportButton: React.FC<PDFExportButtonProps> = ({
         await exportTasksToPDF(tasks, projectTitle, filterType, filterValue);
       }
     } catch (error) {
-      console.error('Export failed:', error);
       // You could add a toast notification here
     } finally {
       setIsExporting(false);

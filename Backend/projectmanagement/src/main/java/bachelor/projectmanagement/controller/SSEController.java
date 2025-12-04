@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
-@RequestMapping("/api/sse")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
+@RequestMapping("/sse")
 public class SSEController {
 
     @Autowired
@@ -17,6 +16,15 @@ public class SSEController {
     
     @Autowired
     private JwtUtil jwtUtil;
+
+    /**
+     * Health check endpoint for SSE service
+     * @return Simple OK response
+     */
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
 
     /**
      * Establish SSE connection for project updates
@@ -39,13 +47,5 @@ public class SSEController {
         }
         
         return sseService.createEmitter(projectId);
-    }
-
-    /**
-     * Health check endpoint for SSE
-     */
-    @GetMapping("/health")
-    public String health() {
-        return "SSE Service is running";
     }
 }

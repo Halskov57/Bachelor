@@ -28,7 +28,6 @@ export const DeleteButton: React.FC<DeleteButtonProps> = ({
         try {
             await onDelete();
         } catch (error) {
-            console.error('Error deleting:', error);
         } finally {
             setShowConfirmation(false);
         }

@@ -1,4 +1,5 @@
 package bachelor.projectmanagement.config;
+import bachelor.projectmanagement.repository.ProjectRepository;
 import bachelor.projectmanagement.repository.UserRepository;
 import bachelor.projectmanagement.service.ProjectService;
 import bachelor.projectmanagement.service.UserService;

@@ -433,10 +433,6 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
     treeData?.forEach((rootNode: NodeData, index: number) => {
       processNode(rootNode, 0, { x: 400 + index * 300, y: 50 });
     });
-
-    console.log('TreeView V2 - Generated nodes:', flowNodes.length, 'edges:', flowEdges.length);
-    console.log('Edges:', flowEdges);
-
     return { nodes: flowNodes, edges: flowEdges };
   }, [treeData, collapsedNodes, handleNodeClick, handleToggleNode]);
 

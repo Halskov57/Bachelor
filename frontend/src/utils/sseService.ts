@@ -1,7 +1,11 @@
 import { client } from './apolloClientSetup';
+import { config } from '../config/environment';
 
 export interface SSEEvent {
-  type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'epicUpdate' | 'epicCreated' | 'featureUpdate' | 'featureCreated' | 'projectUpdate';
+  type: 'taskUpdate' | 'taskCreated' | 'taskUserAssigned' | 'taskDeleted' | 
+        'epicUpdate' | 'epicCreated' | 'epicDeleted' | 
+        'featureUpdate' | 'featureCreated' | 'featureDeleted' | 
+        'projectUpdate';
   data: any;
 }
 
@@ -11,12 +15,17 @@ interface ReconnectionState {
   baseDelay: number;
   maxDelay: number;
   timeoutId?: NodeJS.Timeout;
+  connectionCheckTimeoutId?: NodeJS.Timeout;
+  lastSuccessfulConnection?: number;
+  persistentRetryIntervalId?: NodeJS.Timeout; // For continuous 30s retry after max attempts
+  lastConnectionAttempt?: number;
 }
 
 class SSEService {
   private eventSources: Map<string, EventSource> = new Map();
   private listeners: Map<string, ((event: SSEEvent) => void)[]> = new Map();
   private reconnectionStates: Map<string, ReconnectionState> = new Map();
+  private readonly CONNECTION_TIMEOUT = 15000; // 15 seconds to establish connection
 
   /**
    * Subscribe to Server-Sent Events for a project
@@ -31,13 +40,16 @@ class SSEService {
     if (!this.reconnectionStates.has(projectId)) {
       this.reconnectionStates.set(projectId, {
         attempts: 0,
-        maxAttempts: 10,
+        maxAttempts: 10, // Initial exponential backoff attempts
         baseDelay: 1000,
-        maxDelay: 30000
+        maxDelay: 30000,
+        lastSuccessfulConnection: Date.now()
       });
     }
 
-    if (!this.eventSources.has(projectId)) {
+    const existingEventSource = this.eventSources.get(projectId);
+    
+    if (!existingEventSource || existingEventSource.readyState === EventSource.CLOSED) {
       this.createEventSource(projectId);
     }
   }
@@ -73,41 +85,86 @@ class SSEService {
    * Create an EventSource for a project
    */
   private createEventSource(projectId: string): void {
+    const state = this.reconnectionStates.get(projectId);
+    
+    // Prevent rapid reconnections
+    if (state?.lastConnectionAttempt && 
+        Date.now() - state.lastConnectionAttempt < 2000) {
+      return;
+    }
+    
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error('No JWT token found for SSE connection');
       return;
     }
 
-    const url = `http://localhost:8081/api/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
+    // Update last attempt time BEFORE creating EventSource
+    if (state) {
+      state.lastConnectionAttempt = Date.now();
+      this.reconnectionStates.set(projectId, state);
+    }
+
+    const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
     
     const eventSource = new EventSource(url);
+    
+    // Store EventSource immediately so it's tracked
+    this.eventSources.set(projectId, eventSource);
+    if (state) {
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+      }
+      
+      state.connectionCheckTimeoutId = setTimeout(() => {
+        if (eventSource.readyState === EventSource.CONNECTING) {
+          eventSource.close();
+          this.eventSources.delete(projectId);
+          
+          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+            this.attemptReconnection(projectId);
+          }
+        }
+      }, this.CONNECTION_TIMEOUT);
+    }
 
     eventSource.onopen = () => {
-      console.log(`🔗 SSE connected for project: ${projectId}`);
-      // Reset reconnection attempts on successful connection
       const state = this.reconnectionStates.get(projectId);
       if (state) {
         state.attempts = 0;
+        state.lastSuccessfulConnection = Date.now();
+        
+        if (state.connectionCheckTimeoutId) {
+          clearTimeout(state.connectionCheckTimeoutId);
+          state.connectionCheckTimeoutId = undefined;
+        }
+        
+        if (state.persistentRetryIntervalId) {
+          clearInterval(state.persistentRetryIntervalId);
+          state.persistentRetryIntervalId = undefined;
+        }
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error(`❌ SSE error for project ${projectId}:`, error);
+      const state = this.reconnectionStates.get(projectId);
       
-      // Close the current connection
-      eventSource.close();
-      this.eventSources.delete(projectId);
+      if (state?.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+        state.connectionCheckTimeoutId = undefined;
+      }
       
-      // Attempt to reconnect if there are still listeners
-      if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
-        this.attemptReconnection(projectId);
+      if (eventSource.readyState === EventSource.CLOSED) {
+        this.eventSources.delete(projectId);
+        
+        if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+          this.attemptReconnection(projectId);
+        }
       }
     };
 
     // Handle different event types
     eventSource.addEventListener('connected', (event) => {
-      console.log(`✅ SSE handshake completed for project: ${projectId}`);
+      // Handshake completed
     });
 
     eventSource.addEventListener('taskUpdate', (event) => {
@@ -122,6 +179,10 @@ class SSEService {
       this.handleSSEEvent(projectId, 'taskUserAssigned', event.data);
     });
 
+    eventSource.addEventListener('taskDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'taskDeleted', event.data);
+    });
+
     eventSource.addEventListener('epicUpdate', (event) => {
       this.handleSSEEvent(projectId, 'epicUpdate', event.data);
     });
@@ -130,12 +191,20 @@ class SSEService {
       this.handleSSEEvent(projectId, 'epicCreated', event.data);
     });
 
+    eventSource.addEventListener('epicDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'epicDeleted', event.data);
+    });
+
     eventSource.addEventListener('featureUpdate', (event) => {
       this.handleSSEEvent(projectId, 'featureUpdate', event.data);
     });
 
     eventSource.addEventListener('featureCreated', (event) => {
       this.handleSSEEvent(projectId, 'featureCreated', event.data);
+    });
+
+    eventSource.addEventListener('featureDeleted', (event) => {
+      this.handleSSEEvent(projectId, 'featureDeleted', event.data);
     });
 
     eventSource.addEventListener('projectUpdate', (event) => {
@@ -153,15 +222,12 @@ class SSEService {
       const data = JSON.parse(rawData);
       const event: SSEEvent = { type, data };
 
-      // Call all listeners for this project
       const listeners = this.listeners.get(projectId) || [];
       listeners.forEach(listener => listener(event));
 
       this.updateApolloCache(event);
-      
-      console.log(`📡 SSE ${type} event received for project ${projectId}:`, data);
     } catch (error) {
-      console.error('Failed to parse SSE event data:', error);
+      // Failed to parse SSE event data
     }
   }
 
@@ -174,7 +240,7 @@ class SSEService {
         include: 'active'
       });
     } catch (error) {
-      console.error('Failed to update Apollo cache:', error);
+      // Failed to update Apollo cache
     }
   }
 
@@ -186,7 +252,6 @@ class SSEService {
     if (eventSource) {
       eventSource.close();
       this.eventSources.delete(projectId);
-      console.log(`🔌 SSE disconnected for project: ${projectId}`);
     }
   }
 
@@ -197,28 +262,36 @@ class SSEService {
     const state = this.reconnectionStates.get(projectId);
     if (!state) return;
 
-    // Check if we've exceeded max attempts
     if (state.attempts >= state.maxAttempts) {
-      console.error(`❌ SSE max reconnection attempts (${state.maxAttempts}) reached for project ${projectId}`);
+      if (!state.persistentRetryIntervalId) {
+        state.persistentRetryIntervalId = setInterval(() => {
+          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
+            this.createEventSource(projectId);
+          } else {
+            if (state.persistentRetryIntervalId) {
+              clearInterval(state.persistentRetryIntervalId);
+              state.persistentRetryIntervalId = undefined;
+            }
+          }
+        }, 30000);
+        
+        this.reconnectionStates.set(projectId, state);
+      }
       return;
     }
 
-    // Clear any existing timeout
     if (state.timeoutId) {
       clearTimeout(state.timeoutId);
     }
 
-    // Calculate delay with exponential backoff
     const delay = Math.min(
       state.baseDelay * Math.pow(2, state.attempts),
       state.maxDelay
     );
 
     state.attempts++;
-    console.log(`🔄 SSE attempting reconnection ${state.attempts}/${state.maxAttempts} for project ${projectId} in ${delay}ms...`);
 
     state.timeoutId = setTimeout(() => {
-      // Only reconnect if there are still listeners
       if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
         this.createEventSource(projectId);
       }
@@ -232,8 +305,16 @@ class SSEService {
    */
   private clearReconnectionState(projectId: string): void {
     const state = this.reconnectionStates.get(projectId);
-    if (state?.timeoutId) {
-      clearTimeout(state.timeoutId);
+    if (state) {
+      if (state.timeoutId) {
+        clearTimeout(state.timeoutId);
+      }
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+      }
+      if (state.persistentRetryIntervalId) {
+        clearInterval(state.persistentRetryIntervalId);
+      }
     }
     this.reconnectionStates.delete(projectId);
   }
@@ -242,18 +323,21 @@ class SSEService {
    * Close all EventSource connections
    */
   closeAll(): void {
-    // Clear all reconnection timers
     this.reconnectionStates.forEach((state, projectId) => {
       if (state.timeoutId) {
         clearTimeout(state.timeoutId);
       }
+      if (state.connectionCheckTimeoutId) {
+        clearTimeout(state.connectionCheckTimeoutId);
+      }
+      if (state.persistentRetryIntervalId) {
+        clearInterval(state.persistentRetryIntervalId);
+      }
     });
     this.reconnectionStates.clear();
 
-    // Close all connections
     this.eventSources.forEach((eventSource, projectId) => {
       eventSource.close();
-      console.log(`🔌 SSE disconnected for project: ${projectId}`);
     });
     this.eventSources.clear();
     this.listeners.clear();

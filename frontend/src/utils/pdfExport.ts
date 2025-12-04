@@ -168,7 +168,6 @@ export const exportTableElementToPDF = async (
     pdf.addImage(imgData, 'PNG', x, y, scaledWidth, scaledHeight);
     pdf.save(filename);
   } catch (error) {
-    console.error('Error generating PDF:', error);
     throw error;
   }
 };

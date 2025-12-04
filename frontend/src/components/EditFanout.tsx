@@ -134,13 +134,11 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                             dueDate: formData.dueDate
                         }}
                         onTaskChange={(field: string, value: string | number) => {
-                            console.log(`TaskForm change: ${field} = ${value}`);
                             if (field === 'title') {
                                 updateFormData({ title: value as string });
                             } else if (field === 'description') {
                                 updateFormData({ description: value as string });
                             } else if (field === 'dueDate') {
-                                console.log('Updating dueDate in formData:', value);
                                 updateFormData({ dueDate: value as string });
                             }
                         }}
@@ -181,8 +179,6 @@ const EditFanout: React.FC<EditFanoutProps> = ({
             />
         );
     };
-
-
 
     const renderCourseLevelSection = () => {
         // Only show course level for projects

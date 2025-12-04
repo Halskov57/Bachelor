@@ -12,15 +12,19 @@ const httpLink = createHttpLink({
 // --- 2. Retry Link (Reconnection Logic) ---
 const retryLink = new RetryLink({
   delay: {
-    initial: 300,
-    max: 5000,
+    initial: 1000,     // Start with 1 second delay
+    max: 30000,        // Max 30 seconds between retries (increased from 10s)
     jitter: true
   },
   attempts: {
-    max: 5,
+    max: Infinity,     // Retry indefinitely (changed from 10)
     retryIf: (error, _operation) => {
-      // Retry on network errors but not on GraphQL errors
-      return !!error;
+      // Retry on network errors (server down, connection refused, etc.)
+      // Don't retry on GraphQL errors (authentication, validation, etc.)
+      const isNetworkError = !!error && !error.message?.includes('GraphQL');
+      if (isNetworkError) {
+      }
+      return isNetworkError;
     }
   }
 });
@@ -29,11 +33,6 @@ const retryLink = new RetryLink({
 const errorLink = onError(({ graphQLErrors, networkError }: any) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path, extensions }: any) => {
-      console.error(
-        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
-        extensions
-      );
-
       // Check if it's an authentication error (token expired, invalid, etc.)
       if (
         extensions?.code === 'UNAUTHENTICATED' ||
@@ -43,7 +42,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
       ) {
         // Clear token and redirect to login
         localStorage.removeItem('token');
-        console.log('Authentication error, redirecting to login');
         window.location.href = '/login';
         return;
       }
@@ -58,7 +56,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
       ) {
         // If currently on a project page, redirect to dashboard
         if (window.location.pathname.startsWith('/project/')) {
-          console.log('Access denied to project, redirecting to dashboard');
           window.location.href = '/dashboard';
         }
       }
@@ -66,12 +63,9 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
   }
 
   if (networkError) {
-    console.error(`[Network error]:`, networkError);
-    
     // Only redirect to login for actual authentication errors (401)
     if ('statusCode' in networkError && networkError.statusCode === 401) {
       localStorage.removeItem('token');
-      console.log('401 Unauthorized, redirecting to login');
       window.location.href = '/login';
       return;
     }
@@ -79,7 +73,6 @@ const errorLink = onError(({ graphQLErrors, networkError }: any) => {
     // For 403 (Forbidden) on project pages, redirect to dashboard
     if ('statusCode' in networkError && networkError.statusCode === 403) {
       if (window.location.pathname.startsWith('/project/')) {
-        console.log('403 Forbidden on project page, redirecting to dashboard');
         window.location.href = '/dashboard';
       }
     }

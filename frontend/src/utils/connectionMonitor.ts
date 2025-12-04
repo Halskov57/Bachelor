@@ -11,8 +11,8 @@ class ConnectionMonitor {
     isConnected: true,
   };
   
-  private readonly CHECK_INTERVAL_NORMAL = 30000;
-  private readonly CHECK_INTERVAL_DISCONNECTED = 30000;
+  private readonly CHECK_INTERVAL_NORMAL = 30000; // Check every 30 seconds when connected
+  private readonly CHECK_INTERVAL_DISCONNECTED = 30000; // Check every 5 seconds when disconnected
   private readonly HEALTH_CHECK_ENDPOINT = '/sse/health';
 
   /**
