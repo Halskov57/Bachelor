@@ -21,7 +21,6 @@ export const environments = {
   } as EnvironmentConfig,
 };
 
-// Change this to switch environments quickly
 export const CURRENT_ENV: keyof typeof environments = 'development';
 
 // Export the current configuration

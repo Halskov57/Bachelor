@@ -16,7 +16,6 @@ const Project: React.FC = () => {
 
   // Real-time notification helper with debouncing to prevent duplicate notifications
   const addRealtimeNotification = useCallback((message: string, debounceKey?: string) => {
-    // If a debounce key is provided, use it to prevent duplicate notifications
     if (debounceKey) {
       // Clear any existing timeout for this key
       const existingTimeout = pendingNotifications.get(debounceKey);
@@ -26,7 +25,7 @@ const Project: React.FC = () => {
       
       // Set a new timeout to show the notification after 500ms
       const timeout = setTimeout(() => {
-        setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+        setRealtimeUpdates(prev => [...prev.slice(-4), message]);
         setTimeout(() => {
           setRealtimeUpdates(prev => prev.slice(1));
         }, 5000);
@@ -35,8 +34,7 @@ const Project: React.FC = () => {
       
       setPendingNotifications(prev => new Map(prev).set(debounceKey, timeout));
     } else {
-      // No debouncing, show immediately
-      setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+      setRealtimeUpdates(prev => [...prev.slice(-4), message]);
       setTimeout(() => {
         setRealtimeUpdates(prev => prev.slice(1));
       }, 5000);
@@ -50,7 +48,7 @@ const Project: React.FC = () => {
       const id = params.get('id');
       if (!id) return;
       
-      setProjectId(id); // Store project ID for subscriptions
+      setProjectId(id);
       
       const token = localStorage.getItem('token');
       const query = `
@@ -89,7 +87,7 @@ const Project: React.FC = () => {
         }
       `;
       
-      const response = await fetch(getGraphQLUrl(), {  // <-- CHANGE THIS LINE
+      const response = await fetch(getGraphQLUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +150,6 @@ const Project: React.FC = () => {
     }
   }, [navigate, setProject, setProjectId]);
 
-  // Real-time updates using Server-Sent Events (SSE)
   useEffect(() => {
     if (!projectId) return;
 
@@ -309,13 +306,10 @@ const Project: React.FC = () => {
         case 'projectUpdate':
           setProject((prevProject: any) => {
             if (!prevProject) return prevProject;
-            // Merge the update, preserving existing structure
             return { 
               ...prevProject,
               ...data,
-              // Ensure we keep the existing epics if not provided in update
               epics: data.epics || prevProject.epics,
-              // Ensure we keep the existing owners if not provided in update
               owners: data.owners || prevProject.owners
             };
           });
@@ -341,7 +335,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
-  }, [fetchProjectById]); // Include fetchProjectById dependency
+  }, [fetchProjectById]);
 
 function toTreeData(project: any): NodeData | null {
   if (!project || !(project.title || project.name)) return null;
@@ -380,7 +374,7 @@ function toTreeData(project: any): NodeData | null {
           projectId: project.id,
           epicId: epic.id,
           featureId: feature.id,
-          users: task.users, // Include full user objects for display
+          users: task.users,
         } as any)),
       })),
     })),

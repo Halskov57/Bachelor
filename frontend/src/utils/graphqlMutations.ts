@@ -233,8 +233,6 @@ export const UPDATE_TASK_USERS_MUTATION = gql`
   }
 `;
 
-// --- Delete Mutations ---
-
 export const DELETE_EPIC_MUTATION = gql`
   mutation DeleteEpic($projectId: ID!, $epicId: ID!) {
     deleteEpic(projectId: $projectId, epicId: $epicId)

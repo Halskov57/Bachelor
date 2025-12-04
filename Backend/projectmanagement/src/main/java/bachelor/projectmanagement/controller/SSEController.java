@@ -29,7 +29,6 @@ public class SSEController {
         // Validate JWT token if provided
         if (token != null && !token.isEmpty()) {
             try {
-                // Remove "Bearer " prefix if present
                 String cleanToken = token.startsWith("Bearer ") ? token.substring(7) : token;
                 
                 // Validate the token (will throw exception if invalid)

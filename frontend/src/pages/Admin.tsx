@@ -29,7 +29,7 @@ const Admin: React.FC = () => {
   const loadConfig = useCallback(async () => {
     try {
       setLoading(true);
-      setMessage(''); // Clear any previous messages
+      setMessage('');
       const configData = await getCourseLevelConfig(selectedCourseLevel);
 
       if (configData) {
@@ -39,15 +39,12 @@ const Admin: React.FC = () => {
         const taskUserFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_USER_ASSIGNMENT');
         setTaskUserAssignmentEnabled(taskUserFeature ? taskUserFeature.enabled : true);
         
-        // Find epic create/delete feature
         const epicCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'EPIC_CREATE_DELETE');
         setEpicCreateDeleteEnabled(epicCreateDeleteFeature ? epicCreateDeleteFeature.enabled : true);
         
-        // Find feature create/delete feature
         const featureCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'FEATURE_CREATE_DELETE');
         setFeatureCreateDeleteEnabled(featureCreateDeleteFeature ? featureCreateDeleteFeature.enabled : true);
         
-        // Find task create/delete feature
         const taskCreateDeleteFeature = configData.features?.find((f: FeatureConfig) => f.key === 'TASK_CREATE_DELETE');
         setTaskCreateDeleteEnabled(taskCreateDeleteFeature ? taskCreateDeleteFeature.enabled : true);
         
@@ -86,7 +83,6 @@ const Admin: React.FC = () => {
     }
   }, [selectedCourseLevel]);
 
-  // Load configuration when course level changes
   useEffect(() => {
     loadConfig();
   }, [selectedCourseLevel, loadConfig]);
@@ -113,7 +109,6 @@ const Admin: React.FC = () => {
       setConfig(updatedConfig);
       setMessage('Configuration saved successfully!');
       
-      // Clear message after 3 seconds
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Failed to save config:', error);

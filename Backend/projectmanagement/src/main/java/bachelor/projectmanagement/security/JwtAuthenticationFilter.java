@@ -44,18 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = claims.getSubject();
                 String role = claims.get("role", String.class);
                 
-                // Create authentication object
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     username, 
                     null, 
                     List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );
                 
-                // Set authentication in security context
                 SecurityContextHolder.getContext().setAuthentication(authToken);
                 
             } catch (Exception e) {
-                // Invalid token - continue without authentication
                 logger.warn("Invalid JWT token: " + e.getMessage());
             }
         }

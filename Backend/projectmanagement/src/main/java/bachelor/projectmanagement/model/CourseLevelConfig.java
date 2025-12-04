@@ -70,7 +70,6 @@ public class CourseLevelConfig {
         setFeature(TASK_USER_ASSIGNMENT, enabled);
     }
 
-    // Convenience methods for create/delete permissions
     public boolean isEpicCreateDeleteEnabled() {
         return isFeatureEnabled(EPIC_CREATE_DELETE);
     }

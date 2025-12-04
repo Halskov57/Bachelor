@@ -48,7 +48,6 @@ public class CourseLevelConfigResolver {
             System.out.println("DEBUG: GraphQL updateCourseLevelConfig called with courseLevel=" + courseLevel + ", features=" + features);
             CourseLevelConfig config = configService.getConfigOrDefault(courseLevel);
 
-            // Update features
             for (FeatureConfigInput feature : features) {
                 // Ensure features map exists, though getConfigOrDefault likely handles this
                 if (config.getFeatures() != null) {

@@ -37,7 +37,6 @@ class SSEService {
       });
     }
 
-    // Create EventSource if not exists
     if (!this.eventSources.has(projectId)) {
       this.createEventSource(projectId);
     }
@@ -51,7 +50,6 @@ class SSEService {
     if (!projectListeners) return;
 
     if (onEvent) {
-      // Remove specific listener
       const index = projectListeners.indexOf(onEvent);
       if (index > -1) {
         projectListeners.splice(index, 1);
@@ -65,7 +63,6 @@ class SSEService {
         this.listeners.set(projectId, projectListeners);
       }
     } else {
-      // Remove all listeners
       this.listeners.delete(projectId);
       this.closeEventSource(projectId);
       this.clearReconnectionState(projectId);
@@ -82,8 +79,6 @@ class SSEService {
       return;
     }
 
-    // Note: EventSource doesn't support custom headers, so we'll pass the token as a query parameter
-    // In production, consider using a temporary SSE token endpoint for better security
     const url = `http://localhost:8081/api/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
     
     const eventSource = new EventSource(url);
@@ -162,7 +157,6 @@ class SSEService {
       const listeners = this.listeners.get(projectId) || [];
       listeners.forEach(listener => listener(event));
 
-      // Update Apollo Client cache
       this.updateApolloCache(event);
       
       console.log(`📡 SSE ${type} event received for project ${projectId}:`, data);
@@ -176,8 +170,6 @@ class SSEService {
    */
   private updateApolloCache(event: SSEEvent): void {
     try {
-      // For now, we'll refetch queries to update the cache
-      // This could be optimized to update specific cache entries directly
       client.refetchQueries({
         include: 'active'
       });
