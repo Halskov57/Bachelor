@@ -31,9 +31,6 @@ class SSEService {
    * Subscribe to Server-Sent Events for a project
    */
   subscribeToProject(projectId: string, onEvent: (event: SSEEvent) => void): void {
-    // ADD DEBUG LINE
-    console.log('🔌 subscribeToProject called for:', projectId, 'existing connections:', this.eventSources.size);
-    
     // Add listener
     const projectListeners = this.listeners.get(projectId) || [];
     projectListeners.push(onEvent);
@@ -51,14 +48,9 @@ class SSEService {
     }
 
     const existingEventSource = this.eventSources.get(projectId);
-    // ADD MORE DEBUG INFO
-    console.log('🔌 EventSource state:', existingEventSource?.readyState, 'EventSource.CLOSED:', EventSource.CLOSED);
     
     if (!existingEventSource || existingEventSource.readyState === EventSource.CLOSED) {
-      console.log('🔌 Creating new EventSource for:', projectId);
       this.createEventSource(projectId);
-    } else {
-      console.log('🔌 Reusing existing EventSource for:', projectId);
     }
   }
 
@@ -95,46 +87,24 @@ class SSEService {
   private createEventSource(projectId: string): void {
     const state = this.reconnectionStates.get(projectId);
     
-    // ADD DEBUG INFO
-    console.log('🔌 createEventSource - checking debounce for:', projectId, 'lastAttempt:', state?.lastConnectionAttempt, 'now:', Date.now());
-    
     // Prevent rapid reconnections
     if (state?.lastConnectionAttempt && 
         Date.now() - state.lastConnectionAttempt < 2000) {
-      console.log('🔌 DEBOUNCED - too soon to reconnect for:', projectId);
       return;
     }
-
-    console.log('🔌 Creating EventSource for:', projectId);
     
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error('🔌 No token found in localStorage');
       return;
     }
 
-    // ADD TOKEN DEBUG LINES:
-    console.log('🔌 Token exists, length:', token.length);
-    console.log('🔌 Token starts with:', token.substring(0, 20) + '...');
-    
-    try {
-      const tokenParts = token.split('.');
-      const payload = JSON.parse(atob(tokenParts[1]));
-      const now = Date.now() / 1000;
-      console.log('🔌 Token exp:', payload.exp, 'now:', now, 'expired:', payload.exp < now);
-      console.log('🔌 Token sub:', payload.sub, 'role:', payload.role);
-    } catch (e) {
-      console.error('🔌 Failed to decode token:', e);
-    }
-
-    // FIX: Update last attempt time BEFORE creating EventSource
+    // Update last attempt time BEFORE creating EventSource
     if (state) {
       state.lastConnectionAttempt = Date.now();
       this.reconnectionStates.set(projectId, state);
     }
 
     const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
-    console.log('🔌 SSE URL:', url);
     
     const eventSource = new EventSource(url);
     
