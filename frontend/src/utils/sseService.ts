@@ -40,7 +40,7 @@ class SSEService {
       this.reconnectionStates.set(projectId, {
         attempts: 0,
         maxAttempts: 10, // Initial exponential backoff attempts
-        baseDelay: 3000,
+        baseDelay: 1000,
         maxDelay: 30000,
         lastSuccessfulConnection: Date.now()
       });
@@ -98,7 +98,7 @@ class SSEService {
       }
       
       state.connectionCheckTimeoutId = setTimeout(() => {
-        if (this.eventSources.get(projectId) === eventSource) {
+        if (eventSource.readyState === EventSource.CONNECTING) {
           eventSource.close();
           this.eventSources.delete(projectId);
           
