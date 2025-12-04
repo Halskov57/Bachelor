@@ -310,16 +310,26 @@ export const useEditFanout = ({
         // If creating a task with a due date, update it immediately after creation
         if (createNode.type === 'task' && formData.dueDate && result && 'data' in result) {
           const newTaskId = (result.data as any)?.addTask?.id;
-          if (newTaskId) {
-            await updateNode(
-              {
-                type: 'task',
-                id: newTaskId,
-                dueDate: formData.dueDate
-              },
-              createNode.parentIds
-            );
-          }
+          if (newTaskId) {const taskUpdates: any = {
+        type: 'task',
+        id: newTaskId
+      };
+      
+      // Add due date if provided
+      if (formData.dueDate) {
+        taskUpdates.dueDate = formData.dueDate;
+      }
+      
+      // Add users if any were selected
+      if (formData.selectedUsers && formData.selectedUsers.length > 0) {
+        taskUpdates.users = formData.selectedUsers;
+      }
+      
+      // Only update if we have something to update
+      if (taskUpdates.dueDate || taskUpdates.users) {
+        await updateNode(taskUpdates, createNode.parentIds);
+      }
+  }
         }
         
         onSave?.();
