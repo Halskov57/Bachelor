@@ -141,19 +141,6 @@ class SSEService {
         if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
           this.attemptReconnection(projectId);
         }
-      } else if (eventSource.readyState === EventSource.CONNECTING) {
-        const timeSinceLastConnection = state?.lastSuccessfulConnection 
-          ? Date.now() - state.lastSuccessfulConnection 
-          : Infinity;
-        
-        if (timeSinceLastConnection > this.CONNECTION_TIMEOUT) {
-          eventSource.close();
-          this.eventSources.delete(projectId);
-          
-          if (this.listeners.has(projectId) && this.listeners.get(projectId)!.length > 0) {
-            this.attemptReconnection(projectId);
-          }
-        }
       }
     };
 
