@@ -109,7 +109,22 @@ class SSEService {
     
     const token = localStorage.getItem('token');
     if (!token) {
+      console.error('🔌 No token found in localStorage');
       return;
+    }
+
+    // ADD TOKEN DEBUG LINES:
+    console.log('🔌 Token exists, length:', token.length);
+    console.log('🔌 Token starts with:', token.substring(0, 20) + '...');
+    
+    try {
+      const tokenParts = token.split('.');
+      const payload = JSON.parse(atob(tokenParts[1]));
+      const now = Date.now() / 1000;
+      console.log('🔌 Token exp:', payload.exp, 'now:', now, 'expired:', payload.exp < now);
+      console.log('🔌 Token sub:', payload.sub, 'role:', payload.role);
+    } catch (e) {
+      console.error('🔌 Failed to decode token:', e);
     }
 
     // Update last attempt time
@@ -119,6 +134,7 @@ class SSEService {
     }
 
     const url = `${config.API_BASE_URL}/sse/project/${projectId}?token=${encodeURIComponent(token)}`;
+    console.log('🔌 SSE URL:', url);
     
     const eventSource = new EventSource(url);
     if (state) {
