@@ -407,4 +407,283 @@ class ProjectServiceTest {
         assertEquals(testTask.getTitle(), result.getTitle()); // Should retain original title
         verify(projectRepository).save(testProject);
     }
+
+    @Test
+    void copyProjectStructure_ShouldCopyCompleteProjectStructure() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Template Project", testUser);
+        Epic templateEpic = TestDataBuilder.createTestEpic("Template Epic");
+        Feature templateFeature = TestDataBuilder.createTestFeature("Template Feature");
+        Task templateTask = TestDataBuilder.createTestTask("Template Task");
+        templateTask.setStatus(TaskStatus.DONE); // Template has completed status
+        templateTask.setUsers(List.of("user1", "user2")); // Template has assigned users
+        
+        templateFeature.getTasks().add(templateTask);
+        templateEpic.getFeatures().add(templateFeature);
+        template.getEpics().add(templateEpic);
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "New Project", "New Description", 2, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("New Project", result.getTitle());
+        assertEquals("New Description", result.getDescription());
+        assertEquals(2, result.getCourseLevel());
+        
+        // Verify epic structure copied
+        assertEquals(1, result.getEpics().size());
+        Epic copiedEpic = result.getEpics().get(0);
+        assertEquals("Template Epic", copiedEpic.getTitle());
+        
+        // Verify feature structure copied
+        assertEquals(1, copiedEpic.getFeatures().size());
+        Feature copiedFeature = copiedEpic.getFeatures().get(0);
+        assertEquals("Template Feature", copiedFeature.getTitle());
+        
+        // Verify task structure copied with reset status and users
+        assertEquals(1, copiedFeature.getTasks().size());
+        Task copiedTask = copiedFeature.getTasks().get(0);
+        assertEquals("Template Task", copiedTask.getTitle());
+        assertEquals(TaskStatus.TODO, copiedTask.getStatus()); // Should reset to TODO
+        assertTrue(copiedTask.getUsers().isEmpty()); // Should start with no assigned users
+        
+        verify(projectRepository).save(any(Project.class));
+        verify(userRepository).findByUsername("newowner");
+    }
+
+    @Test
+    void copyProjectStructure_ShouldHandleMultipleEpicsAndFeatures() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Multi-Level Template", testUser);
+        
+        Epic epic1 = TestDataBuilder.createTestEpic("Epic 1");
+        Epic epic2 = TestDataBuilder.createTestEpic("Epic 2");
+        
+        Feature feature1 = TestDataBuilder.createTestFeature("Feature 1.1");
+        Feature feature2 = TestDataBuilder.createTestFeature("Feature 1.2");
+        Feature feature3 = TestDataBuilder.createTestFeature("Feature 2.1");
+        
+        Task task1 = TestDataBuilder.createTestTask("Task 1");
+        Task task2 = TestDataBuilder.createTestTask("Task 2");
+        Task task3 = TestDataBuilder.createTestTask("Task 3");
+        
+        feature1.getTasks().add(task1);
+        feature1.getTasks().add(task2);
+        feature2.getTasks().add(task3);
+        
+        epic1.getFeatures().add(feature1);
+        epic1.getFeatures().add(feature2);
+        epic2.getFeatures().add(feature3);
+        
+        template.getEpics().add(epic1);
+        template.getEpics().add(epic2);
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Complex Project", "Complex Description", 3, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.getEpics().size());
+        assertEquals(2, result.getEpics().get(0).getFeatures().size());
+        assertEquals(1, result.getEpics().get(1).getFeatures().size());
+        assertEquals(2, result.getEpics().get(0).getFeatures().get(0).getTasks().size());
+        assertEquals(1, result.getEpics().get(0).getFeatures().get(1).getTasks().size());
+        
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void copyProjectStructure_ShouldHandleEmptyTemplate() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Empty Template", testUser);
+        template.setEpics(List.of()); // Empty epics list
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Empty Project", "Empty Description", 1, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("Empty Project", result.getTitle());
+        assertEquals("Empty Description", result.getDescription());
+        assertTrue(result.getEpics().isEmpty());
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void copyProjectStructure_ShouldHandleNullEpicsList() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Null Epics Template", testUser);
+        template.setEpics(null); // Null epics list
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Project From Null", "Description", 1, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.getEpics());
+        assertTrue(result.getEpics().isEmpty());
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void copyProjectStructure_ShouldHandleEpicWithNullFeatures() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Template", testUser);
+        Epic epic = TestDataBuilder.createTestEpic("Epic With Null Features");
+        epic.setFeatures(null);
+        template.getEpics().add(epic);
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Project", "Description", 1, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getEpics().size());
+        assertNotNull(result.getEpics().get(0).getFeatures());
+        assertTrue(result.getEpics().get(0).getFeatures().isEmpty());
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void copyProjectStructure_ShouldHandleFeatureWithNullTasks() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Template", testUser);
+        Epic epic = TestDataBuilder.createTestEpic("Epic");
+        Feature feature = TestDataBuilder.createTestFeature("Feature With Null Tasks");
+        feature.setTasks(null);
+        epic.getFeatures().add(feature);
+        template.getEpics().add(epic);
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Project", "Description", 1, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getEpics().size());
+        assertEquals(1, result.getEpics().get(0).getFeatures().size());
+        assertNotNull(result.getEpics().get(0).getFeatures().get(0).getTasks());
+        assertTrue(result.getEpics().get(0).getFeatures().get(0).getTasks().isEmpty());
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    void copyProjectStructure_ShouldCopyTaskAndFeatureDescriptions() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Template", testUser);
+        Epic epic = TestDataBuilder.createTestEpic("Epic");
+        epic.setDescription("Epic Description");
+        
+        Feature feature = TestDataBuilder.createTestFeature("Feature");
+        feature.setDescription("Feature Description");
+        
+        Task task = TestDataBuilder.createTestTask("Task");
+        task.setDescription("Task Description");
+        
+        feature.getTasks().add(task);
+        epic.getFeatures().add(feature);
+        template.getEpics().add(epic);
+
+        when(userRepository.findByUsername("newowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "New Project", "New Description", 2, "newowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("Epic Description", result.getEpics().get(0).getDescription());
+        assertEquals("Feature Description", result.getEpics().get(0).getFeatures().get(0).getDescription());
+        assertEquals("Task Description", result.getEpics().get(0).getFeatures().get(0).getTasks().get(0).getDescription());
+    }
+
+    @Test
+    void copyProjectStructure_ShouldCallCreateProjectWithCorrectParameters() {
+        // Given
+        Project template = TestDataBuilder.createTestProject("Template", testUser);
+        Epic epic = TestDataBuilder.createTestEpic("Epic");
+        template.getEpics().add(epic);
+
+        when(userRepository.findByUsername("testowner")).thenReturn(Optional.of(testUser));
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> {
+            Project saved = invocation.getArgument(0);
+            saved.setProjectId("new-project-id");
+            return saved;
+        });
+        when(userRepository.save(any(User.class))).thenReturn(testUser);
+
+        // When
+        Project result = projectService.copyProjectStructure(
+            template, "Specific Title", "Specific Description", 4, "testowner");
+
+        // Then
+        assertNotNull(result);
+        assertEquals("Specific Title", result.getTitle());
+        assertEquals("Specific Description", result.getDescription());
+        assertEquals(4, result.getCourseLevel());
+        assertTrue(result.getOwners().contains(testUser));
+        verify(userRepository).findByUsername("testowner");
+        verify(projectRepository).save(any(Project.class));
+        verify(userRepository).save(any(User.class));
+    }
 }

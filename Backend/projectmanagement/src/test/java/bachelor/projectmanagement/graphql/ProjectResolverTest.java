@@ -582,4 +582,166 @@ class ProjectResolverTest {
         assertTrue(exception.getMessage().contains("Failed to add task"));
         verify(projectService).addTaskToFeature(eq(projectId), eq(epicId), eq(featureId), any(Task.class));
     }
+
+    @Test
+    void updateTaskDueDate_ShouldUpdateDueDateSuccessfully() {
+        // Given
+        String newDueDate = "2025-12-31";
+        Task updatedTask = TestDataBuilder.createTestTask();
+        updatedTask.setTaskId(testTask.getTaskId());
+        updatedTask.setDueDate(java.time.LocalDate.parse(newDueDate));
+
+        when(projectService.getTaskById(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), 
+            eq(testFeature.getFeatureId()), eq(testTask.getTaskId()))).thenReturn(testTask);
+        when(projectService.saveTask(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), 
+            eq(testFeature.getFeatureId()), any(Task.class))).thenReturn(updatedTask);
+
+        // When
+        Task result = projectResolver.updateTaskDueDate(testProject.getProjectId(), testEpic.getEpicId(), 
+            testFeature.getFeatureId(), testTask.getTaskId(), newDueDate);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(java.time.LocalDate.parse(newDueDate), result.getDueDate());
+        verify(projectService).getTaskById(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), 
+            eq(testFeature.getFeatureId()), eq(testTask.getTaskId()));
+        verify(projectService).saveTask(eq(testProject.getProjectId()), eq(testEpic.getEpicId()), 
+            eq(testFeature.getFeatureId()), any(Task.class));
+        verify(sseService).sendTaskUpdate(eq(testProject.getProjectId()), anyMap());
+    }
+
+    @Test
+    void updateTaskDueDate_ShouldHandleNullDueDate() {
+        // Given
+        Task updatedTask = TestDataBuilder.createTestTask();
+        updatedTask.setTaskId(testTask.getTaskId());
+        updatedTask.setDueDate(null);
+
+        when(projectService.getTaskById(anyString(), anyString(), anyString(), anyString())).thenReturn(testTask);
+        when(projectService.saveTask(anyString(), anyString(), anyString(), any(Task.class))).thenReturn(updatedTask);
+
+        // When
+        Task result = projectResolver.updateTaskDueDate(testProject.getProjectId(), testEpic.getEpicId(), 
+            testFeature.getFeatureId(), testTask.getTaskId(), null);
+
+        // Then
+        assertNotNull(result);
+        assertNull(result.getDueDate());
+        verify(projectService).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
+
+    @Test
+    void updateTaskDueDate_ShouldThrowExceptionForInvalidDateFormat() {
+        // Given
+        String invalidDate = "invalid-date";
+        when(projectService.getTaskById(anyString(), anyString(), anyString(), anyString())).thenReturn(testTask);
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.updateTaskDueDate(testProject.getProjectId(), testEpic.getEpicId(), 
+                testFeature.getFeatureId(), testTask.getTaskId(), invalidDate);
+        });
+
+        assertTrue(exception.getMessage().contains("Invalid date format"));
+        verify(projectService, never()).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
+
+    @Test
+    void updateTaskDueDate_ShouldThrowExceptionWhenTaskNotFound() {
+        // Given
+        when(projectService.getTaskById(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.updateTaskDueDate(testProject.getProjectId(), testEpic.getEpicId(), 
+                testFeature.getFeatureId(), "nonexistent", "2025-12-31");
+        });
+
+        assertTrue(exception.getMessage().contains("Task not found"));
+        verify(projectService, never()).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
+
+    @Test
+    void updateTaskUsers_ShouldUpdateUsersSuccessfully() {
+        // Given
+        User user1 = TestDataBuilder.createTestUser("user1");
+        User user2 = TestDataBuilder.createTestUser("user2");
+        List<String> usernames = List.of("user1", "user2");
+        
+        Task updatedTask = TestDataBuilder.createTestTask();
+        updatedTask.setTaskId(testTask.getTaskId());
+        updatedTask.setUsers(List.of(user1.getId(), user2.getId()));
+
+        when(projectService.getProjectById(testProject.getProjectId())).thenReturn(testProject);
+        when(courseLevelConfigService.isTaskUserAssignmentEnabled(anyInt())).thenReturn(true);
+        when(projectService.getTaskById(anyString(), anyString(), anyString(), anyString())).thenReturn(testTask);
+        when(userRepository.findByUsername("user1")).thenReturn(java.util.Optional.of(user1));
+        when(userRepository.findByUsername("user2")).thenReturn(java.util.Optional.of(user2));
+        when(userRepository.findById(user1.getId())).thenReturn(java.util.Optional.of(user1));
+        when(userRepository.findById(user2.getId())).thenReturn(java.util.Optional.of(user2));
+        when(projectService.saveTask(anyString(), anyString(), anyString(), any(Task.class))).thenReturn(updatedTask);
+
+        // When
+        Task result = projectResolver.updateTaskUsers(testProject.getProjectId(), testEpic.getEpicId(), 
+            testFeature.getFeatureId(), testTask.getTaskId(), usernames);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.getUsers().size());
+        assertTrue(result.getUsers().contains(user1.getId()));
+        assertTrue(result.getUsers().contains(user2.getId()));
+        verify(projectService).getProjectById(testProject.getProjectId());
+        verify(courseLevelConfigService).isTaskUserAssignmentEnabled(anyInt());
+        verify(projectService).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+        verify(sseService).sendTaskUserAssigned(eq(testProject.getProjectId()), anyMap());
+    }
+
+    @Test
+    void updateTaskUsers_ShouldThrowExceptionWhenFeatureDisabled() {
+        // Given
+        when(projectService.getProjectById(testProject.getProjectId())).thenReturn(testProject);
+        when(courseLevelConfigService.isTaskUserAssignmentEnabled(anyInt())).thenReturn(false);
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.updateTaskUsers(testProject.getProjectId(), testEpic.getEpicId(), 
+                testFeature.getFeatureId(), testTask.getTaskId(), List.of("user1"));
+        });
+
+        assertTrue(exception.getMessage().contains("not enabled"));
+        verify(projectService, never()).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
+
+    @Test
+    void updateTaskUsers_ShouldThrowExceptionWhenProjectNotFound() {
+        // Given
+        when(projectService.getProjectById(anyString())).thenReturn(null);
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.updateTaskUsers(testProject.getProjectId(), testEpic.getEpicId(), 
+                testFeature.getFeatureId(), testTask.getTaskId(), List.of("user1"));
+        });
+
+        assertTrue(exception.getMessage().contains("Project not found"));
+        verify(projectService, never()).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
+
+    @Test
+    void updateTaskUsers_ShouldThrowExceptionWhenUserNotFound() {
+        // Given
+        when(projectService.getProjectById(testProject.getProjectId())).thenReturn(testProject);
+        when(courseLevelConfigService.isTaskUserAssignmentEnabled(anyInt())).thenReturn(true);
+        when(projectService.getTaskById(anyString(), anyString(), anyString(), anyString())).thenReturn(testTask);
+        when(userRepository.findByUsername("nonexistent")).thenReturn(java.util.Optional.empty());
+
+        // When & Then
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            projectResolver.updateTaskUsers(testProject.getProjectId(), testEpic.getEpicId(), 
+                testFeature.getFeatureId(), testTask.getTaskId(), List.of("nonexistent"));
+        });
+
+        assertTrue(exception.getMessage().contains("User not found"));
+        verify(projectService, never()).saveTask(anyString(), anyString(), anyString(), any(Task.class));
+    }
 }
