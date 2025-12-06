@@ -114,3 +114,64 @@ sequenceDiagram
         Frontend-->>Bruger: Bekræfter sletning
         deactivate Frontend
     end
+
+
+    ---
+config:
+  layout: elk
+---
+flowchart TB editfanout
+    Start(["Bruger åbner EditFanout"]) --> CheckData{"Er der data?"}
+    CheckData -- Ja --> EditMode["EDIT MODE<br>- Vis eksisterende data<br>- Vis Delete button<br>- Save button"]
+    CheckData -- Nej --> CreateMode["CREATE MODE<br>- Tomme felter<br>- Skjul Delete button<br>- Create button"]
+    EditMode --> TypeCheck{"Hvilken type?"}
+    CreateMode --> TypeCheck
+    TypeCheck -- project --> ProjectUI["ProjectForm<br>+ CourseSelect<br>+ UserManagement"]
+    TypeCheck -- epic --> EpicUI["BasicForm<br>Title + Description"]
+    TypeCheck -- feature --> FeatureUI["BasicForm<br>Title + Description"]
+    TypeCheck -- task --> TaskUI["TaskForm<br>+ StatusSelect<br>+ Due Date<br>+ UserManagement"]
+    ProjectUI --> UserEdit["Bruger redigerer felter"]
+    EpicUI --> UserEdit
+    FeatureUI --> UserEdit
+    TaskUI --> UserEdit
+    UserEdit --> Submit["Klikker Save/Create"]
+    Submit --> Hook["useEditFanout hook<br>- Validerer data<br>- Kalder GraphQL<br>- Opdaterer UI"]
+    Hook --> Success["Success Toast<br>Lukker EditFanout"]
+
+    style Start fill:#e1f5ff
+    style CheckData fill:#fff4e1
+    style EditMode fill:#e8f5e9
+    style CreateMode fill:#e8f5e9
+    style TypeCheck fill:#fff4e1
+    style ProjectUI fill:#f3e5f5
+    style EpicUI fill:#f3e5f5
+    style FeatureUI fill:#f3e5f5
+    style TaskUI fill:#f3e5f5
+    style Success fill:#c8e6c9
+
+
+graph TD editfanout
+    A[EditFanout Komponent] --> B{Hvilken type?}
+    B -->|type = 'project'| C[ProjectForm]
+    B -->|type = 'epic'| D[BasicForm - Epic]
+    B -->|type = 'feature'| E[BasicForm - Feature]
+    B -->|type = 'task'| F[TaskForm]
+    
+    C --> C1[Vis CourseSelect]
+    C --> C2[Vis UserManagement]
+    C --> C3[Title + Description]
+    
+    D --> D1[Title + Description]
+    
+    E --> E1[Title + Description]
+    
+    F --> F1[Title + Description]
+    F --> F2[StatusSelect]
+    F --> F3[Due Date]
+    F --> F4[UserManagement]
+    
+    style A fill:#e1f5ff
+    style C fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#fff4e1
+    style F fill:#fff4e1
