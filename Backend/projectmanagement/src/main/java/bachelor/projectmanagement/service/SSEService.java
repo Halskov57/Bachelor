@@ -111,6 +111,27 @@ public class SSEService {
     }
 
     /**
+     * Send task deleted event to all clients subscribed to the project
+     */
+    public void sendTaskDeleted(String projectId, Object deletionData) {
+        sendEventToProject(projectId, "taskDeleted", deletionData);
+    }
+
+    /**
+     * Send epic deleted event to all clients subscribed to the project
+     */
+    public void sendEpicDeleted(String projectId, Object deletionData) {
+        sendEventToProject(projectId, "epicDeleted", deletionData);
+    }
+
+    /**
+     * Send feature deleted event to all clients subscribed to the project
+     */
+    public void sendFeatureDeleted(String projectId, Object deletionData) {
+        sendEventToProject(projectId, "featureDeleted", deletionData);
+    }
+
+    /**
      * Send event to all emitters for a specific project
      */
     private void sendEventToProject(String projectId, String eventName, Object data) {
@@ -137,7 +158,7 @@ public class SSEService {
                 return false; // Keep emitter
             } catch (IOException e) {
                 logger.warn("Failed to send SSE event to client, removing emitter: {}", e.getMessage());
-                return true; // Remove emitter
+                return true;
             }
         });
 

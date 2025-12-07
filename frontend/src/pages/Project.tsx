@@ -16,7 +16,6 @@ const Project: React.FC = () => {
 
   // Real-time notification helper with debouncing to prevent duplicate notifications
   const addRealtimeNotification = useCallback((message: string, debounceKey?: string) => {
-    // If a debounce key is provided, use it to prevent duplicate notifications
     if (debounceKey) {
       // Clear any existing timeout for this key
       const existingTimeout = pendingNotifications.get(debounceKey);
@@ -26,7 +25,7 @@ const Project: React.FC = () => {
       
       // Set a new timeout to show the notification after 500ms
       const timeout = setTimeout(() => {
-        setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+        setRealtimeUpdates(prev => [...prev.slice(-4), message]);
         setTimeout(() => {
           setRealtimeUpdates(prev => prev.slice(1));
         }, 5000);
@@ -35,14 +34,12 @@ const Project: React.FC = () => {
       
       setPendingNotifications(prev => new Map(prev).set(debounceKey, timeout));
     } else {
-      // No debouncing, show immediately
-      setRealtimeUpdates(prev => [...prev.slice(-4), message]); // Keep last 5 notifications
+      setRealtimeUpdates(prev => [...prev.slice(-4), message]);
       setTimeout(() => {
         setRealtimeUpdates(prev => prev.slice(1));
       }, 5000);
     }
   }, [pendingNotifications]);
-
 
   const fetchProjectById = useCallback(async () => {
     try {
@@ -50,7 +47,7 @@ const Project: React.FC = () => {
       const id = params.get('id');
       if (!id) return;
       
-      setProjectId(id); // Store project ID for subscriptions
+      setProjectId(id);
       
       const token = localStorage.getItem('token');
       const query = `
@@ -89,7 +86,7 @@ const Project: React.FC = () => {
         }
       `;
       
-      const response = await fetch(getGraphQLUrl(), {  // <-- CHANGE THIS LINE
+      const response = await fetch(getGraphQLUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,25 +96,14 @@ const Project: React.FC = () => {
       });
       
       const result = await response.json();
-      
-      console.log('🔍 Full GraphQL result:', result);
-      
       // Check for authorization errors
       if (result.errors) {
-        console.log('🔍 Errors found:', result.errors);
-        
         const authError = result.errors.find((error: any) => {
-          console.log('🔍 Checking error message:', error.message);
           return error.message?.includes('Access denied') || 
                  error.message?.includes('not authorized') ||
                  error.message?.includes('Unauthorized');
         });
-        
-        console.log('🔍 Auth error found?', authError);
-        
         if (authError) {
-          console.error('❌ Authorization error:', authError.message);
-          console.log('🔄 Redirecting to login...');
           // Clear everything and redirect
           setProject(null);
           setProjectId(null);
@@ -129,20 +115,16 @@ const Project: React.FC = () => {
         }
         
         // Handle other errors
-        console.error('GraphQL errors:', result.errors);
       }
       
       if (result.data?.projectById) {
         setProject(result.data.projectById);
-        console.log('📊 Project loaded:', result.data.projectById.title);
       } else if (!result.errors) {
         // Project not found or other issue
-        console.error('Project not found');
         localStorage.removeItem('token');
         navigate('/dashboard', { replace: true });
       }
     } catch (error) {
-      console.error('❌ Error fetching project:', error);
       // On any error, redirect to login
       setProject(null);
       setProjectId(null);
@@ -152,7 +134,19 @@ const Project: React.FC = () => {
     }
   }, [navigate, setProject, setProjectId]);
 
-  // Real-time updates using Server-Sent Events (SSE)
+  // Listen for backend reconnection events
+  useEffect(() => {
+    const handleReconnection = () => {
+      fetchProjectById();
+    };
+
+    window.addEventListener('backend-reconnected', handleReconnection);
+    
+    return () => {
+      window.removeEventListener('backend-reconnected', handleReconnection);
+    };
+  }, [fetchProjectById]);
+
   useEffect(() => {
     if (!projectId) return;
 
@@ -183,7 +177,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Task updated`, `task-${data.id}`);
-          console.log('🔄 Real-time task update:', data);
           break;
 
         case 'taskCreated':
@@ -208,7 +201,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Task created`);
-          console.log('🔄 Real-time task created:', data);
           break;
 
         case 'taskUserAssigned':
@@ -236,7 +228,29 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`User assigned to task`);
-          console.log('🔄 Real-time user assigned:', data);
+          break;
+
+        case 'taskDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            const removeTaskFromFeature = (epics: any[]): any[] => {
+              return epics.map(epic => ({
+                ...epic,
+                features: (epic.features || []).map((feature: any) => ({
+                  ...feature,
+                  tasks: (feature.tasks || []).filter((task: any) => task.id !== data.taskId)
+                }))
+              }));
+            };
+
+            return {
+              ...prevProject,
+              epics: removeTaskFromFeature(prevProject.epics || [])
+            };
+          });
+
+          addRealtimeNotification(`Task deleted`);
           break;
 
         case 'epicUpdate':
@@ -252,7 +266,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Epic updated`, `epic-${data.id}`);
-          console.log('🔄 Real-time epic update:', data);
           break;
 
         case 'epicCreated':
@@ -266,7 +279,19 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Epic created`);
-          console.log('🔄 Real-time epic created:', data);
+          break;
+
+        case 'epicDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).filter((epic: any) => epic.id !== data.epicId)
+            };
+          });
+
+          addRealtimeNotification(`Epic deleted`);
           break;
 
         case 'featureUpdate':
@@ -285,7 +310,6 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Feature updated`, `feature-${data.id}`);
-          console.log('🔄 Real-time feature update:', data);
           break;
 
         case 'featureCreated':
@@ -303,29 +327,39 @@ const Project: React.FC = () => {
           });
 
           addRealtimeNotification(`Feature created`);
-          console.log('🔄 Real-time feature created:', data);
+          break;
+
+        case 'featureDeleted':
+          setProject((prevProject: any) => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              epics: (prevProject.epics || []).map((epic: any) => ({
+                ...epic,
+                features: (epic.features || []).filter((feature: any) => feature.id !== data.featureId)
+              }))
+            };
+          });
+
+          addRealtimeNotification(`Feature deleted`);
           break;
 
         case 'projectUpdate':
           setProject((prevProject: any) => {
             if (!prevProject) return prevProject;
-            // Merge the update, preserving existing structure
             return { 
               ...prevProject,
               ...data,
-              // Ensure we keep the existing epics if not provided in update
               epics: data.epics || prevProject.epics,
-              // Ensure we keep the existing owners if not provided in update
               owners: data.owners || prevProject.owners
             };
           });
 
           addRealtimeNotification(`Project updated`, `project-${projectId}`);
-          console.log('🔄 Real-time project update:', data);
           break;
 
         default:
-          console.log('🔄 Unhandled SSE event type:', type, data);
           break;
       }
     };
@@ -341,7 +375,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
-  }, [fetchProjectById]); // Include fetchProjectById dependency
+  }, [fetchProjectById]);
 
 function toTreeData(project: any): NodeData | null {
   if (!project || !(project.title || project.name)) return null;
@@ -380,14 +414,12 @@ function toTreeData(project: any): NodeData | null {
           projectId: project.id,
           epicId: epic.id,
           featureId: feature.id,
-          users: task.users, // Include full user objects for display
+          users: task.users,
         } as any)),
       })),
     })),
   };
 }
-
-
 
   const treeData = useMemo(() => {
     const tree = toTreeData(project);

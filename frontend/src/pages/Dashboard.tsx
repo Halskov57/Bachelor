@@ -20,8 +20,20 @@ const Dashboard: React.FC = () => {
     // eslint-disable-next-line
   }, []);
 
+  useEffect(() => {
+    const handleReconnection = () => {
+      fetchProjects();
+    };
+
+    window.addEventListener('backend-reconnected', handleReconnection);
+    
+    return () => {
+      window.removeEventListener('backend-reconnected', handleReconnection);
+    };
+    // eslint-disable-next-line
+  }, []);
+
   const fetchProjects = () => {
-    console.log('🔍 Fetching projects from:', getApiUrl('/projects'));
     const token = localStorage.getItem('token');
     if (!token) {
       setError('No authentication token found');
@@ -36,23 +48,18 @@ const Dashboard: React.FC = () => {
       setLoading(false);
       return;
     }
-
-    console.log('👤 Fetching projects for user:', username);
-
     fetch(getApiUrl(`/projects/user/${username}`), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
       .then(res => {
-        console.log('📡 API Response status:', res.status);
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
       .then(data => {
-        console.log('📦 Projects data received:', data);
         const mappedProjects = Array.isArray(data)
           ? data.map((p: any) => ({
               id: p.projectId || p.id,
@@ -64,7 +71,6 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       })
       .catch(err => {
-        console.error('❌ Error fetching projects:', err);
         setError(err.message);
         setLoading(false);
       });

@@ -126,9 +126,5 @@ public class RateLimitInterceptor implements HandlerInterceptor {
      * This should be called periodically (e.g., via scheduled task).
      */
     public void cleanup() {
-        // In a production system, you'd want to track last access time
-        // and remove buckets that haven't been used in a while
-        // For now, we keep all buckets in memory
-        // Consider implementing LRU cache or time-based eviction if needed
     }
 }

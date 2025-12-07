@@ -7,8 +7,8 @@ export interface EnvironmentConfig {
 
 export const environments = {
   development: {
-    API_BASE_URL: 'http://localhost:8081',
-    GRAPHQL_ENDPOINT: 'http://localhost:8081/graphql',
+    API_BASE_URL: 'http://localhost:8080',
+    GRAPHQL_ENDPOINT: 'http://localhost:8080/graphql',
     APP_NAME: 'Project Management (Dev)',
     DEBUG: true,
   } as EnvironmentConfig,
@@ -55,8 +55,3 @@ export const getWebSocketUrl = (): string => {
   // For relative paths in production
   return '/subscriptions';
 };
-
-console.log(`🚀 Running in ${CURRENT_ENV} mode`);
-console.log(`📡 API Base: ${config.API_BASE_URL}`);
-console.log(`🔗 GraphQL: ${config.GRAPHQL_ENDPOINT}`);
-console.log(`🔗 WebSocket: ${getWebSocketUrl()}`);

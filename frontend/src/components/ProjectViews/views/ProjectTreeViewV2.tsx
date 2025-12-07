@@ -112,7 +112,7 @@ const TaskContainer: React.FC<TaskContainerProps> = ({ data }) => {
         width: '150px',
         animation: 'expandDown 0.3s ease-out',
         transformOrigin: 'top center',
-        marginTop: '-4px', // Pull it closer to the parent node
+        marginTop: '-4px',
       }}
     >
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
@@ -298,9 +298,9 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
     const flowEdges: Edge[] = [];
     let nodeIdCounter = 0;
 
-    const verticalSpacing = 100; // Distance between parent and child layers
-    const horizontalSpacing = 200; // Distance between siblings
-    const taskSpacing = 40; // Distance between tasks in a list
+    const verticalSpacing = 100;
+    const horizontalSpacing = 200;
+    //const taskSpacing = 40;
 
     // Calculate the total width a node and its descendants will occupy
     const calculateSubtreeWidth = (node: NodeData, collapsedNodes: Set<string>): number => {
@@ -308,16 +308,14 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
       const isCollapsed = collapsedNodes.has(nodeId);
       
       if (!node.children || node.children.length === 0 || isCollapsed) {
-        return horizontalSpacing; // Base width for a leaf node
+        return horizontalSpacing;
       }
 
       const childrenAreTasks = node.children[0]?.type === 'task';
       
       if (childrenAreTasks) {
-        // Tasks are in a vertical list, so they don't add horizontal width
         return horizontalSpacing;
       } else {
-        // Sum up the widths of all children
         const childrenWidth = node.children.reduce((sum, child) => {
           return sum + calculateSubtreeWidth(child, collapsedNodes);
         }, 0);
@@ -352,7 +350,6 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
         },
       });
 
-      // Create edges for parent-child connections
       if (parentId) {
         flowEdges.push({
           id: `edge-${parentId}-${nodeId}`,
@@ -372,45 +369,38 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
         const childrenAreTasks = children[0]?.type === 'task';
 
         if (childrenAreTasks) {
-          // Create a single task container node with all tasks (no edge connection)
           const taskContainerId = `task-container-${nodeId}`;
-          const taskContainerWidth = 150; // Same width as parent node
-          const nodeWidth = 150; // Width of parent node
+          const taskContainerWidth = 150;
+          const nodeWidth = 150;
           
-          // Calculate actual rendered height more accurately
-          // Create a temporary canvas context to measure text
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
-          let nodeHeight = 42; // Default minimum height
+          let nodeHeight = 42;
           
           if (context) {
-            context.font = '600 14px system-ui, -apple-system, sans-serif'; // Match the actual font
+            context.font = '600 14px system-ui, -apple-system, sans-serif';
             const metrics = context.measureText(node.title);
             const textWidth = metrics.width;
             
-            // Calculate how many lines the text will wrap to
-            // Available width: 150px (max-width from CSS) - small margin for safety
-            const maxTextWidth = 145; // Slightly less than max-width for word-break behavior
+            const maxTextWidth = 145;
             const lines = Math.max(1, Math.ceil(textWidth / maxTextWidth));
             
-            // Calculate height: lines * line-height + padding + small buffer
-            const lineHeight = 18.2; // 14px * 1.3
-            const verticalPadding = 16; // 8px top + 8px bottom
-            const buffer = 2; // Small buffer for rendering variations
+            const lineHeight = 18.2;
+            const verticalPadding = 16;
+            const buffer = 2;
             nodeHeight = (lines * lineHeight) + verticalPadding + buffer;
             
-            canvas.remove(); // Clean up
+            canvas.remove();
           }
           
-          const taskContainerGap = 6; // Consistent gap between feature and task container
+          const taskContainerGap = 6;
           
           flowNodes.push({
             id: taskContainerId,
             type: 'taskContainer',
             position: {
-              // Center the container below parent: parent center - half container width
               x: position.x + (nodeWidth / 2) - (taskContainerWidth / 2),
-              y: position.y + nodeHeight + taskContainerGap, // Position right below the node
+              y: position.y + nodeHeight + taskContainerGap,
             },
             sourcePosition: Position.Bottom,
             targetPosition: Position.Top,
@@ -420,12 +410,9 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
             },
           });
         } else {
-          // Non-tasks are displayed horizontally with proper spacing
-          // Calculate width for each child
           const childWidths = children.map(child => calculateSubtreeWidth(child, collapsedNodes));
           const totalWidth = childWidths.reduce((sum, width) => sum + width, 0);
           
-          // Start from the left and position each child
           let currentX = position.x - totalWidth / 2;
           
           children.forEach((child, index) => {
@@ -443,21 +430,15 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
       return nodeIdCounter;
     };
 
-    // Process all root nodes
     treeData?.forEach((rootNode: NodeData, index: number) => {
       processNode(rootNode, 0, { x: 400 + index * 300, y: 50 });
     });
-
-    console.log('TreeView V2 - Generated nodes:', flowNodes.length, 'edges:', flowEdges.length);
-    console.log('Edges:', flowEdges);
-
     return { nodes: flowNodes, edges: flowEdges };
   }, [treeData, collapsedNodes, handleNodeClick, handleToggleNode]);
 
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges);
 
-  // Update nodes and edges when they change
   React.useEffect(() => {
     setFlowNodes(nodes);
     setFlowEdges(edges);
@@ -486,8 +467,8 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
       minHeight: '600px',
       width: '100%',
       height: '600px',
-      position: 'relative', // For absolute positioning of EditFanout
-      overflow: 'visible', // Allow EditFanout to extend beyond container
+      position: 'relative',
+      overflow: 'visible',
     }}>
       <div style={{
         marginBottom: '10px',

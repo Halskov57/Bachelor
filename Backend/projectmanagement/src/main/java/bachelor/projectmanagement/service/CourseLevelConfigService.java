@@ -33,7 +33,6 @@ public class CourseLevelConfigService {
                 configsByLevel.computeIfAbsent(config.getCourseLevel(), k -> new java.util.ArrayList<>()).add(config);
             }
             
-            // Find and clean duplicates
             int duplicatesRemoved = 0;
             for (Map.Entry<Integer, List<CourseLevelConfig>> entry : configsByLevel.entrySet()) {
                 List<CourseLevelConfig> configs = entry.getValue();

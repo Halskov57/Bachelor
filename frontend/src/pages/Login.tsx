@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getApiUrl } from '../config/environment';
+import { fetchWithRetry } from '../utils/fetchWithRetry';
 
 const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
@@ -10,6 +11,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isCreatingUser, setIsCreatingUser] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const navigate = useNavigate();
 
   // Cooldown timer
@@ -27,11 +29,26 @@ const Login: React.FC = () => {
     setError('');
     if (mode === 'login') {
       try {
-        const res = await fetch(getApiUrl('/users/verify'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
+        setIsRetrying(false);
+        const res = await fetchWithRetry(
+          getApiUrl('/users/verify'),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          },
+          {
+            maxAttempts: 10,
+            initialDelay: 1000,
+            maxDelay: 30000,
+            persistentRetry: true, // Keep retrying every 30s after initial attempts
+            onRetry: (attempt, delay, error) => {
+              setIsRetrying(true);
+              setError(`Connecting to server... (attempt ${attempt})`);
+            }
+          }
+        );
+        setIsRetrying(false);
         if (res.ok) {
           const data = await res.json();
           if (data.token) {
@@ -45,6 +62,7 @@ const Login: React.FC = () => {
           setError(data.message || 'Login failed');
         }
       } catch (err) {
+        setIsRetrying(false);
         setError('Network error');
       }
     } else {
@@ -78,11 +96,26 @@ const Login: React.FC = () => {
       // Registration logic with cooldown
       try {
         setIsCreatingUser(true);
-        const res = await fetch(getApiUrl('/users/create'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
-        });
+        setIsRetrying(false);
+        const res = await fetchWithRetry(
+          getApiUrl('/users/create'),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+          },
+          {
+            maxAttempts: 10,
+            initialDelay: 1000,
+            maxDelay: 30000,
+            persistentRetry: true, // Keep retrying every 30s after initial attempts
+            onRetry: (attempt, delay, error) => {
+              setIsRetrying(true);
+              setError(`Connecting to server... (attempt ${attempt})`);
+            }
+          }
+        );
+        setIsRetrying(false);
         if (res.ok) {
           setError('Account created successfully!');
           setMode('login');
@@ -101,6 +134,7 @@ const Login: React.FC = () => {
           }
         }
       } catch (err) {
+        setIsRetrying(false);
         setError('Network error: Could not connect to server');
       } finally {
         setIsCreatingUser(false);
@@ -312,9 +346,9 @@ const Login: React.FC = () => {
           }}
         >
           {mode === 'login' 
-            ? 'Login' 
+            ? isRetrying ? 'Connecting...' : 'Login'
             : isCreatingUser 
-              ? 'Creating...'
+              ? isRetrying ? 'Connecting...' : 'Creating...'
               : cooldownSeconds > 0 
                 ? `Wait ${cooldownSeconds}s`
                 : 'Create Account'

@@ -2,7 +2,7 @@ package bachelor.projectmanagement.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // Added import for HttpMethod
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -31,20 +31,22 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.deny()) // Security header
+                .frameOptions(frameOptions -> frameOptions.deny())
             )
             .authorizeHttpRequests(authz -> authz
                 
-                // 1. CRITICAL FIX: Allow OPTIONS pre-flight requests globally
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
                 
                 // Public endpoints (no authentication required)
                 .requestMatchers("/users/create", "/users/verify").permitAll()
                 .requestMatchers("/hello/**").permitAll()
+                .requestMatchers("/sse/health").permitAll()
                 
-                // SSE endpoints for real-time updates (JWT passed as query param)
-                .requestMatchers(HttpMethod.GET, "/api/sse/**").permitAll() // SSE connections
-                .requestMatchers(HttpMethod.POST, "/graphql").authenticated() // GraphQL HTTP queries
+                // SSE endpoints require authentication (but handled via query param)
+                .requestMatchers("/sse/**").authenticated()
+                
+                // GraphQL endpoint requires authentication
+                .requestMatchers(HttpMethod.POST, "/graphql").authenticated()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()

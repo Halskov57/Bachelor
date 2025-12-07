@@ -129,7 +129,6 @@ export const useEditFanout = ({
               onSave?.();
             }
           } catch (error: any) {
-            console.error('Auto-save error when switching nodes:', error);
             // Don't show error to user since this is background save
           }
         }
@@ -202,7 +201,6 @@ export const useEditFanout = ({
             isTaskDueDateEnabled: taskDueDateFeature ? taskDueDateFeature.enabled : true
           });
         } catch (error) {
-          console.error('Failed to load course level config:', error);
           setCourseConfig({
             isTaskUserAssignmentEnabled: true,
             isEpicCreateDeleteEnabled: true,
@@ -253,7 +251,6 @@ export const useEditFanout = ({
         node.owners.push({ username });
       }
     } catch (error: any) {
-      console.error('Error adding owner:', error);
       const errorMessage = error.message || '';
       if (errorMessage.toLowerCase().includes('not found') || 
           errorMessage.toLowerCase().includes('does not exist') ||
@@ -284,7 +281,6 @@ export const useEditFanout = ({
         );
       }
     } catch (error: any) {
-      console.error('Error removing owner:', error);
       showError(`Error removing owner: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));
@@ -314,16 +310,31 @@ export const useEditFanout = ({
         // If creating a task with a due date, update it immediately after creation
         if (createNode.type === 'task' && formData.dueDate && result && 'data' in result) {
           const newTaskId = (result.data as any)?.addTask?.id;
-          if (newTaskId) {
-            await updateNode(
-              {
-                type: 'task',
-                id: newTaskId,
-                dueDate: formData.dueDate
-              },
-              createNode.parentIds
-            );
-          }
+          if (newTaskId) {const taskUpdates: any = {
+        type: 'task',
+        id: newTaskId
+      };
+      
+      // Add due date if provided
+      if (formData.dueDate) {
+        taskUpdates.dueDate = formData.dueDate;
+      }
+
+      // Add status if provided
+      if(formData.status){
+        taskUpdates.status = formData.status;
+      }
+      
+      // Add users if any were selected
+      if (formData.selectedUsers && formData.selectedUsers.length > 0) {
+        taskUpdates.users = formData.selectedUsers;
+      }
+      
+      // Only update if we have something to update
+      if (taskUpdates.dueDate || taskUpdates.users) {
+        await updateNode(taskUpdates, createNode.parentIds);
+      }
+  }
         }
         
         onSave?.();
@@ -368,8 +379,7 @@ export const useEditFanout = ({
         };
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
-        if (changedKeys.length > 0) {
-          console.log('Saving task with data:', data); // Debug log
+        if (changedKeys.length > 0) { // Debug log
           await updateNode(data, parentIds);
         }
 
@@ -377,7 +387,6 @@ export const useEditFanout = ({
         onClose();
       }
     } catch (error: any) {
-      console.error('Save error:', error);
       showError(`Error: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));
@@ -415,7 +424,6 @@ export const useEditFanout = ({
       onSave?.();
       onClose();
     } catch (error: any) {
-      console.error('Delete error:', error);
       showError(`Error deleting ${node.type}: ${error.message}`);
     } finally {
       setUiState(prev => ({ ...prev, loading: false }));
