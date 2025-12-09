@@ -441,7 +441,8 @@ export const addNode = async (
   parentIds: any,
   title: string,
   description: string,
-  courseLevel?: number
+  courseLevel?: number,
+  taskData?: { status?: string; dueDate?: string; selectedUsers?: string[] }
 ) => {
   try {
     switch (type) {
@@ -465,13 +466,27 @@ export const addNode = async (
         });
 
       case 'task':
+        const taskInput: any = { 
+          title, 
+          description, 
+          status: taskData?.status || 'TODO' 
+        };
+        
+        // Add optional task fields if provided
+        if (taskData?.dueDate) {
+          taskInput.dueDate = taskData.dueDate;
+        }
+        if (taskData?.selectedUsers && taskData.selectedUsers.length > 0) {
+          taskInput.userIds = taskData.selectedUsers;
+        }
+        
         return await client.mutate({
           mutation: CREATE_TASK_MUTATION,
           variables: {
             projectId: parentIds.projectId,
             epicId: parentIds.epicId,
             featureId: parentIds.featureId,
-            input: { title, description, status: 'TODO' }
+            input: taskInput
           }
         });
 
