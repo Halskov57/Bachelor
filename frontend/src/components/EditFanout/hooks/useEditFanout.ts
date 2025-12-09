@@ -125,6 +125,7 @@ export const useEditFanout = ({
 
             const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
             if (changedKeys.length > 0) {
+              // Auto-save uses the same consolidated mutation - single request
               await updateNode(data, parentIds);
               onSave?.();
             }
@@ -379,7 +380,9 @@ export const useEditFanout = ({
         };
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
-        if (changedKeys.length > 0) { // Debug log
+        if (changedKeys.length > 0) {
+          // New GraphQL approach: ALL changes sent in a SINGLE request!
+          // This replaces the old pattern of multiple sequential mutations
           await updateNode(data, parentIds);
         }
 

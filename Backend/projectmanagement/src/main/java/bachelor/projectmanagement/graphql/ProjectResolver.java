@@ -1,23 +1,22 @@
 package bachelor.projectmanagement.graphql;
 
+import bachelor.projectmanagement.graphql.input.*;
+import bachelor.projectmanagement.model.*;
+import bachelor.projectmanagement.repository.UserRepository;
+import bachelor.projectmanagement.service.ProjectService;
+import bachelor.projectmanagement.service.SSEService;
+import bachelor.projectmanagement.service.CourseLevelConfigService;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import bachelor.projectmanagement.model.Project;
-import bachelor.projectmanagement.model.Epic;
-import bachelor.projectmanagement.model.Feature;
-import bachelor.projectmanagement.model.Task;
-import bachelor.projectmanagement.model.TaskStatus;
-import bachelor.projectmanagement.model.User;
-import bachelor.projectmanagement.service.ProjectService;
-import bachelor.projectmanagement.service.SSEService;
-import bachelor.projectmanagement.service.CourseLevelConfigService;
-import bachelor.projectmanagement.repository.UserRepository;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Controller
@@ -59,336 +58,198 @@ public class ProjectResolver {
         return projectService.getProjectById(id);
     }
 
-    @MutationMapping
-    public Project updateProjectTitle(@Argument String projectId, @Argument String newTitle) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        System.out.println("🔧 updateProjectTitle called - projectId: " + projectId + ", newTitle: " + newTitle);
-        Project project = projectService.getProjectById(projectId);
-        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
-        project.setTitle(newTitle);
-        Project updatedProject = projectService.save(project);
-        
-        
-        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
-        projectUpdate.put("id", updatedProject.getProjectId());
-        projectUpdate.put("title", updatedProject.getTitle());
-        System.out.println("📡 Sending SSE projectUpdate: " + projectUpdate);
-        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
-        
-        return updatedProject;
-    }
+    // ===== PROJECT MUTATIONS =====
 
     @MutationMapping
-    public Project updateProjectDescription(@Argument String projectId, @Argument String newDescription) {
+    public Project updateProject(@Argument String id, @Argument ProjectInput input) {
         String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
+        projectService.verifyProjectAccess(id, currentUsername);
         
-        System.out.println("🔧 updateProjectDescription called - projectId: " + projectId + ", newDescription: " + newDescription);
-        Project project = projectService.getProjectById(projectId);
-        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
-        project.setDescription(newDescription);
-        Project updatedProject = projectService.save(project);
-        
-        
-        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
-        projectUpdate.put("id", updatedProject.getProjectId());
-        projectUpdate.put("description", updatedProject.getDescription());
-        System.out.println("📡 Sending SSE projectUpdate: " + projectUpdate);
-        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
-        
-        return updatedProject;
-    }
-
-    @MutationMapping
-    public Project updateProjectCourseLevel(@Argument String projectId, @Argument int newCourseLevel) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        Project project = projectService.getProjectById(projectId);
-        if (project == null) throw new RuntimeException("Project not found for id: " + projectId);
-        project.setCourseLevel(newCourseLevel);
-        Project updatedProject = projectService.save(project);
-        
-        
-        java.util.Map<String, Object> projectUpdate = new java.util.HashMap<>();
-        projectUpdate.put("id", updatedProject.getProjectId());
-        projectUpdate.put("courseLevel", updatedProject.getCourseLevel());
-        sseService.sendProjectUpdate(projectId, projectUpdate); // SSE BROADCAST
-        
-        return updatedProject;
-    }
-
-    @MutationMapping
-    public Epic updateEpicTitle(@Argument String projectId, @Argument String epicId, @Argument String newTitle) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        Epic epic = projectService.getEpicById(projectId, epicId);
-        if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
-        epic.setTitle(newTitle);
-        Epic updatedEpic = projectService.saveEpic(projectId, epic);
-        
-        
-        // Send with correct field mapping (epicId -> id)
-        java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
-        epicUpdate.put("id", updatedEpic.getEpicId());
-        epicUpdate.put("title", updatedEpic.getTitle());
-        sseService.sendEpicUpdate(projectId, epicUpdate); // SSE BROADCAST
-        
-        return updatedEpic;
-    }
-
-    @MutationMapping
-    public Epic updateEpicDescription(@Argument String projectId, @Argument String epicId, @Argument String newDescription) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        Epic epic = projectService.getEpicById(projectId, epicId);
-        if (epic == null) throw new RuntimeException("Epic not found: " + epicId);
-        epic.setDescription(newDescription);
-        Epic updatedEpic = projectService.saveEpic(projectId, epic);
-        
-        
-        // Send with correct field mapping (epicId -> id)
-        java.util.Map<String, Object> epicUpdate = new java.util.HashMap<>();
-        epicUpdate.put("id", updatedEpic.getEpicId());
-        epicUpdate.put("description", updatedEpic.getDescription());
-        sseService.sendEpicUpdate(projectId, epicUpdate); // SSE BROADCAST
-        
-        return updatedEpic;
-    }
-
-    @MutationMapping
-    public Feature updateFeatureTitle(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newTitle) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        System.out.println("updateFeatureTitle called with:");
-        System.out.println("projectId: " + projectId + ", epicId: " + epicId + ", featureId: " + featureId + ", newTitle: " + newTitle);
-
-        Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
-        if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
-
-        System.out.println("Before update: " + feature.getTitle());
-
-        feature.setTitle(newTitle);
-
-        Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
-
-        System.out.println("After update: " + updatedFeature.getTitle());
-        
-        
-        // Send with correct field mapping (featureId -> id)
-        java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
-        featureUpdate.put("id", updatedFeature.getFeatureId());
-        featureUpdate.put("title", updatedFeature.getTitle());
-        sseService.sendFeatureUpdate(projectId, featureUpdate); // SSE BROADCAST
-        
-        return updatedFeature;
-    }
-
-    @MutationMapping
-    public Feature updateFeatureDescription(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String newDescription) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-        
-        System.out.println("🔧 updateFeatureDescription called - featureId: " + featureId + ", newDescription: " + newDescription);
-        
-        Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
-        if (feature == null) throw new RuntimeException("Feature not found: " + featureId);
-        feature.setDescription(newDescription);
-        Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
-        
-        
-        // Send with correct field mapping (featureId -> id)
-        java.util.Map<String, Object> featureUpdate = new java.util.HashMap<>();
-        featureUpdate.put("id", updatedFeature.getFeatureId());
-        featureUpdate.put("description", updatedFeature.getDescription());
-        System.out.println("📡 Sending SSE featureUpdate: " + featureUpdate);
-        sseService.sendFeatureUpdate(projectId, featureUpdate); // SSE BROADCAST
-        
-        return updatedFeature;
-    }
-
-    @MutationMapping
-    public Task updateTaskTitle(
-            @Argument String projectId,
-            @Argument String epicId,
-            @Argument String featureId,
-            @Argument String taskId,
-            @Argument String newTitle) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-
-        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
-        if (task == null) throw new RuntimeException("Task not found: " + taskId);
-        task.setTitle(newTitle);
-        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
-        
-        
-        // Send with correct field mapping (taskId -> id)
-        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
-        taskUpdate.put("id", updatedTask.getTaskId());
-        taskUpdate.put("title", updatedTask.getTitle());
-        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
-        
-        return updatedTask;
-    }
-
-    @MutationMapping
-    public Task updateTaskDescription(
-            @Argument String projectId,
-            @Argument String epicId,
-            @Argument String featureId,
-            @Argument String taskId,
-            @Argument String newDescription) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-
-        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
-        if (task == null) throw new RuntimeException("Task not found: " + taskId);
-        task.setDescription(newDescription);
-        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
-        
-        
-        // Send with correct field mapping (taskId -> id)
-        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
-        taskUpdate.put("id", updatedTask.getTaskId());
-        taskUpdate.put("description", updatedTask.getDescription());
-        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
-        
-        return updatedTask;
-    }
-
-    @MutationMapping
-    public Task updateTaskStatus(
-            @Argument String projectId,
-            @Argument String epicId,
-            @Argument String featureId,
-            @Argument String taskId,
-            @Argument String newStatus) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-
-        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
-        if (task == null) throw new RuntimeException("Task not found: " + taskId);
-        
-        // Convert String to TaskStatus enum
-        TaskStatus status = TaskStatus.valueOf(newStatus);
-        task.setStatus(status);
-        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
-        
-        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
-        taskUpdate.put("id", updatedTask.getTaskId());
-        taskUpdate.put("status", updatedTask.getStatus().toString());
-        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
-        
-        return updatedTask;
-    }
-
-    @MutationMapping
-    public Task updateTaskDueDate(
-            @Argument String projectId,
-            @Argument String epicId,
-            @Argument String featureId,
-            @Argument String taskId,
-            @Argument String newDueDate) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-
-        Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
-        if (task == null) throw new RuntimeException("Task not found: " + taskId);
-        
-        // Parse the date string to LocalDate (format: YYYY-MM-DD)
-        java.time.LocalDate dueDate = null;
-        if (newDueDate != null && !newDueDate.isEmpty()) {
-            try {
-                dueDate = java.time.LocalDate.parse(newDueDate);
-            } catch (Exception e) {
-                throw new RuntimeException("Invalid date format. Expected YYYY-MM-DD: " + newDueDate);
-            }
-        }
-        task.setDueDate(dueDate);
-        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
-        
-        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
-        taskUpdate.put("id", updatedTask.getTaskId());
-        taskUpdate.put("dueDate", updatedTask.getDueDate() != null ? updatedTask.getDueDate().toString() : null);
-        sseService.sendTaskUpdate(projectId, taskUpdate); // SSE BROADCAST
-        
-        return updatedTask;
-    }
-
-    @MutationMapping
-    public Task updateTaskUsers(
-            @Argument String projectId,
-            @Argument String epicId,
-            @Argument String featureId,
-            @Argument String taskId,
-            @Argument List<String> userIds) {
-        String currentUsername = getCurrentUsername();
-        projectService.verifyProjectAccess(projectId, currentUsername);
-
-        System.out.println("updateTaskUsers called with:");
-        System.out.println("projectId: " + projectId);
-        System.out.println("epicId: " + epicId);
-        System.out.println("featureId: " + featureId);
-        System.out.println("taskId: " + taskId);
-        System.out.println("userIds: " + userIds);
-
-        // Get the project to check its course level
-        Project project = projectService.getProjectById(projectId);
+        Project project = projectService.getProjectById(id);
         if (project == null) {
-            throw new RuntimeException("Project not found: " + projectId);
+            throw new RuntimeException("Project not found: " + id);
         }
 
-        // Check if task user assignment is enabled for this course level
-        int courseLevel = project.getCourseLevel();
-        if (!courseLevelConfigService.isTaskUserAssignmentEnabled(courseLevel)) {
-            throw new RuntimeException("Task user assignment is not enabled for course level " + courseLevel);
+        // Only update fields that are provided
+        boolean changed = false;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("id", project.getProjectId());
+
+        if (input.getTitle() != null) {
+            project.setTitle(input.getTitle());
+            updates.put("title", input.getTitle());
+            changed = true;
         }
+        if (input.getDescription() != null) {
+            project.setDescription(input.getDescription());
+            updates.put("description", input.getDescription());
+            changed = true;
+        }
+        if (input.getCourseLevel() != null) {
+            project.setCourseLevel(input.getCourseLevel());
+            updates.put("courseLevel", input.getCourseLevel());
+            changed = true;
+        }
+
+        if (changed) {
+            Project updatedProject = projectService.save(project);
+            sseService.sendProjectUpdate(id, updates);
+            return updatedProject;
+        }
+
+        return project;
+    }
+
+    // ===== EPIC MUTATIONS =====
+
+    @MutationMapping
+    public Epic updateEpic(@Argument String projectId, @Argument String epicId, @Argument EpicInput input) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
+        Epic epic = projectService.getEpicById(projectId, epicId);
+        if (epic == null) {
+            throw new RuntimeException("Epic not found: " + epicId);
+        }
+
+        boolean changed = false;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("id", epic.getEpicId());
+
+        if (input.getTitle() != null) {
+            epic.setTitle(input.getTitle());
+            updates.put("title", input.getTitle());
+            changed = true;
+        }
+        if (input.getDescription() != null) {
+            epic.setDescription(input.getDescription());
+            updates.put("description", input.getDescription());
+            changed = true;
+        }
+
+        if (changed) {
+            Epic updatedEpic = projectService.saveEpic(projectId, epic);
+            sseService.sendEpicUpdate(projectId, updates);
+            return updatedEpic;
+        }
+
+        return epic;
+    }
+
+    // ===== FEATURE MUTATIONS =====
+
+    @MutationMapping
+    public Feature updateFeature(@Argument String projectId, @Argument String epicId, 
+                                 @Argument String featureId, @Argument FeatureInput input) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
+        
+        Feature feature = projectService.getFeatureById(projectId, epicId, featureId);
+        if (feature == null) {
+            throw new RuntimeException("Feature not found: " + featureId);
+        }
+
+        boolean changed = false;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("id", feature.getFeatureId());
+
+        if (input.getTitle() != null) {
+            feature.setTitle(input.getTitle());
+            updates.put("title", input.getTitle());
+            changed = true;
+        }
+        if (input.getDescription() != null) {
+            feature.setDescription(input.getDescription());
+            updates.put("description", input.getDescription());
+            changed = true;
+        }
+
+        if (changed) {
+            Feature updatedFeature = projectService.saveFeature(projectId, epicId, feature);
+            sseService.sendFeatureUpdate(projectId, updates);
+            return updatedFeature;
+        }
+
+        return feature;
+    }
+
+    // ===== TASK MUTATIONS =====
+
+    @MutationMapping
+    public Task updateTask(@Argument String projectId, @Argument String epicId, 
+                          @Argument String featureId, @Argument String taskId, 
+                          @Argument TaskInput input) {
+        String currentUsername = getCurrentUsername();
+        projectService.verifyProjectAccess(projectId, currentUsername);
 
         Task task = projectService.getTaskById(projectId, epicId, featureId, taskId);
-        if (task == null) throw new RuntimeException("Task not found: " + taskId);
+        if (task == null) {
+            throw new RuntimeException("Task not found: " + taskId);
+        }
 
-        // Convert usernames to user IDs (assuming userIds here are usernames based on existing logic)
-        List<String> resolvedUserIds = userIds.stream()
-            .map(username -> {
-                System.out.println("Resolving username: " + username);
-                return userRepository.findByUsername(username)
+        boolean changed = false;
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("id", task.getTaskId());
+
+        if (input.getTitle() != null) {
+            task.setTitle(input.getTitle());
+            updates.put("title", input.getTitle());
+            changed = true;
+        }
+        if (input.getDescription() != null) {
+            task.setDescription(input.getDescription());
+            updates.put("description", input.getDescription());
+            changed = true;
+        }
+        if (input.getStatus() != null) {
+            task.setStatus(TaskStatus.valueOf(input.getStatus()));
+            updates.put("status", input.getStatus());
+            changed = true;
+        }
+        if (input.getDueDate() != null) {
+            LocalDate dueDate = input.getDueDate().isEmpty() ? null : LocalDate.parse(input.getDueDate());
+            task.setDueDate(dueDate);
+            updates.put("dueDate", input.getDueDate().isEmpty() ? null : input.getDueDate());
+            changed = true;
+        }
+        if (input.getUserIds() != null) {
+            // Check if task user assignment is enabled
+            Project project = projectService.getProjectById(projectId);
+            if (!courseLevelConfigService.isTaskUserAssignmentEnabled(project.getCourseLevel())) {
+                throw new RuntimeException("Task user assignment is not enabled for this course level");
+            }
+
+            List<String> resolvedUserIds = input.getUserIds().stream()
+                .map(username -> userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found: " + username))
-                    .getId();
-            })
-            .collect(Collectors.toList());
+                    .getId())
+                .collect(Collectors.toList());
 
-        System.out.println("Resolved user IDs: " + resolvedUserIds);
+            task.setUsers(resolvedUserIds);
+            
+            List<User> assignedUsers = resolvedUserIds.stream()
+                .map(userId -> userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + userId)))
+                .collect(Collectors.toList());
+            
+            updates.put("users", assignedUsers.stream()
+                .map(user -> {
+                    Map<String, String> userMap = new HashMap<>();
+                    userMap.put("id", user.getId());
+                    userMap.put("username", user.getUsername());
+                    return userMap;
+                })
+                .collect(Collectors.toList()));
+            changed = true;
+        }
 
-        task.setUsers(resolvedUserIds);
-        Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
-        
-        // Publish general task change
-        
-        // Get assigned users for SSE broadcast
-        List<User> assignedUsers = resolvedUserIds.stream()
-            .map(userId -> userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + userId)))
-            .collect(Collectors.toList());
-        
-        java.util.Map<String, Object> taskUpdate = new java.util.HashMap<>();
-        taskUpdate.put("id", updatedTask.getTaskId());
-        taskUpdate.put("users", assignedUsers.stream()
-            .map(user -> {
-                java.util.Map<String, String> userMap = new java.util.HashMap<>();
-                userMap.put("id", user.getId());
-                userMap.put("username", user.getUsername());
-                return userMap;
-            })
-            .collect(Collectors.toList()));
-        sseService.sendTaskUserAssigned(projectId, taskUpdate); // SSE broadcast for user assignment
-        
-        return updatedTask;
+        if (changed) {
+            Task updatedTask = projectService.saveTask(projectId, epicId, featureId, task);
+            sseService.sendTaskUpdate(projectId, updates);
+            return updatedTask;
+        }
+
+        return task;
     }
     
     @MutationMapping
@@ -458,72 +319,80 @@ public class ProjectResolver {
         }
     }
 
-    // --- Creation Mutations ---
+    // ===== CREATE MUTATIONS =====
 
     @MutationMapping
-    public Epic addEpic(@Argument String projectId, @Argument String title, @Argument String description) {
+    public Epic createEpic(@Argument String projectId, @Argument CreateEpicInput input) {
         String currentUsername = getCurrentUsername();
         projectService.verifyProjectAccess(projectId, currentUsername);
         
-        try {
-            Epic epic = new Epic();
-            epic.setTitle(title);
-            epic.setDescription(description);
-            Epic newEpic = projectService.addEpicToProject(projectId, epic);
-            
-            sseService.sendEpicCreated(projectId, newEpic);
-            
-            return newEpic;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to add epic: " + e.getMessage());
-        }
+        Epic epic = new Epic();
+        epic.setTitle(input.getTitle());
+        epic.setDescription(input.getDescription());
+        
+        Epic newEpic = projectService.addEpicToProject(projectId, epic);
+        sseService.sendEpicCreated(projectId, newEpic);
+        
+        return newEpic;
     }
 
     @MutationMapping
-    public Feature addFeature(@Argument String projectId, @Argument String epicId, @Argument String title, @Argument String description) {
+    public Feature createFeature(@Argument String projectId, @Argument String epicId, 
+                                 @Argument CreateFeatureInput input) {
         String currentUsername = getCurrentUsername();
         projectService.verifyProjectAccess(projectId, currentUsername);
         
-        try {
-            Feature feature = new Feature();
-            feature.setTitle(title);
-            feature.setDescription(description);
-            Feature newFeature = projectService.addFeatureToEpic(projectId, epicId, feature);
-            
-            
-            // Create a map with epicId for SSE broadcast (since Feature model doesn't have epicId field)
-            java.util.Map<String, Object> featureWithEpicId = new java.util.HashMap<>();
-            featureWithEpicId.put("id", newFeature.getFeatureId());
-            featureWithEpicId.put("title", newFeature.getTitle());
-            featureWithEpicId.put("description", newFeature.getDescription());
-            featureWithEpicId.put("epicId", epicId);
-            featureWithEpicId.put("tasks", newFeature.getTasks());
-            
-            sseService.sendFeatureCreated(projectId, featureWithEpicId);
-            
-            return newFeature;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to add feature: " + e.getMessage());
-        }
+        Feature feature = new Feature();
+        feature.setTitle(input.getTitle());
+        feature.setDescription(input.getDescription());
+        
+        Feature newFeature = projectService.addFeatureToEpic(projectId, epicId, feature);
+        
+        Map<String, Object> featureWithEpicId = new HashMap<>();
+        featureWithEpicId.put("id", newFeature.getFeatureId());
+        featureWithEpicId.put("title", newFeature.getTitle());
+        featureWithEpicId.put("description", newFeature.getDescription());
+        featureWithEpicId.put("epicId", epicId);
+        featureWithEpicId.put("tasks", newFeature.getTasks());
+        
+        sseService.sendFeatureCreated(projectId, featureWithEpicId);
+        
+        return newFeature;
     }
 
     @MutationMapping
-    public Task addTask(@Argument String projectId, @Argument String epicId, @Argument String featureId, @Argument String title, @Argument String description) {
+    public Task createTask(@Argument String projectId, @Argument String epicId, 
+                          @Argument String featureId, @Argument CreateTaskInput input) {
         String currentUsername = getCurrentUsername();
         projectService.verifyProjectAccess(projectId, currentUsername);
         
-        try {
-            Task task = new Task();
-            task.setTitle(title);
-            task.setDescription(description);
-            Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
-            
-            sseService.sendTaskCreated(projectId, newTask);
-            
-            return newTask;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to add task: " + e.getMessage());
+        Task task = new Task();
+        task.setTitle(input.getTitle());
+        task.setDescription(input.getDescription());
+        task.setStatus(input.getStatus() != null ? TaskStatus.valueOf(input.getStatus()) : TaskStatus.TODO);
+        
+        if (input.getDueDate() != null && !input.getDueDate().isEmpty()) {
+            task.setDueDate(LocalDate.parse(input.getDueDate()));
         }
+        
+        if (input.getUserIds() != null && !input.getUserIds().isEmpty()) {
+            Project project = projectService.getProjectById(projectId);
+            if (!courseLevelConfigService.isTaskUserAssignmentEnabled(project.getCourseLevel())) {
+                throw new RuntimeException("Task user assignment is not enabled for this course level");
+            }
+
+            List<String> resolvedUserIds = input.getUserIds().stream()
+                .map(username -> userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username))
+                    .getId())
+                .collect(Collectors.toList());
+            task.setUsers(resolvedUserIds);
+        }
+        
+        Task newTask = projectService.addTaskToFeature(projectId, epicId, featureId, task);
+        sseService.sendTaskCreated(projectId, newTask);
+        
+        return newTask;
     }
     
     @MutationMapping

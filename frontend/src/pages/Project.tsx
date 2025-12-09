@@ -415,6 +415,7 @@ function toTreeData(project: any): NodeData | null {
           epicId: epic.id,
           featureId: feature.id,
           users: task.users,
+          dueDate: task.dueDate,
         } as any)),
       })),
     })),
