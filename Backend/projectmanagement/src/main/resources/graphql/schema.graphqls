@@ -56,6 +56,56 @@ input FeatureConfigInput {
     enabled: Boolean!
 }
 
+# ===== INPUT TYPES =====
+
+input ProjectInput {
+    title: String
+    description: String
+    courseLevel: Int
+}
+
+input EpicInput {
+    title: String
+    description: String
+}
+
+input FeatureInput {
+    title: String
+    description: String
+}
+
+input TaskInput {
+    title: String
+    description: String
+    status: String
+    userIds: [ID!]
+    dueDate: String
+}
+
+input CreateProjectInput {
+    title: String!
+    description: String
+    courseLevel: Int!
+}
+
+input CreateEpicInput {
+    title: String!
+    description: String
+}
+
+input CreateFeatureInput {
+    title: String!
+    description: String
+}
+
+input CreateTaskInput {
+    title: String!
+    description: String
+    status: String
+    userIds: [ID!]
+    dueDate: String
+}
+
 type Query {
     users: [User!]!
     userByUsername(username: String!): User
@@ -68,38 +118,36 @@ type Query {
 }
 
 type Mutation {
-    updateUserUsername(id: ID!, newUsername: String!): User!
-    updateProjectTitle(projectId: ID!, newTitle: String!): Project!
-    updateProjectDescription(projectId: ID!, newDescription: String!): Project!
-    updateProjectCourseLevel(projectId: ID!, newCourseLevel: Int!): Project!
-    updateEpicTitle(projectId: ID!, epicId: ID!, newTitle: String!): Epic!
-    updateEpicDescription(projectId: ID!, epicId: ID!, newDescription: String!): Epic!
-    updateFeatureTitle(projectId: ID!, epicId: ID!, featureId: ID!, newTitle: String!): Feature!
-    updateFeatureDescription(projectId: ID!, epicId: ID!, featureId: ID!, newDescription: String!): Feature!
-    updateTaskTitle(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newTitle: String!): Task!
-    updateTaskDescription(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDescription: String!): Task!
-    updateTaskStatus(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newStatus: String!): Task!
-    updateTaskDueDate(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, newDueDate: String): Task!
-    updateTaskUsers(
-        projectId: ID!,
-        epicId: ID!,
-        featureId: ID!,
-        taskId: ID!,
-        userIds: [ID!]!
-    ): Task!
+    # Project mutations
+    updateProject(id: ID!, input: ProjectInput!): Project!
+    createProject(input: CreateProjectInput!): Project!
+    deleteProject(id: ID!): Boolean!
+    
+    # Epic mutations
+    updateEpic(projectId: ID!, epicId: ID!, input: EpicInput!): Epic!
+    createEpic(projectId: ID!, input: CreateEpicInput!): Epic!
     deleteEpic(projectId: ID!, epicId: ID!): Boolean!
+    
+    # Feature mutations
+    updateFeature(projectId: ID!, epicId: ID!, featureId: ID!, input: FeatureInput!): Feature!
+    createFeature(projectId: ID!, epicId: ID!, input: CreateFeatureInput!): Feature!
     deleteFeature(projectId: ID!, epicId: ID!, featureId: ID!): Boolean!
+    
+    # Task mutations
+    updateTask(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!, input: TaskInput!): Task!
+    createTask(projectId: ID!, epicId: ID!, featureId: ID!, input: CreateTaskInput!): Task!
     deleteTask(projectId: ID!, epicId: ID!, featureId: ID!, taskId: ID!): Boolean!
-    addEpic(projectId: ID!, title: String!, description: String): Epic!
-    addFeature(projectId: ID!, epicId: ID!, title: String!, description: String): Feature!
-    addTask(projectId: ID!, epicId: ID!, featureId: ID!, title: String!, description: String): Task!
+    
+    # Project user management
     addUserToProject(projectId: ID!, username: String!): Project!
     removeUserFromProject(projectId: ID!, username: String!): Project!
-    updateCourseLevelConfig(
-        courseLevel: Int!,
-        features: [FeatureConfigInput!]!
-    ): CourseLevelConfig!
+    
+    # Course level config
+    updateCourseLevelConfig(courseLevel: Int!, features: [FeatureConfigInput!]!): CourseLevelConfig!
     setTemplateProject(courseLevel: Int!, projectId: ID!): CourseLevelConfig!
     createProjectFromTemplate(courseLevel: Int!, title: String!, description: String!): Project!
+    
+    # User management
     updateUserRole(username: String!, newRole: String!): User!
+    updateUserUsername(id: ID!, newUsername: String!): User!
 }

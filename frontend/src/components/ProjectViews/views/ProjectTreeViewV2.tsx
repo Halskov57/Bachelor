@@ -162,6 +162,21 @@ const TaskContainer: React.FC<TaskContainerProps> = ({ data }) => {
                   {getStatusDisplayName(task.status)}
                 </span>
               )}
+              {task.dueDate && (
+                <span style={{
+                  backgroundColor: '#fff3cd',
+                  color: '#856404',
+                  border: '1px solid #ffc107',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                }}>
+                  📅 {new Date(task.dueDate).toLocaleDateString('da-DK', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                  })}
+                </span>
+              )}
               {(task.users || task.assignedUsers) && (task.users || task.assignedUsers).length > 0 && (
                 <span style={{
                   backgroundColor: getNodeColor(task),

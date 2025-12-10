@@ -369,3 +369,222 @@ sequenceDiagram
     
     Frontend->>Frontend: Opdaterer UI med nyt projekt
     Frontend-->>User: Viser succesbesked
+
+
+    ---
+config:
+  layout: elk
+---
+flowchart TB editfanout
+    Start(["Bruger åbner EditFanout"]) --> CheckData{"Er der data?"}
+    CheckData -- Ja --> EditMode["EDIT MODE<br>- Vis eksisterende data<br>- Vis Delete button<br>- Save button"]
+    CheckData -- Nej --> CreateMode["CREATE MODE<br>- Tomme felter<br>- Skjul Delete button<br>- Create button"]
+    EditMode --> TypeCheck{"Hvilken type?"}
+    CreateMode --> TypeCheck
+    TypeCheck -- project --> ProjectUI["ProjectForm<br>+ CourseSelect<br>+ UserManagement"]
+    TypeCheck -- epic --> EpicUI["BasicForm<br>Title + Description"]
+    TypeCheck -- feature --> FeatureUI["BasicForm<br>Title + Description"]
+    TypeCheck -- task --> TaskUI["TaskForm<br>+ StatusSelect<br>+ Due Date<br>+ UserManagement"]
+    ProjectUI --> UserEdit["Bruger redigerer felter"]
+    EpicUI --> UserEdit
+    FeatureUI --> UserEdit
+    TaskUI --> UserEdit
+    UserEdit --> Submit["Klikker Save/Create"]
+    Submit --> Hook["useEditFanout hook<br>- Validerer data<br>- Kalder GraphQL<br>- Opdaterer UI"]
+    Hook --> Success["Success Toast<br>Lukker EditFanout"]
+
+    style Start fill:#e1f5ff
+    style CheckData fill:#fff4e1
+    style EditMode fill:#e8f5e9
+    style CreateMode fill:#e8f5e9
+    style TypeCheck fill:#fff4e1
+    style ProjectUI fill:#f3e5f5
+    style EpicUI fill:#f3e5f5
+    style FeatureUI fill:#f3e5f5
+    style TaskUI fill:#f3e5f5
+    style Success fill:#c8e6c9
+
+
+graph TD editfanout
+    A[EditFanout Komponent] --> B{Hvilken type?}
+    B -->|type = 'project'| C[ProjectForm]
+    B -->|type = 'epic'| D[BasicForm - Epic]
+    B -->|type = 'feature'| E[BasicForm - Feature]
+    B -->|type = 'task'| F[TaskForm]
+    
+    C --> C1[Vis CourseSelect]
+    C --> C2[Vis UserManagement]
+    C --> C3[Title + Description]
+    
+    D --> D1[Title + Description]
+    
+    E --> E1[Title + Description]
+    
+    F --> F1[Title + Description]
+    F --> F2[StatusSelect]
+    F --> F3[Due Date]
+    F --> F4[UserManagement]
+    
+    style A fill:#e1f5ff
+    style C fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#fff4e1
+    style F fill:#fff4e1
+
+
+    måske sekvense diagram? 
+    sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant B as Backend
+    participant D as Database
+
+    Note over U,D: User Registration
+    U->>F: Fill form & click create
+    F->>B: Create user request
+    B->>D: Save user
+    D-->>B: Success
+    B-->>F: User created
+    F-->>U: Show success/redirect to login
+
+    Note over U,D: User Login
+    U->>F: Enter username/password
+    F->>B: Login request
+    B->>D: Validate user
+    alt Valid user
+        D-->>B: User data
+        B->>D: Get user projects
+        D-->>B: Project list
+        B-->>F: Login success + projects
+        F-->>U: Show project page
+    else Invalid user
+        D-->>B: User not found
+        B-->>F: Login failed
+        F-->>U: Show error
+    end
+
+    Note over U,D: Edit Project
+    U->>F: Select project
+    F->>B: Get project details
+    B->>D: Fetch project
+    D-->>B: Project data
+    B-->>F: Project details
+    F-->>U: Show edit page
+    
+    alt Update data
+        U->>F: Change data
+        F->>B: Update request
+        B->>D: Save changes
+        D-->>B: Success
+        B-->>F: Update confirmed
+        F-->>U: Show success
+    else Delete item
+        U->>F: Delete item
+        F->>B: Delete request
+        B->>D: Remove item
+        D-->>B: Success
+        B-->>F: Delete confirmed
+        F-->>U: Show success
+    end
+
+
+    domæne model?
+    graph TB
+    subgraph "Frontend Layer"
+        UI[React Components<br/>TypeScript]
+        Apollo[Apollo Client<br/>GraphQL]
+        SSE[SSE Service<br/>Real-time]
+    end
+    
+    subgraph "API Layer"
+        Nginx[Nginx<br/>Reverse Proxy]
+    end
+    
+    subgraph "Backend Layer"
+        Security[Spring Security<br/>JWT Validation]
+        GraphQL[GraphQL API<br/>Queries & Mutations]
+        Services[Service Layer<br/>Business Logic]
+        SSEBroadcast[SSE Broadcaster<br/>Events]
+    end
+    
+    subgraph "Data Layer"
+        MongoDB[(MongoDB<br/>Document DB)]
+    end
+    
+    %% Frontend to Backend
+    UI -->|User Actions| Apollo
+    Apollo -->|HTTP POST<br/>GraphQL Query/Mutation<br/>+ JWT Token| Nginx
+    Nginx -->|Forward Request| Security
+    
+    %% Backend Processing
+    Security -->|Validate & Route| GraphQL
+    GraphQL -->|Execute| Services
+    Services -->|CRUD Operations| MongoDB
+    
+    %% Response Flow
+    MongoDB -->|Document Data| Services
+    Services -->|Process & Return| GraphQL
+    GraphQL -->|JSON Response| Security
+    Security -->|HTTP Response| Nginx
+    Nginx -->|Return Data| Apollo
+    Apollo -->|Update State| UI
+    
+    %% Real-time Updates
+    Services -->|Trigger Event| SSEBroadcast
+    SSEBroadcast -->|Server-Sent Events<br/>Event Stream| Nginx
+    Nginx -->|Forward Stream| SSE
+    SSE -->|Notifications| UI
+    
+    %% Styling
+    classDef frontend fill:#61dafb,stroke:#333,stroke-width:2px,color:#000
+    classDef backend fill:#6db33f,stroke:#333,stroke-width:2px,color:#fff
+    classDef database fill:#47a248,stroke:#333,stroke-width:2px,color:#fff
+    classDef proxy fill:#ff9900,stroke:#333,stroke-width:2px,color:#000
+    
+    class UI,Apollo,SSE frontend
+    class Security,GraphQL,Services,SSEBroadcast backend
+    class MongoDB database
+    class Nginx proxy
+
+    Data flow?
+    graph LR
+    subgraph "Client"
+        A[React UI]
+    end
+    
+    subgraph "Communication"
+        B[GraphQL Queries/Mutations]
+        C[SSE Event Stream]
+        D[JWT Token]
+    end
+    
+    subgraph "Server"
+        E[Spring Boot API]
+    end
+    
+    subgraph "Storage"
+        F[MongoDB Documents]
+    end
+    
+    A -->|1. Request + JWT| B
+    B -->|2. Validate & Process| E
+    E -->|3. Read/Write| F
+    F -->|4. Return Data| E
+    E -->|5. GraphQL Response| B
+    B -->|6. Update UI| A
+    
+    E -.->|7. Broadcast Events| C
+    C -.->|8. Real-time Updates| A
+    
+    A -->|Authentication| D
+    D -->|Authorization| E
+    
+    classDef client fill:#61dafb,stroke:#333,stroke-width:2px
+    classDef comm fill:#ff9900,stroke:#333,stroke-width:2px
+    classDef server fill:#6db33f,stroke:#333,stroke-width:2px
+    classDef storage fill:#47a248,stroke:#333,stroke-width:2px
+    
+    class A client
+    class B,C,D comm
+    class E server
+    class F storage
