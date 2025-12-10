@@ -114,3 +114,258 @@ sequenceDiagram
         Frontend-->>Bruger: Bekræfter sletning
         deactivate Frontend
     end
+
+
+
+
+
+    (JWT Sekvens diagram)
+    ---
+config:
+  look: classic
+---
+sequenceDiagram
+    actor Bruger
+    participant Frontend
+    participant JwtAuthFilter as JWT Auth Filter
+    participant Backend
+    participant JwtUtil as JWT Utility
+    participant Database
+
+    Note over Bruger, Database: JWT Authentication Flow
+
+    Bruger->>Frontend: Indtaster login credentials
+    activate Frontend
+    Frontend->>Backend: POST /login (username, password)
+    activate Backend
+    Backend->>Database: validateUser(username, password)
+    activate Database
+    Database-->>Backend: returnUserData(user)
+    deactivate Database
+
+    alt Hvis credentials er gyldige
+        Backend->>JwtUtil: generateToken(user)
+        activate JwtUtil
+        JwtUtil-->>Backend: returnJwtToken(token)
+        deactivate JwtUtil
+        Backend-->>Frontend: loginSuccess(jwtToken, userInfo)
+        Frontend->>Frontend: storeToken(localStorage/sessionStorage)
+        Frontend-->>Bruger: Redirect til hovedside
+    else Hvis credentials er ugyldige
+        Backend-->>Frontend: loginError("Invalid credentials")
+        Frontend-->>Bruger: Vis fejlmeddelelse
+    end
+    deactivate Backend
+    deactivate Frontend
+
+    Note over Bruger, Database: Authenticated Request Flow
+
+    Bruger->>Frontend: Anmoder om beskyttet ressource
+    activate Frontend
+    Frontend->>JwtAuthFilter: HTTP Request med Authorization header
+    activate JwtAuthFilter
+    JwtAuthFilter->>JwtUtil: validateToken(token)
+    activate JwtUtil
+    JwtUtil->>JwtUtil: checkExpiration & signature
+    alt Token er gyldig
+        JwtUtil-->>JwtAuthFilter: tokenValid(userInfo)
+        JwtAuthFilter->>Backend: forwardRequest(authenticatedUser)
+        activate Backend
+        Backend->>Database: processRequest(data)
+        activate Database
+        Database-->>Backend: returnData(result)
+        deactivate Database
+        Backend-->>JwtAuthFilter: response(data)
+        deactivate Backend
+        JwtAuthFilter-->>Frontend: authorizedResponse(data)
+        Frontend-->>Bruger: Vis data
+    else Token er ugyldig/udløbet
+        JwtUtil-->>JwtAuthFilter: tokenInvalid("Token expired/invalid")
+        JwtAuthFilter-->>Frontend: 401 Unauthorized
+        Frontend->>Frontend: clearStoredToken()
+        Frontend-->>Bruger: Redirect til login
+    end
+    deactivate JwtAuthFilter
+    deactivate JwtUtil
+    deactivate Frontend
+
+
+    (GraphQL Mutation sekvensdiagram)
+    sequenceDiagram
+    actor User
+    participant ReactComponent
+    participant ApolloClient
+    participant apolloClientSetup
+    participant JwtAuthenticationFilter
+    participant ProjectResolver
+    participant ProjectService
+    participant ProjectRepository
+    participant SSEService
+
+    User->>ReactComponent: Updates task title
+    activate ReactComponent
+    
+    ReactComponent->>ApolloClient: mutate(UPDATE_TASK_TITLE_MUTATION)
+    activate ApolloClient
+    
+    ApolloClient->>apolloClientSetup: authLink.request()
+    activate apolloClientSetup
+    apolloClientSetup->>apolloClientSetup: localStorage.getItem('token')
+    apolloClientSetup->>apolloClientSetup: setContext(Authorization header)
+    apolloClientSetup-->>ApolloClient: Forward with JWT
+    deactivate apolloClientSetup
+    
+    ApolloClient->>JwtAuthenticationFilter: POST /graphql
+    activate JwtAuthenticationFilter
+    
+    JwtAuthenticationFilter->>JwtAuthenticationFilter: doFilterInternal()
+    JwtAuthenticationFilter->>JwtAuthenticationFilter: jwtUtil.validateToken(token)
+    JwtAuthenticationFilter->>JwtAuthenticationFilter: SecurityContextHolder.setAuthentication()
+    
+    JwtAuthenticationFilter->>ProjectResolver: updateTaskTitle()
+    activate ProjectResolver
+    
+    ProjectResolver->>ProjectResolver: getCurrentUsername()
+    ProjectResolver->>ProjectService: verifyProjectAccess()
+    activate ProjectService
+    
+    ProjectService->>ProjectRepository: findById(projectId)
+    activate ProjectRepository
+    ProjectRepository-->>ProjectService: Optional<Project>
+    deactivate ProjectRepository
+    
+    ProjectService->>ProjectService: project.getUsers().contains(username)
+    ProjectService-->>ProjectResolver: Access verified
+    
+    ProjectResolver->>ProjectService: getTaskById()
+    ProjectService->>ProjectRepository: findById(projectId)
+    activate ProjectRepository
+    ProjectRepository-->>ProjectService: Project with task
+    deactivate ProjectRepository
+    
+    ProjectService-->>ProjectResolver: Task
+    ProjectResolver->>ProjectResolver: task.setTitle(newTitle)
+    ProjectResolver->>ProjectService: saveTask()
+    
+    ProjectService->>ProjectRepository: save(project)
+    activate ProjectRepository
+    ProjectRepository-->>ProjectService: Saved project
+    deactivate ProjectRepository
+    
+    ProjectService-->>ProjectResolver: Updated task
+    deactivate ProjectService
+    
+    ProjectResolver->>SSEService: sendTaskUpdate()
+    activate SSEService
+    SSEService->>SSEService: emitters.get(projectId).send()
+    deactivate SSEService
+    
+    ProjectResolver-->>JwtAuthenticationFilter: Return task
+    deactivate ProjectResolver
+    
+    JwtAuthenticationFilter-->>ApolloClient: 200 OK
+    deactivate JwtAuthenticationFilter
+    
+    ApolloClient->>ApolloClient: cache.writeQuery()
+    ApolloClient-->>ReactComponent: Success
+    deactivate ApolloClient
+    
+    ReactComponent-->>User: UI updates
+    deactivate ReactComponent
+
+
+    (SSE connection)
+    sequenceDiagram
+    actor User
+    participant ReactComponent
+    participant sseService
+    participant EventSource
+    participant SSEController
+    participant SSEService
+    participant emitters
+
+    User->>ReactComponent: Opens project page
+    activate ReactComponent
+    
+    ReactComponent->>sseService: subscribe(projectId, callbacks)
+    activate sseService
+    
+    sseService->>sseService: Check if connection exists
+    
+    alt No existing connection
+        sseService->>EventSource: new EventSource(/api/sse/project/{projectId})
+        activate EventSource
+        
+        EventSource->>SSEController: GET /api/sse/project/{projectId}
+        activate SSEController
+        
+        SSEController->>SSEController: getCurrentUsername()
+        SSEController->>SSEService: subscribe(projectId, username, emitter)
+        activate SSEService
+        
+        SSEService->>SSEService: emitters.computeIfAbsent(projectId)
+        SSEService->>emitters: Add new SseEmitter
+        activate emitters
+        
+        SSEService->>emitters: emitter.send(connected event)
+        emitters-->>EventSource: data: connected
+        deactivate emitters
+        
+        SSEService-->>SSEController: Return emitter
+        deactivate SSEService
+        
+        SSEController-->>EventSource: SseEmitter stream
+        deactivate SSEController
+        
+        EventSource->>sseService: onopen event
+        sseService->>sseService: Store connection
+        sseService->>sseService: connectionMonitor.markConnected()
+        
+        EventSource->>sseService: onmessage event
+        sseService->>ReactComponent: callbacks.onTaskUpdate(data)
+        
+        EventSource->>sseService: onerror event
+        sseService->>sseService: handleReconnect()
+        sseService->>sseService: connectionMonitor.markDisconnected()
+        deactivate EventSource
+    end
+    
+    sseService-->>ReactComponent: Subscription active
+    deactivate sseService
+    deactivate ReactComponent
+
+    (Sekvensdiagram af REST)
+    sequenceDiagram
+    participant User
+    participant Frontend
+    participant ProjectController
+    participant ProjectService
+    participant ProjectRepository
+    participant MongoDB
+
+    User->>Frontend: Klikker "Create Project"
+    Frontend->>Frontend: Udfylder projekt form<br/>(navn, beskrivelse)
+    
+    Frontend->>ProjectController: POST /projects?username={username}<br/>Body: Project JSON
+    
+    activate ProjectController
+    ProjectController->>ProjectService: createProject(project, username)
+    
+    activate ProjectService
+    ProjectService->>ProjectService: Validerer projekt data
+    ProjectService->>ProjectRepository: save(project)
+    
+    activate ProjectRepository
+    ProjectRepository->>MongoDB: Insert project document
+    MongoDB-->>ProjectRepository: Project saved
+    deactivate ProjectRepository
+    
+    ProjectRepository-->>ProjectService: Saved Project
+    ProjectService-->>ProjectController: Project with ID
+    deactivate ProjectService
+    
+    ProjectController-->>Frontend: 200 OK<br/>Body: Project JSON
+    deactivate ProjectController
+    
+    Frontend->>Frontend: Opdaterer UI med nyt projekt
+    Frontend-->>User: Viser succesbesked
