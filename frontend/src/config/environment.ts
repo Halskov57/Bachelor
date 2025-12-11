@@ -22,7 +22,7 @@ export const environments = {
 };
 
 // Change this to switch environments quickly
-export const CURRENT_ENV: keyof typeof environments = 'production';
+export const CURRENT_ENV: keyof typeof environments = 'development';
 
 // Export the current configuration
 export const config = environments[CURRENT_ENV];
