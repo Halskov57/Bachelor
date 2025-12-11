@@ -193,85 +193,28 @@ sequenceDiagram
     (GraphQL Mutation sekvensdiagram)
     sequenceDiagram
     actor User
-    participant ReactComponent
+    participant Frontend
     participant ApolloClient
-    participant apolloClientSetup
-    participant JwtAuthenticationFilter
+    participant Backend
     participant ProjectResolver
     participant ProjectService
-    participant ProjectRepository
-    participant SSEService
+    participant Database
 
-    User->>ReactComponent: Updates task title
-    activate ReactComponent
-    
-    ReactComponent->>ApolloClient: mutate(UPDATE_TASK_TITLE_MUTATION)
-    activate ApolloClient
-    
-    ApolloClient->>apolloClientSetup: authLink.request()
-    activate apolloClientSetup
-    apolloClientSetup->>apolloClientSetup: localStorage.getItem('token')
-    apolloClientSetup->>apolloClientSetup: setContext(Authorization header)
-    apolloClientSetup-->>ApolloClient: Forward with JWT
-    deactivate apolloClientSetup
-    
-    ApolloClient->>JwtAuthenticationFilter: POST /graphql
-    activate JwtAuthenticationFilter
-    
-    JwtAuthenticationFilter->>JwtAuthenticationFilter: doFilterInternal()
-    JwtAuthenticationFilter->>JwtAuthenticationFilter: jwtUtil.validateToken(token)
-    JwtAuthenticationFilter->>JwtAuthenticationFilter: SecurityContextHolder.setAuthentication()
-    
-    JwtAuthenticationFilter->>ProjectResolver: updateTaskTitle()
-    activate ProjectResolver
-    
-    ProjectResolver->>ProjectResolver: getCurrentUsername()
-    ProjectResolver->>ProjectService: verifyProjectAccess()
-    activate ProjectService
-    
-    ProjectService->>ProjectRepository: findById(projectId)
-    activate ProjectRepository
-    ProjectRepository-->>ProjectService: Optional<Project>
-    deactivate ProjectRepository
-    
-    ProjectService->>ProjectService: project.getUsers().contains(username)
-    ProjectService-->>ProjectResolver: Access verified
-    
-    ProjectResolver->>ProjectService: getTaskById()
-    ProjectService->>ProjectRepository: findById(projectId)
-    activate ProjectRepository
-    ProjectRepository-->>ProjectService: Project with task
-    deactivate ProjectRepository
-    
-    ProjectService-->>ProjectResolver: Task
-    ProjectResolver->>ProjectResolver: task.setTitle(newTitle)
-    ProjectResolver->>ProjectService: saveTask()
-    
-    ProjectService->>ProjectRepository: save(project)
-    activate ProjectRepository
-    ProjectRepository-->>ProjectService: Saved project
-    deactivate ProjectRepository
-    
-    ProjectService-->>ProjectResolver: Updated task
-    deactivate ProjectService
-    
-    ProjectResolver->>SSEService: sendTaskUpdate()
-    activate SSEService
-    SSEService->>SSEService: emitters.get(projectId).send()
-    deactivate SSEService
-    
-    ProjectResolver-->>JwtAuthenticationFilter: Return task
-    deactivate ProjectResolver
-    
-    JwtAuthenticationFilter-->>ApolloClient: 200 OK
-    deactivate JwtAuthenticationFilter
-    
-    ApolloClient->>ApolloClient: cache.writeQuery()
-    ApolloClient-->>ReactComponent: Success
-    deactivate ApolloClient
-    
-    ReactComponent-->>User: UI updates
-    deactivate ReactComponent
+    User->>Frontend: Clicks save on project form
+    Frontend->>ApolloClient: Execute UPDATE_PROJECT mutation
+    ApolloClient->>Backend: POST /graphql<br/>updateProject(id, input)
+    Backend->>ProjectResolver: updateProject(id, input)
+    ProjectResolver->>ProjectService: updateProject(id, input)
+    ProjectService->>Database: Find project by ID
+    Database-->>ProjectService: Return project
+    ProjectService->>Database: Update project fields
+    Database-->>ProjectService: Return updated project
+    ProjectService-->>ProjectResolver: Return updated project
+    ProjectResolver-->>Backend: Return project data
+    Backend-->>ApolloClient: GraphQL response
+    ApolloClient->>ApolloClient: Update cache
+    ApolloClient-->>Frontend: Return updated project
+    Frontend->>User: Display success toast
 
 
     (SSE connection)
