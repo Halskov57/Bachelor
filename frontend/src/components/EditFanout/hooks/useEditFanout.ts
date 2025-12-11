@@ -125,6 +125,7 @@ export const useEditFanout = ({
 
             const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
             if (changedKeys.length > 0) {
+              // Auto-save uses the same consolidated mutation - single request
               await updateNode(data, parentIds);
               onSave?.();
             }
@@ -299,43 +300,19 @@ export const useEditFanout = ({
           return;
         }
         
-        const result = await addNode(
+        await addNode(
           createNode.type,
           createNode.parentIds,
           formData.title,
           formData.description,
-          createNode.type === 'project' ? formData.courseLevel : undefined
+          createNode.type === 'project' ? formData.courseLevel : undefined,
+          // Pass task-specific data for initial creation
+          createNode.type === 'task' ? {
+            status: formData.status,
+            dueDate: formData.dueDate || undefined,
+            selectedUsers: formData.selectedUsers
+          } : undefined
         );
-        
-        // If creating a task with a due date, update it immediately after creation
-        if (createNode.type === 'task' && formData.dueDate && result && 'data' in result) {
-          const newTaskId = (result.data as any)?.addTask?.id;
-          if (newTaskId) {const taskUpdates: any = {
-        type: 'task',
-        id: newTaskId
-      };
-      
-      // Add due date if provided
-      if (formData.dueDate) {
-        taskUpdates.dueDate = formData.dueDate;
-      }
-
-      // Add status if provided
-      if(formData.status){
-        taskUpdates.status = formData.status;
-      }
-      
-      // Add users if any were selected
-      if (formData.selectedUsers && formData.selectedUsers.length > 0) {
-        taskUpdates.users = formData.selectedUsers;
-      }
-      
-      // Only update if we have something to update
-      if (taskUpdates.dueDate || taskUpdates.users) {
-        await updateNode(taskUpdates, createNode.parentIds);
-      }
-  }
-        }
         
         onSave?.();
         onClose();
@@ -379,7 +356,9 @@ export const useEditFanout = ({
         };
 
         const changedKeys = Object.keys(data).filter(k => k !== 'id' && k !== 'type');
-        if (changedKeys.length > 0) { // Debug log
+        if (changedKeys.length > 0) {
+          // New GraphQL approach: ALL changes sent in a SINGLE request!
+          // This replaces the old pattern of multiple sequential mutations
           await updateNode(data, parentIds);
         }
 

@@ -4,3 +4,4 @@
 **/publish
 **/.env
 ./nginx.conf
+./frontend/src/config/environment.ts

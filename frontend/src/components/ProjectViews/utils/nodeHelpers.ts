@@ -10,6 +10,7 @@ export const createNodeFromTreeData = (nodeDatum: any): NodeData => ({
   projectId: nodeDatum.projectId,
   epicId: nodeDatum.epicId,
   featureId: nodeDatum.featureId,
+  dueDate: nodeDatum.dueDate,
 });
 
 export const getAllTasksWithContext = (project: any) => {

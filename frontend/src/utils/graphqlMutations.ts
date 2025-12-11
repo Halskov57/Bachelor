@@ -88,146 +88,37 @@ export const GET_PROJECTS_BY_CURRENT_USER_QUERY = gql`
   }
 `;
 
-// --- Node CRUD Mutations ---
-export const ADD_EPIC_MUTATION = gql`
-  mutation AddEpic($projectId: ID!, $title: String!, $description: String!) {
-    addEpic(projectId: $projectId, title: $title, description: $description) {
+// ===== PROJECT MUTATIONS =====
+
+export const UPDATE_PROJECT_MUTATION = gql`
+  mutation UpdateProject($id: ID!, $input: ProjectInput!) {
+    updateProject(id: $id, input: $input) {
       id
       title
       description
-    }
-  }
-`;
-
-export const ADD_FEATURE_MUTATION = gql`
-  mutation AddFeature($projectId: ID!, $epicId: ID!, $title: String!, $description: String!) {
-    addFeature(projectId: $projectId, epicId: $epicId, title: $title, description: $description) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-export const ADD_TASK_MUTATION = gql`
-  mutation AddTask($projectId: ID!, $epicId: ID!, $featureId: ID!, $title: String!, $description: String!) {
-    addTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, title: $title, description: $description) {
-      id
-      title
-      description
-      status
-      dueDate
-    }
-  }
-`;
-
-export const UPDATE_PROJECT_TITLE_MUTATION = gql`
-  mutation UpdateProjectTitle($projectId: ID!, $newTitle: String!) {
-    updateProjectTitle(projectId: $projectId, newTitle: $newTitle) {
-      id
-      title
-    }
-  }
-`;
-
-export const UPDATE_PROJECT_DESCRIPTION_MUTATION = gql`
-  mutation UpdateProjectDescription($projectId: ID!, $newDescription: String!) {
-    updateProjectDescription(projectId: $projectId, newDescription: $newDescription) {
-      id
-      description
-    }
-  }
-`;
-
-export const UPDATE_PROJECT_COURSE_LEVEL_MUTATION = gql`
-  mutation UpdateProjectCourseLevel($projectId: ID!, $newCourseLevel: Int!) {
-    updateProjectCourseLevel(projectId: $projectId, newCourseLevel: $newCourseLevel) {
-      id
       courseLevel
     }
   }
 `;
 
-export const UPDATE_EPIC_TITLE_MUTATION = gql`
-  mutation UpdateEpicTitle($projectId: ID!, $epicId: ID!, $newTitle: String!) {
-    updateEpicTitle(projectId: $projectId, epicId: $epicId, newTitle: $newTitle) {
+// ===== EPIC MUTATIONS =====
+
+export const UPDATE_EPIC_MUTATION = gql`
+  mutation UpdateEpic($projectId: ID!, $epicId: ID!, $input: EpicInput!) {
+    updateEpic(projectId: $projectId, epicId: $epicId, input: $input) {
       id
       title
-    }
-  }
-`;
-
-export const UPDATE_EPIC_DESCRIPTION_MUTATION = gql`
-  mutation UpdateEpicDescription($projectId: ID!, $epicId: ID!, $newDescription: String!) {
-    updateEpicDescription(projectId: $projectId, epicId: $epicId, newDescription: $newDescription) {
-      id
       description
     }
   }
 `;
 
-export const UPDATE_FEATURE_TITLE_MUTATION = gql`
-  mutation UpdateFeatureTitle($projectId: ID!, $epicId: ID!, $featureId: ID!, $newTitle: String!) {
-    updateFeatureTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, newTitle: $newTitle) {
+export const CREATE_EPIC_MUTATION = gql`
+  mutation CreateEpic($projectId: ID!, $input: CreateEpicInput!) {
+    createEpic(projectId: $projectId, input: $input) {
       id
       title
-    }
-  }
-`;
-
-export const UPDATE_FEATURE_DESCRIPTION_MUTATION = gql`
-  mutation UpdateFeatureDescription($projectId: ID!, $epicId: ID!, $featureId: ID!, $newDescription: String!) {
-    updateFeatureDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, newDescription: $newDescription) {
-      id
       description
-    }
-  }
-`;
-
-export const UPDATE_TASK_TITLE_MUTATION = gql`
-  mutation UpdateTaskTitle($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newTitle: String!) {
-    updateTaskTitle(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newTitle: $newTitle) {
-      id
-      title
-    }
-  }
-`;
-
-export const UPDATE_TASK_DESCRIPTION_MUTATION = gql`
-  mutation UpdateTaskDescription($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newDescription: String!) {
-    updateTaskDescription(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newDescription: $newDescription) {
-      id
-      description
-    }
-  }
-`;
-
-export const UPDATE_TASK_STATUS_MUTATION = gql`
-  mutation UpdateTaskStatus($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newStatus: String!) {
-    updateTaskStatus(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newStatus: $newStatus) {
-      id
-      status
-    }
-  }
-`;
-
-export const UPDATE_TASK_DUE_DATE_MUTATION = gql`
-  mutation UpdateTaskDueDate($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $newDueDate: String) {
-    updateTaskDueDate(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, newDueDate: $newDueDate) {
-      id
-      dueDate
-    }
-  }
-`;
-
-export const UPDATE_TASK_USERS_MUTATION = gql`
-  mutation UpdateTaskUsers($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $userIds: [ID!]!) {
-    updateTaskUsers(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, userIds: $userIds) {
-      id
-      users {
-        id
-        username
-      }
     }
   }
 `;
@@ -238,9 +129,65 @@ export const DELETE_EPIC_MUTATION = gql`
   }
 `;
 
+// ===== FEATURE MUTATIONS =====
+
+export const UPDATE_FEATURE_MUTATION = gql`
+  mutation UpdateFeature($projectId: ID!, $epicId: ID!, $featureId: ID!, $input: FeatureInput!) {
+    updateFeature(projectId: $projectId, epicId: $epicId, featureId: $featureId, input: $input) {
+      id
+      title
+      description
+    }
+  }
+`;
+
+export const CREATE_FEATURE_MUTATION = gql`
+  mutation CreateFeature($projectId: ID!, $epicId: ID!, $input: CreateFeatureInput!) {
+    createFeature(projectId: $projectId, epicId: $epicId, input: $input) {
+      id
+      title
+      description
+    }
+  }
+`;
+
 export const DELETE_FEATURE_MUTATION = gql`
   mutation DeleteFeature($projectId: ID!, $epicId: ID!, $featureId: ID!) {
     deleteFeature(projectId: $projectId, epicId: $epicId, featureId: $featureId)
+  }
+`;
+
+// ===== TASK MUTATIONS =====
+
+export const UPDATE_TASK_MUTATION = gql`
+  mutation UpdateTask($projectId: ID!, $epicId: ID!, $featureId: ID!, $taskId: ID!, $input: TaskInput!) {
+    updateTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, taskId: $taskId, input: $input) {
+      id
+      title
+      description
+      status
+      dueDate
+      users {
+        id
+        username
+      }
+    }
+  }
+`;
+
+export const CREATE_TASK_MUTATION = gql`
+  mutation CreateTask($projectId: ID!, $epicId: ID!, $featureId: ID!, $input: CreateTaskInput!) {
+    createTask(projectId: $projectId, epicId: $epicId, featureId: $featureId, input: $input) {
+      id
+      title
+      description
+      status
+      dueDate
+      users {
+        id
+        username
+      }
+    }
   }
 `;
 
@@ -426,31 +373,57 @@ export const getProjectsByCurrentUser = async (): Promise<Project[]> => {
 
 export const updateNode = async (data: any, parentIds: any) => {
   try {
-    switch (data.type) {
+    const { type, id, ...input } = data;
+
+    switch (type) {
       case 'project':
-        if (data.title) await client.mutate({ mutation: UPDATE_PROJECT_TITLE_MUTATION, variables: { projectId: data.id, newTitle: data.title } });
-        if (data.description) await client.mutate({ mutation: UPDATE_PROJECT_DESCRIPTION_MUTATION, variables: { projectId: data.id, newDescription: data.description } });
-        if (data.courseLevel) await client.mutate({ mutation: UPDATE_PROJECT_COURSE_LEVEL_MUTATION, variables: { projectId: data.id, newCourseLevel: data.courseLevel } });
-        break;
+        return await client.mutate({
+          mutation: UPDATE_PROJECT_MUTATION,
+          variables: { id, input }
+        });
+
       case 'epic':
-        if (data.title) await client.mutate({ mutation: UPDATE_EPIC_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newTitle: data.title } });
-        if (data.description) await client.mutate({ mutation: UPDATE_EPIC_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: data.id, newDescription: data.description } });
-        break;
+        return await client.mutate({
+          mutation: UPDATE_EPIC_MUTATION,
+          variables: { 
+            projectId: parentIds.projectId, 
+            epicId: id, 
+            input 
+          }
+        });
+
       case 'feature':
-        if (data.title) await client.mutate({ mutation: UPDATE_FEATURE_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newTitle: data.title } });
-        if (data.description) await client.mutate({ mutation: UPDATE_FEATURE_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: data.id, newDescription: data.description } });
-        break;
+        return await client.mutate({
+          mutation: UPDATE_FEATURE_MUTATION,
+          variables: { 
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            featureId: id,
+            input
+          }
+        });
+
       case 'task':
-        if (data.title) await client.mutate({ mutation: UPDATE_TASK_TITLE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newTitle: data.title } });
-        if (data.description) await client.mutate({ mutation: UPDATE_TASK_DESCRIPTION_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDescription: data.description } });
-        if (data.status) await client.mutate({ mutation: UPDATE_TASK_STATUS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newStatus: data.status } });
-        if (data.dueDate !== undefined) { // Debug log
-          await client.mutate({ mutation: UPDATE_TASK_DUE_DATE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, newDueDate: data.dueDate || null } });
+        // Convert users array to userIds for TaskInput
+        const taskInput = { ...input };
+        if (taskInput.users) {
+          taskInput.userIds = taskInput.users;
+          delete taskInput.users;
         }
-        if (data.users) await client.mutate({ mutation: UPDATE_TASK_USERS_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: data.id, userIds: data.users } });
-        break;
+        
+        return await client.mutate({
+          mutation: UPDATE_TASK_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            featureId: parentIds.featureId,
+            taskId: id,
+            input: taskInput
+          }
+        });
+
       default:
-        throw new Error(`Unknown node type: ${data.type}`);
+        throw new Error(`Unknown node type: ${type}`);
     }
   } catch (error: any) {
     // Check for authorization errors
@@ -468,30 +441,61 @@ export const addNode = async (
   parentIds: any,
   title: string,
   description: string,
-  courseLevel?: number // <-- add optional argument
+  courseLevel?: number,
+  taskData?: { status?: string; dueDate?: string; selectedUsers?: string[] }
 ) => {
   try {
     switch (type) {
       case 'epic':
         return await client.mutate({
-          mutation: ADD_EPIC_MUTATION,
-          variables: { projectId: parentIds.projectId, title, description },
+          mutation: CREATE_EPIC_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            input: { title, description }
+          }
         });
+
       case 'feature':
         return await client.mutate({
-          mutation: ADD_FEATURE_MUTATION,
-          variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, title, description },
+          mutation: CREATE_FEATURE_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            input: { title, description }
+          }
         });
+
       case 'task':
+        const taskInput: any = { 
+          title, 
+          description, 
+          status: taskData?.status || 'TODO' 
+        };
+        
+        // Add optional task fields if provided
+        if (taskData?.dueDate) {
+          taskInput.dueDate = taskData.dueDate;
+        }
+        if (taskData?.selectedUsers && taskData.selectedUsers.length > 0) {
+          taskInput.userIds = taskData.selectedUsers;
+        }
+        
         return await client.mutate({
-          mutation: ADD_TASK_MUTATION,
-          variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, title, description },
+          mutation: CREATE_TASK_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            featureId: parentIds.featureId,
+            input: taskInput
+          }
         });
+
       case 'project':
         if (courseLevel === undefined) {
           throw new Error('courseLevel is required when creating a project');
         }
         return await createProjectFromTemplate(courseLevel, title, description);
+
       default:
         throw new Error(`Unknown node type: ${type}`);
     }
@@ -508,13 +512,39 @@ export const addNode = async (
 
 export const deleteNode = async (node: any, parentIds: any) => {
   try {
+    const nodeId = node.id || node.epicId || node.featureId || node.taskId;
+
     switch (node.type) {
       case 'epic':
-        return await client.mutate({ mutation: DELETE_EPIC_MUTATION, variables: { projectId: parentIds.projectId, epicId: node.id } });
+        return await client.mutate({
+          mutation: DELETE_EPIC_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: nodeId
+          }
+        });
+
       case 'feature':
-        return await client.mutate({ mutation: DELETE_FEATURE_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: node.id } });
+        return await client.mutate({
+          mutation: DELETE_FEATURE_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            featureId: nodeId
+          }
+        });
+
       case 'task':
-        return await client.mutate({ mutation: DELETE_TASK_MUTATION, variables: { projectId: parentIds.projectId, epicId: parentIds.epicId, featureId: parentIds.featureId, taskId: node.id } });
+        return await client.mutate({
+          mutation: DELETE_TASK_MUTATION,
+          variables: {
+            projectId: parentIds.projectId,
+            epicId: parentIds.epicId,
+            featureId: parentIds.featureId,
+            taskId: nodeId
+          }
+        });
+
       default:
         throw new Error(`Unknown node type: ${node.type}`);
     }

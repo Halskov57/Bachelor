@@ -11,6 +11,7 @@ export interface NodeData {
   projectId?: string;
   epicId?: string;
   featureId?: string;
+  dueDate?: string;
 
   // Recursive children
   children?: NodeData[];

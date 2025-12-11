@@ -33,7 +33,7 @@ export interface FormData {
   courseLevel: number;
   selectedUsers: string[];
   selectedOwners: string[];
-  dueDate?: string; // Add dueDate field
+  dueDate?: string;
 }
 
 export interface CourseConfig {
