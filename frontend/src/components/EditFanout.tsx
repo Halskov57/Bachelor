@@ -238,39 +238,16 @@ const EditFanout: React.FC<EditFanoutProps> = ({
     };
 
     return (
-        <div style={{
-            position: 'absolute',
-            right: 75,
-            top: 0,
-            width: 360,
-            maxWidth: 'calc(100vw - 40px)',
-            background: '#fff',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
-            borderRadius: 12,
-            padding: 24,
-            zIndex: 100
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0 }}>
+        <div className="space-y-3">
+            <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold m-0">
                     {getNodeTitle()}
-                </h3>
+                </h2>
                 
                 {/* Info icons for disabled features */}
                 {mode === 'edit' && !canCreateDelete(nodeType) && (
                     <span 
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            backgroundColor: '#6c757d',
-                            color: 'white',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            cursor: 'help'
-                        }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-500 text-white text-xs font-bold cursor-help"
                         title={`Creating and deleting ${nodeType}s is disabled for this course level`}
                     >
                         i
@@ -279,19 +256,7 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                 
                 {mode === 'edit' && childType !== null && !canCreateDelete(childType) && (
                     <span 
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            backgroundColor: '#6c757d',
-                            color: 'white',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
-                            cursor: 'help'
-                        }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-500 text-white text-xs font-bold cursor-help"
                         title={`Creating ${childType}s is disabled for this course level`}
                     >
                         i
@@ -299,7 +264,7 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                 )}
             </div>
 
-            <div>
+            <div className="space-y-3">
                 {renderFormContent()}
                 
                 {renderStatusSection()}
@@ -309,7 +274,7 @@ const EditFanout: React.FC<EditFanoutProps> = ({
                 {renderUserManagement()}
             </div>
 
-            <div style={{ marginTop: '20px' }}>
+            <div className="mt-3">
                 <EditFanoutActions
                     onSave={handleSave}
                     onDelete={showDeleteButton ? handleDelete : undefined}

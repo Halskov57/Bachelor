@@ -1,4 +1,6 @@
 import React from 'react';
+import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -14,86 +16,58 @@ interface ToastProps {
 }
 
 const Toast: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
-  const getBackgroundColor = (type: ToastType) => {
+  const getStyles = (type: ToastType) => {
     switch (type) {
-      case 'success': return '#4CAF50';
-      case 'error': return '#f44336';
-      case 'warning': return '#ff9800';
-      case 'info': return '#2196F3';
-      default: return '#333';
+      case 'success':
+        return 'bg-green-50 text-green-900 border-green-200';
+      case 'error':
+        return 'bg-red-50 text-red-900 border-red-200';
+      case 'warning':
+        return 'bg-yellow-50 text-yellow-900 border-yellow-200';
+      case 'info':
+        return 'bg-blue-50 text-blue-900 border-blue-200';
+      default:
+        return 'bg-gray-50 text-gray-900 border-gray-200';
     }
   };
 
   const getIcon = (type: ToastType) => {
+    const iconClass = 'h-5 w-5';
     switch (type) {
-      case 'success': return '✅';
-      case 'error': return '❌';
-      case 'warning': return '⚠️';
-      case 'info': return 'ℹ️';
-      default: return '';
+      case 'success':
+        return <CheckCircle2 className={cn(iconClass, 'text-green-600')} />;
+      case 'error':
+        return <XCircle className={cn(iconClass, 'text-red-600')} />;
+      case 'warning':
+        return <AlertCircle className={cn(iconClass, 'text-yellow-600')} />;
+      case 'info':
+        return <Info className={cn(iconClass, 'text-blue-600')} />;
+      default:
+        return null;
     }
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '80px',
-      right: '20px',
-      zIndex: 10000,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px'
-    }}>
+    <div className="fixed top-20 right-4 z-[10000] flex flex-col gap-2 max-w-md">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          style={{
-            backgroundColor: getBackgroundColor(toast.type),
-            color: 'white',
-            padding: '12px 20px',
-            borderRadius: '6px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            fontSize: '14px',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            animation: 'slideInRight 0.3s ease-out',
-            maxWidth: '400px',
-            minWidth: '250px'
-          }}
+          className={cn(
+            'flex items-center gap-3 rounded-lg border p-4 shadow-lg',
+            'animate-in slide-in-from-right duration-300',
+            getStyles(toast.type)
+          )}
         >
-          <span>{getIcon(toast.type)}</span>
-          <span style={{ flex: 1 }}>{toast.message}</span>
+          {getIcon(toast.type)}
+          <span className="flex-1 text-sm font-medium">{toast.message}</span>
           <button
             onClick={() => onDismiss(toast.id)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '18px',
-              padding: '0 4px',
-              marginLeft: '8px'
-            }}
+            className="rounded-sm opacity-70 transition-opacity hover:opacity-100"
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
       ))}
-      
-      <style>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };

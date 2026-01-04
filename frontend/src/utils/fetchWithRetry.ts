@@ -67,10 +67,6 @@ export async function fetchWithRetry(
       delay = maxDelay;
     }
     
-    const retryMessage = persistentRetry && attempt >= maxAttempts
-      ? `🔄 Persistent retry attempt ${attempt + 1} in ${delay}ms...`
-      : `🔄 Fetch retry attempt ${attempt + 1}/${maxAttempts} in ${delay}ms...`;
-    
     if (!lastError?.message.includes('Gateway error')) {
     }
     

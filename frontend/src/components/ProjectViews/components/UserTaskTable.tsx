@@ -61,25 +61,10 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
   }, [taskUserData]);
 
   return (
-    <div style={{ 
-      background: 'rgba(230,230,240,0.96)', 
-      borderRadius: 12, 
-      padding: '20px',
-      margin: '20px 0'
-    }}>
+    <div className="bg-card rounded-xl p-5 my-5 border">
       {/* Header with export button */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '20px'
-      }}>
-        <h3 style={{ 
-          margin: 0, 
-          color: '#022AFF',
-          fontSize: '1.2rem',
-          fontWeight: 'bold'
-        }}>
+      <div className="flex justify-between items-center mb-5">
+        <h3 className="text-xl font-bold text-primary m-0">
           Completed Task Assignments
         </h3>
         
@@ -91,121 +76,49 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
       </div>
 
       {taskUserData.length === 0 ? (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          fontStyle: 'italic'
-        }}>
+        <div className="text-center py-10 text-muted-foreground italic">
           No completed tasks found in this project
         </div>
       ) : (
         <div 
           id="completed-tasks-table"
-          style={{ 
-            overflowX: 'auto',
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            border: '1px solid #e0e6ed'
-          }}
+          className="overflow-x-auto bg-background rounded-lg border"
         >
-          <table style={{ 
-            width: '100%', 
-            borderCollapse: 'collapse',
-            backgroundColor: '#fff',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
+          <table className="w-full border-collapse bg-background rounded-lg overflow-hidden">
             <thead>
-              <tr style={{ backgroundColor: '#022AFF', color: '#fff' }}>
-                <th style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'left',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  width: '35%'
-                }}>
+              <tr className="bg-primary text-primary-foreground">
+                <th className="p-3 text-left font-semibold text-sm w-[35%]">
                   Task Title
                 </th>
-                <th style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'left',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  width: '12%'
-                }}>
+                <th className="p-3 text-left font-semibold text-sm w-[12%]">
                   Status
                 </th>
-                <th style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'left',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  width: '28%'
-                }}>
+                <th className="p-3 text-left font-semibold text-sm w-[28%]">
                   Users
                 </th>
-                <th style={{ 
-                  padding: '12px 16px', 
-                  textAlign: 'left',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  width: '25%'
-                }}>
+                <th className="p-3 text-left font-semibold text-sm w-[25%]">
                   Part Of
                 </th>
               </tr>
             </thead>
             <tbody>
               {taskUserData.map((task, index) => (
-                <tr key={task.taskId} style={{ 
-                  backgroundColor: index % 2 === 0 ? '#f8f9fa' : '#fff'
-                }}>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    verticalAlign: 'top',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #eee',
-                    fontSize: '14px',
-                    color: '#333'
-                  }}>
+                <tr key={task.taskId} className={index % 2 === 0 ? 'bg-muted/50' : 'bg-background'}>
+                  <td className="p-3 align-top text-left border-b border-border text-sm text-foreground">
                     {task.taskTitle}
                   </td>
-                  <td style={{ 
-                    padding: '12px 16px', 
-                    verticalAlign: 'top',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #eee'
-                  }}>
-                    <span style={{
-                      backgroundColor: '#4caf50',
-                      color: '#fff',
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      display: 'inline-block'
-                    }}>
+                  <td className="p-3 align-top text-left border-b border-border">
+                    <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium inline-block">
                       {task.taskStatus}
                     </span>
                   </td>
-                  <td style={{ 
-                    padding: '12px 16px',
-                    verticalAlign: 'top',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #eee'
-                  }}>
+                  <td className="p-3 align-top text-left border-b border-border">
                     {task.assignedUsers.length === 0 ? (
-                      <span style={{ 
-                        color: '#999', 
-                        fontStyle: 'italic',
-                        fontSize: '13px'
-                      }}>
+                      <span className="text-muted-foreground italic text-xs">
                         Unassigned
                       </span>
                     ) : (
-                      <div style={{ fontSize: '13px', color: '#555' }}>
+                      <div className="text-xs text-muted-foreground">
                         {task.assignedUsers.map((user, idx) => (
                           <span key={user.id}>
                             {user.username}
@@ -215,17 +128,10 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
                       </div>
                     )}
                   </td>
-                  <td style={{ 
-                    padding: '12px 16px',
-                    verticalAlign: 'top',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #eee',
-                    fontSize: '13px',
-                    color: '#666'
-                  }}>
+                  <td className="p-3 align-top text-left border-b border-border text-xs text-muted-foreground">
                     {task.epicTitle}
                     {task.featureTitle && (
-                      <span style={{ color: '#999' }}> / {task.featureTitle}</span>
+                      <span className="text-muted-foreground/70"> / {task.featureTitle}</span>
                     )}
                   </td>
                 </tr>
@@ -235,12 +141,7 @@ const UserTaskTable: React.FC<UserTaskTableProps> = ({ project }) => {
         </div>
       )}
 
-      <div style={{ 
-        marginTop: '16px', 
-        fontSize: '14px', 
-        color: '#666',
-        textAlign: 'center'
-      }}>
+      <div className="mt-4 text-sm text-muted-foreground text-center">
         Total: {taskUserData.length} completed tasks
       </div>
     </div>

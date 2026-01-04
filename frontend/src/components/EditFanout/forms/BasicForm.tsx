@@ -1,4 +1,7 @@
 import React from 'react';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Textarea } from '../../ui/textarea';
 
 interface BasicFormProps {
     title: string;
@@ -24,26 +27,30 @@ export const BasicForm: React.FC<BasicFormProps> = ({
     descriptionPlaceholder = "Enter description"
 }) => {
     return (
-        <div>
-            <label>{titleLabel}</label>
-            <input
-                type="text"
-                value={title}
-                onChange={(e) => onTitleChange(e.target.value)}
-                placeholder={titlePlaceholder}
-                disabled={disabled}
-                style={{ width: '100%', marginBottom: '12px' }}
-            />
+        <div className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="title">{titleLabel}</Label>
+                <Input
+                    id="title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    placeholder={titlePlaceholder}
+                    disabled={disabled}
+                />
+            </div>
 
-            <label>{descriptionLabel}</label>
-            <textarea
-                value={description}
-                onChange={(e) => onDescriptionChange(e.target.value)}
-                placeholder={descriptionPlaceholder}
-                rows={3}
-                disabled={disabled}
-                style={{ width: '100%', marginBottom: '12px' }}
-            />
+            <div className="space-y-2">
+                <Label htmlFor="description">{descriptionLabel}</Label>
+                <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => onDescriptionChange(e.target.value)}
+                    placeholder={descriptionPlaceholder}
+                    rows={3}
+                    disabled={disabled}
+                />
+            </div>
         </div>
     );
 };

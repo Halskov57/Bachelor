@@ -1,6 +1,7 @@
 import React from 'react';
 import { Task } from '../types/EditFanoutTypes';
 import { BasicForm } from './BasicForm';
+import { DatePicker } from '../components/DatePicker';
 
 interface TaskFormProps {
     task: Partial<Task>;
@@ -18,7 +19,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     isTaskDueDateEnabled = true
 }) => {
     return (
-        <div>
+        <div className="space-y-4">
             <BasicForm
                 title={task.title || ''}
                 description={task.description || ''}
@@ -33,38 +34,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             
             {/* Due Date Field - conditionally rendered */}
             {isTaskDueDateEnabled && (
-                <div style={{ marginTop: '16px' }}>
-                    <label style={{
-                        display: 'block',
-                        marginBottom: '8px',
-                        fontWeight: '500',
-                        color: '#333',
-                        fontSize: '0.9rem'
-                    }}>
-                        Due Date
-                    </label>
-                    <input
-                        type="date"
-                        value={task.dueDate || ''}
-                        onChange={(e) => {
-                            onTaskChange('dueDate', e.target.value);
-                        }}
-                        disabled={disabled}
-                        style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            border: '2px solid #e0e6ed',
-                            fontSize: '0.9rem',
-                            outline: 'none',
-                            transition: 'border-color 0.2s',
-                            cursor: disabled ? 'not-allowed' : 'pointer',
-                            boxSizing: 'border-box'
-                        }}
-                        onFocus={(e) => !disabled && (e.target.style.borderColor = '#022AFF')}
-                        onBlur={(e) => e.target.style.borderColor = '#e0e6ed'}
-                    />
-                </div>
+                <DatePicker
+                    value={task.dueDate || ''}
+                    onChange={(value) => onTaskChange('dueDate', value)}
+                    disabled={disabled}
+                    label="Due Date"
+                />
             )}
         </div>
     );

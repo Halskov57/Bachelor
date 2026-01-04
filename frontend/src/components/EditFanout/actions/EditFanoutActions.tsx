@@ -52,7 +52,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                     onClick={onClose}
                     disabled={loading}
                     style={{
-                        padding: '8px 16px',
+                        padding: '6px 12px',
+                        fontSize: '13px',
                         backgroundColor: '#f5f5f5',
                         border: '1px solid #ddd',
                         borderRadius: '4px',
@@ -67,7 +68,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                     onClick={onSave} 
                     disabled={loading}
                     style={{
-                        padding: '8px 16px',
+                        padding: '6px 12px',
+                        fontSize: '13px',
                         backgroundColor: '#0066cc',
                         color: 'white',
                         border: 'none',
@@ -88,13 +90,13 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                         onClick={onAddChild}
                         disabled={loading}
                         style={{
-                            padding: '8px 16px',
+                            padding: '6px 12px',
+                            fontSize: '13px',
                             backgroundColor: '#ffb800',
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '14px',
                             whiteSpace: 'nowrap'
                         }}
                     >
@@ -107,7 +109,8 @@ export const EditFanoutActions: React.FC<EditFanoutActionsProps> = ({
                         onClick={onDelete}
                         disabled={loading}
                         style={{
-                            padding: '8px 16px',
+                            padding: '6px 12px',
+                            fontSize: '13px',
                             backgroundColor: '#dc3545',
                             color: 'white',
                             border: 'none',

@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ApolloProvider } from "@apollo/client/react";
 import { client } from './utils/apolloClientSetup';
 import { ToastProvider } from './utils/toastContext';
 import { connectionMonitor } from './utils/connectionMonitor';
+import { MainLayout } from './components/layout/MainLayout';
 import Login from './pages/Login';
-import Header from './components/Header';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
 import Admin from './pages/Admin';
@@ -13,8 +13,6 @@ import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
 const AppContent: React.FC = () => {
-  const location = useLocation();
-
   // Start connection monitoring when app loads
   useEffect(() => {
     connectionMonitor.startMonitoring();
@@ -25,38 +23,44 @@ const AppContent: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>
-      <Header />
-      <main style={{ flex: 1, position: 'relative', width: '100%' }}>
-        {location.pathname !== '/project' && (
-          <div style={{
-            position: 'fixed',
-            zIndex: 0,
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            pointerEvents: 'none',
-          }}>
-          </div>
-        )}
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/project" element={
-            <PrivateRoute>
-              <Project />
-            </PrivateRoute>
-          } />
-          <Route path="/admin" element={
+    <>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        
+        {/* Routes with MainLayout (sidebar) */}
+        <Route
+          path="/dashboard"
+          element={
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
             <PrivateRoute requiredRole="ADMIN">
-              <Admin />
+              <MainLayout>
+                <Admin />
+              </MainLayout>
             </PrivateRoute>
-          } />
-        </Routes>
-      </main>
-    </div>
+          }
+        />
+        
+        {/* Project route with MainLayout */}
+        <Route
+          path="/project"
+          element={
+            <PrivateRoute>
+              <MainLayout>
+                <Project />
+              </MainLayout>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </>
   );
 };
 

@@ -42,31 +42,7 @@ const PDFExportButton: React.FC<PDFExportButtonProps> = ({
     <button
       onClick={handleExport}
       disabled={isExporting || tasks.length === 0}
-      style={{
-        padding: '8px 16px',
-        backgroundColor: '#022AFF',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: isExporting || tasks.length === 0 ? 'not-allowed' : 'pointer',
-        fontSize: '0.9rem',
-        fontWeight: '500',
-        opacity: isExporting || tasks.length === 0 ? 0.6 : 1,
-        transition: 'all 0.2s',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      }}
-      onMouseEnter={(e) => {
-        if (!isExporting && tasks.length > 0) {
-          (e.target as HTMLElement).style.backgroundColor = '#001a66';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isExporting && tasks.length > 0) {
-          (e.target as HTMLElement).style.backgroundColor = '#022AFF';
-        }
-      }}
+      className="px-4 py-2 bg-primary text-primary-foreground rounded-md cursor-pointer text-sm font-medium transition-all duration-200 flex items-center gap-1.5 hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
     >
       {isExporting ? 'Generating PDF...' : 'Export as PDF'}
     </button>

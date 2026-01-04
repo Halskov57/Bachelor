@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { getApiUrl } from '../config/environment';
 import { fetchWithRetry } from '../utils/fetchWithRetry';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
 
 const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
@@ -143,218 +154,177 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        background: 'rgba(230,230,240,0.92)',
-        borderRadius: '18px',
-        padding: '35px',
-        maxWidth: '420px',
-        minWidth: '340px',
-        margin: 'auto',
-        boxShadow: '0 8px 32px 0 rgba(2,42,255,0.18), 0 0 32px 8px rgba(255,255,255,0.10)',
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        border: '1px solid rgba(80, 80, 160, 0.12)',
-        color: '#222',
-        backdropFilter: 'blur(12px)',
-      }}
-    >
-      <h2
-        style={{
-          textAlign: 'center',
-          marginBottom: '32px',
-          color: '#022AFF',
-          fontWeight: 800,
-          letterSpacing: 1,
-          fontSize: '2.5rem',
-        }}
-      >
-        {mode === 'login' ? 'Login' : 'Create Account'}
-      </h2>
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '28px', gap: '18px' }}>
-        <span style={{ color: mode === 'login' ? '#022AFF' : '#888', fontWeight: 600, fontSize: '1.1rem' }}>Login</span>
-        <label style={{ display: 'inline-block', position: 'relative', width: '54px', height: '30px' }}>
-          <input
-            type="checkbox"
-            checked={mode === 'create'}
-            onChange={() => {
-              setMode(mode === 'login' ? 'create' : 'login');
-              setError('');
-              setPassword('');
-              setPassword2('');
-            }}
-            style={{ opacity: 0, width: 0, height: 0 }}
-          />
-          <span
-            style={{
-              position: 'absolute',
-              cursor: 'pointer',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: mode === 'create' ? '#022AFF' : '#ccc',
-              borderRadius: '14px',
-              transition: 'background 0.2s',
-            }}
-          />
-          <span
-            style={{
-              position: 'absolute',
-              left: mode === 'create' ? '28px' : '4px',
-              top: '4px',
-              width: '20px',
-              height: '20px',
-              background: '#fff',
-              borderRadius: '50%',
-              boxShadow: '0 2px 6px rgba(2,42,255,0.12)',
-              transition: 'left 0.2s',
-              border: '1px solid #aaa',
-            }}
-          />
-        </label>
-        <span style={{ color: mode === 'create' ? '#022AFF' : '#888', fontWeight: 600, fontSize: '1.1rem' }}>Create</span>
-      </div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={e => setUsername(e.target.value)}
-          style={{
-            width: '100%',
-            marginBottom: '16px',
-            paddingLeft: '12px',
-            paddingRight: '12px',
-            paddingTop: '12px',
-            paddingBottom: '12px',
-            borderRadius: '8px',
-            border: '1px solid #022AFF',
-            background: 'rgba(240,240,255,0.95)',
-            color: '#222',
-            fontSize: '1.05rem',
-            boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
-            boxSizing: 'border-box', // <-- add this line
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={{
-            width: '100%',
-            marginBottom: mode === 'create' ? '16px' : '28px',
-            paddingLeft: '12px',
-            paddingRight: '12px',
-            paddingTop: '12px',
-            paddingBottom: '12px',
-            borderRadius: '8px',
-            border: '1px solid #022AFF',
-            background: 'rgba(240,240,255,0.95)',
-            color: '#222',
-            fontSize: '1.05rem',
-            boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
-            boxSizing: 'border-box', // <-- add this line
-          }}
-        />
-        {mode === 'create' && (
-          <>
-            <input
-              type="password"
-              placeholder="Repeat Password"
-              value={password2}
-              onChange={e => setPassword2(e.target.value)}
-              style={{
-                width: '100%',
-                marginBottom: '12px',
-                paddingLeft: '12px',
-                paddingRight: '12px',
-                paddingTop: '12px',
-                paddingBottom: '12px',
-                borderRadius: '8px',
-                border: '1px solid #022AFF',
-                background: 'rgba(240,240,255,0.95)',
-                color: '#222',
-                fontSize: '1.05rem',
-                boxShadow: '0 2px 8px rgba(2,42,255,0.07)',
-                boxSizing: 'border-box', // <-- add this line
-              }}
-            />
-            <div
-              style={{
-                fontSize: '0.85rem',
-                color: '#666',
-                marginBottom: '20px',
-                padding: '8px 12px',
-                background: 'rgba(2,42,255,0.05)',
-                borderRadius: '6px',
-                border: '1px solid rgba(2,42,255,0.15)',
-              }}
-            >
-              <strong>Password requirements:</strong>
-              <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px' }}>
-                <li style={{ color: password.length >= 8 ? '#388e3c' : '#666' }}>
-                  At least 8 characters
-                </li>
-                <li style={{ color: /[A-Z]/.test(password) ? '#388e3c' : '#666' }}>
-                  At least one uppercase letter
-                </li>
-                <li style={{ color: /\d/.test(password) ? '#388e3c' : '#666' }}>
-                  At least one number
-                </li>
-              </ul>
-            </div>
-          </>
-        )}
-        {error && (
-          <div
-            style={{
-              color: error.includes('Account created successfully') ? '#388e3c' : '#d32f2f', // green for success, red for error
-              marginBottom: '12px',
-              textAlign: 'center',
-              fontWeight: 600,
-            }}
-          >
-            {error}
+    <div className="flex min-h-screen">
+      {/* Left side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#8B7355] via-[#A0826D] to-[#C9B097] p-12 text-white flex-col justify-between">
+        <div>
+          <h1 className="text-4xl font-bold mb-4">Project Manager</h1>
+          <p className="text-xl text-white/90">
+            Organize your work. Track your progress. Achieve your goals.
+          </p>
+        </div>
+        
+        <div className="space-y-6">
+          <div className="rounded-lg bg-white/10 p-6 backdrop-blur-sm border border-white/20">
+            <p className="text-lg italic mb-2">
+              "Project Management Made Simple"
+            </p>
+            <p className="text-sm text-white/70">
+              Streamline your workflow with intuitive project organization
+            </p>
           </div>
-        )}
-        <button
-          type="submit"
-          disabled={mode === 'create' && (cooldownSeconds > 0 || isCreatingUser)}
-          style={{
-            width: '100%',
-            padding: '12px 0',
-            borderRadius: '8px',
-            border: 'none',
-            background: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
-              ? '#ccc' 
-              : '#022AFF',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '1.1rem',
-            boxShadow: '0 2px 8px rgba(2,42,255,0.18)',
-            marginTop: '8px',
-            cursor: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
-              ? 'not-allowed' 
-              : 'pointer',
-            opacity: mode === 'create' && (cooldownSeconds > 0 || isCreatingUser) 
-              ? 0.6 
-              : 1,
-          }}
-        >
-          {mode === 'login' 
-            ? isRetrying ? 'Connecting...' : 'Login'
-            : isCreatingUser 
-              ? isRetrying ? 'Connecting...' : 'Creating...'
-              : cooldownSeconds > 0 
-                ? `Wait ${cooldownSeconds}s`
-                : 'Create Account'
-          }
-        </button>
-      </form>
+          
+          {/* Placeholder for logo/image */}
+          <div className="rounded-lg bg-white/5 p-12 backdrop-blur-sm border border-white/10 flex items-center justify-center min-h-[200px]">
+            <p className="text-white/50 text-center">
+              Logo / Image <br /> Placeholder
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-[#F5F1E8]">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">
+              {mode === 'login' ? 'Welcome back' : 'Create account'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {mode === 'login'
+                ? 'Enter your credentials to access your account'
+                : 'Fill in the details to create a new account'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <span className={`text-sm font-semibold ${mode === 'login' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Login
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={mode === 'create'}
+                  onChange={() => {
+                    setMode(mode === 'login' ? 'create' : 'login');
+                    setError('');
+                    setPassword('');
+                    setPassword2('');
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-14 h-7 bg-muted peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+              <span className={`text-sm font-semibold ${mode === 'create' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Create
+              </span>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {mode === 'create' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="password2">Repeat Password</Label>
+                    <Input
+                      id="password2"
+                      type="password"
+                      placeholder="Repeat your password"
+                      value={password2}
+                      onChange={e => setPassword2(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
+                    <p className="font-semibold mb-2">Password requirements:</p>
+                    <ul className="space-y-1 ml-4">
+                      <li className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                        ✓ At least 8 characters
+                      </li>
+                      <li className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                        ✓ At least one uppercase letter
+                      </li>
+                      <li className={/\d/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                        ✓ At least one number
+                      </li>
+                    </ul>
+                  </div>
+                </>
+              )}
+
+              {error && (
+                <div
+                  className={`rounded-lg p-3 text-sm font-semibold text-center ${
+                    error.includes('Account created successfully')
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-destructive/10 text-destructive border border-destructive/20'
+                  }`}
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={mode === 'create' && (cooldownSeconds > 0 || isCreatingUser)}
+                className="w-full"
+                size="lg"
+              >
+                {mode === 'login' ? (
+                  isRetrying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    'Login'
+                  )
+                ) : isCreatingUser ? (
+                  isRetrying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  )
+                ) : cooldownSeconds > 0 ? (
+                  `Wait ${cooldownSeconds}s`
+                ) : (
+                  'Create Account'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -115,15 +115,6 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    window.location.href = '/dashboard';
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
-  };
-
   const loadUsers = async () => {
     try {
       setUserLoading(true);
@@ -266,84 +257,12 @@ const Admin: React.FC = () => {
   const filteredUsers = getFilteredUsers();
 
   return (
-    <>
-      {/* Top navigation bar */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '60px',
-          background: '#022AFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 20px',
-          zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}
-      >
-        <button
-          onClick={handleBackToDashboard}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          ← Back to Dashboard
-        </button>
-
-        <h2 style={{
-          color: '#fff',
-          margin: 0,
-          fontWeight: 700
-        }}>
-          Admin Panel
-        </h2>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          Logout
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">
+          Admin Panel - {isUserSuperAdmin ? 'User Management & Course Configuration' : 'Course Level Configuration'}
+        </h1>
       </div>
-
-      {/* Main content */}
-      <div style={{ 
-        padding: '20px', 
-        maxWidth: '800px', 
-        margin: '0 auto', 
-        position: 'relative', 
-        zIndex: 20, 
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-        borderRadius: '8px', 
-        marginTop: '80px', 
-        marginBottom: '20px', 
-        maxHeight: 'calc(100vh - 120px)', // Restored scrollable area
-        overflowY: 'auto', // Enable scrolling
-        boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
-      }}>
-      <h1 style={{ color: '#333', marginTop: '0' }}>
-        Admin Panel - {isUserSuperAdmin ? 'User Management & Course Configuration' : 'Course Level Configuration'}
-      </h1>
       
       {/* User Management Section - Only for SuperAdmin */}
       {isUserSuperAdmin && (
@@ -896,8 +815,7 @@ const Admin: React.FC = () => {
           Loading...
         </div>
       )}
-      </div>
-    </>
+    </div>
   );
 };
 

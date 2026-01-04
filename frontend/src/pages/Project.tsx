@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { ProjectTreeView, ProjectListView, UserTaskTable } from '../components/ProjectViews';
-import { isAdmin } from '../utils/jwt';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { NodeData } from '../utils/types';
 import { getGraphQLUrl } from '../config/environment';
 import { sseService, SSEEvent } from '../utils/sseService';
 
 const Project: React.FC = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
   const [project, setProject] = useState<any>(null);
   const [view, setView] = useState<'list' | 'tree' | 'users'>('list');
   const [realtimeUpdates, setRealtimeUpdates] = useState<string[]>([]);
@@ -108,8 +108,6 @@ const Project: React.FC = () => {
           setProject(null);
           setProjectId(null);
           localStorage.removeItem('token');
-          // Use both navigation methods to ensure redirect
-          navigate('/login', { replace: true });
           window.location.href = '/login';
           return;
         }
@@ -122,17 +120,16 @@ const Project: React.FC = () => {
       } else if (!result.errors) {
         // Project not found or other issue
         localStorage.removeItem('token');
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       // On any error, redirect to login
       setProject(null);
       setProjectId(null);
       localStorage.removeItem('token');
-      navigate('/login', { replace: true });
       window.location.href = '/login';
     }
-  }, [navigate, setProject, setProjectId]);
+  }, [setProject, setProjectId]);
 
   // Listen for backend reconnection events
   useEffect(() => {
@@ -375,7 +372,7 @@ const Project: React.FC = () => {
 
   useEffect(() => {
     fetchProjectById();
-  }, [fetchProjectById]);
+  }, [fetchProjectById, location.search]);
 
 function toTreeData(project: any): NodeData | null {
   if (!project || !(project.title || project.name)) return null;
@@ -427,270 +424,57 @@ function toTreeData(project: any): NodeData | null {
     return tree ? [tree] : [];
   }, [project]);
 
-  const handleBackToDashboard = () => {
-    window.location.href = '/dashboard';
-  };
-
-  const handleAdminPage = () => {
-    window.location.href = '/admin';
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
-  };
-
   if (!project) return <div>Loading...</div>;
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      overflow: 'visible',
-      paddingBottom: '40px'
-    }}>
-      {/* Top navigation bar */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '60px',
-          background: '#022AFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 20px',
-          zIndex: 1000,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}
-      >
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={handleBackToDashboard}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              color: '#fff',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            ← Back to Dashboard
-          </button>
-
-          {isAdmin() && (
-            <button
-              onClick={handleAdminPage}
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                border: '1px solid rgba(255,255,255,0.3)',
-                color: '#fff',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              ⚙️ Admin
-            </button>
-          )}
-        </div>
-
-        <h2 style={{
-          color: '#ffffffff',
-          margin: 0,
-          fontWeight: 700
-        }}>
-          {project.title || project.name}
-        </h2>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 600
-          }}
-        >
-          Logout
-        </button>
+    <div className="space-y-3">
+      {/* Project title header with real-time status */}
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">{project.title || project.name}</h1>
+        {projectId && (
+          <div className="flex items-center gap-1.5 bg-green-50 px-2 py-0.5 rounded-full text-xs text-green-700">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            Real-time
+          </div>
+        )}
       </div>
 
       {/* Real-time notifications */}
-      <div style={{
-        position: 'fixed',
-        top: '80px',
-        right: '20px',
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        pointerEvents: 'none'
-      }}>
+      <div className="fixed top-20 right-5 z-[1000] flex flex-col gap-2 pointer-events-none">
         {realtimeUpdates.map((update, index) => (
           <div
             key={index}
-            style={{
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              fontSize: '14px',
-              opacity: 0.9,
-              animation: 'slideIn 0.3s ease-out'
-            }}
+            className="bg-green-500 text-white px-4 py-2 rounded shadow-lg text-sm opacity-90 animate-in slide-in-from-right"
           >
             🔔 {update}
           </div>
         ))}
       </div>
 
-      {/* Connection status indicator */}
-      {projectId && (
-        <div style={{
-          position: 'fixed',
-          top: '80px',
-          left: '20px',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          backgroundColor: '#e8f5e8',
-          padding: '4px 12px',
-          borderRadius: '16px',
-          fontSize: '12px',
-          color: '#2e7d32'
-        }}>
-          <span style={{ 
-            width: '8px', 
-            height: '8px', 
-            backgroundColor: '#4caf50', 
-            borderRadius: '50%',
-            animation: 'pulse 2s infinite'
-          }}></span>
-          Real-time enabled
-        </div>
-      )}
+      <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'tree' | 'users')} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-sidebar/50">
+          <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsTrigger value="tree">Tree View</TabsTrigger>
+          <TabsTrigger value="users">Task Distribution</TabsTrigger>
+        </TabsList>
 
-      {/* Add top margin to account for fixed header */}
-      <div style={{ 
-        marginTop: '80px', 
-        paddingBottom: '40px',
-        minHeight: 'calc(100vh - 80px)'
-      }}>
-        <div
-        style={{
-          textAlign: 'center',
-          marginTop: '24px',
-          position: 'relative',
-          zIndex: 10,
-          background: 'rgba(230,230,240,0.96)',
-          padding: '16px 0',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(2,42,255,0.08)',
-          maxWidth: 600,
-          marginLeft: 'auto',
-          marginRight: 'auto'
-        }}
-      >
-        <button
-          onClick={() => setView('list')}
-          style={{
-            marginRight: '12px',
-            padding: '8px 18px',
-            borderRadius: '8px',
-            border: view === 'list' ? '2px solid #022AFF' : '1px solid #aaa',
-            background: view === 'list' ? '#022AFF' : '#fff',
-            color: view === 'list' ? '#fff' : '#022AFF',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          List View
-        </button>
-        <button
-          onClick={() => setView('tree')}
-          style={{
-            marginRight: '12px',
-            padding: '8px 18px',
-            borderRadius: '8px',
-            border: view === 'tree' ? '2px solid #022AFF' : '1px solid #aaa',
-            background: view === 'tree' ? '#022AFF' : '#fff',
-            color: view === 'tree' ? '#fff' : '#022AFF',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          Tree View
-        </button>
-        <button
-          onClick={() => setView('users')}
-          style={{
-            padding: '8px 18px',
-            borderRadius: '8px',
-            border: view === 'users' ? '2px solid #022AFF' : '1px solid #aaa',
-            background: view === 'users' ? '#022AFF' : '#fff',
-            color: view === 'users' ? '#fff' : '#022AFF',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          Task Distribution
-        </button>
-      </div>
-      
-      <div style={{ textAlign: 'center', marginTop: '10px', position: 'relative', zIndex: 2, overflow: 'visible' }}>
-        {view === 'list' ? (
+        <TabsContent value="list" className="mt-3">
           <ProjectListView project={project} fetchProjectById={fetchProjectById} />
-        ) : view === 'tree' ? (
+        </TabsContent>
+
+        <TabsContent value="tree" className="mt-3">
           <ProjectTreeView
             key={project.id || project._id || project.title}
             treeData={treeData}
             project={project}
             fetchProjectById={fetchProjectById}
           />
-        ) : (
+        </TabsContent>
+
+        <TabsContent value="users" className="mt-3">
           <UserTaskTable project={project} />
-        )}
-      </div>
-      </div> {/* Close the marginTop div */}
-
-      {/* CSS for animations */}
-      <style>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 0.9;
-          }
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-      `}</style>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

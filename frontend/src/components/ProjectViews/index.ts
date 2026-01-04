@@ -1,6 +1,7 @@
 // Barrel exports for ProjectViews
 export { default as ProjectTreeView } from './views/ProjectTreeViewV2';
-export { default as ProjectListView } from './views/ProjectListView';
+export { default as ProjectListView } from './views/ProjectListViewNew';
+export { default as ProjectListViewOld } from './views/ProjectListView';
 export { default as UserTaskTable } from './components/UserTaskTable';
 export { useProjectViewState } from './hooks/useProjectViewState';
 export { ProjectViewModal } from './components/ProjectViewModal';

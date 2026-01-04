@@ -14,7 +14,10 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { NodeData } from '../../../utils/types';
 import { useProjectViewState } from '../hooks/useProjectViewState';
-import { ProjectViewModal } from '../components/ProjectViewModal';
+import { X } from 'lucide-react';
+import { Button } from '../../ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import EditFanout from '../../EditFanout';
 import { getStatusColor, getStatusBackgroundColor, getStatusDisplayName } from '../utils/nodeHelpers';
 
 // Add CSS animations for smooth expansion
@@ -280,20 +283,24 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
   project 
 }) => {
   const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
-
-  const {
-    editNode,
-    createNode,
-    handleEditNode,
-    handleCloseEdit,
-    handleCloseCreate,
-    handleSave,
-    handleSaveCreate,
-  } = useProjectViewState(fetchProjectById);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [currentNode, setCurrentNode] = useState<any>(null);
 
   const handleNodeClick = useCallback((node: NodeData) => {
-    handleEditNode(node);
-  }, [handleEditNode]);
+    setCurrentNode(node);
+    if (!editSheetOpen) {
+      setEditSheetOpen(true);
+    }
+  }, [editSheetOpen]);
+
+  const handleSheetClose = () => {
+    setEditSheetOpen(false);
+    setCurrentNode(null);
+  };
+
+  const handleSaveNode = () => {
+    fetchProjectById();
+  };
 
   const handleToggleNode = useCallback((nodeId: string) => {
     setCollapsedNodes(prev => {
@@ -475,27 +482,19 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
   }
 
   return (
-    <div style={{
-      background: 'rgba(230,230,240,0.96)',
-      borderRadius: 12,
-      padding: '20px',
-      minHeight: '600px',
-      width: '100%',
-      height: '600px',
-      position: 'relative',
-      overflow: 'visible',
-    }}>
+    <div className="flex gap-4">
+      <div className="flex-1" style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '12px' }}>
       <div style={{
         marginBottom: '10px',
         textAlign: 'center'
       }}>
         <h3 style={{
-          color: '#022AFF',
+          color: '#8B7355',
           margin: 0,
           fontSize: '18px',
           fontWeight: '600'
         }}>
-          Project Tree Structure (Version 2 - ReactFlow)
+          Project Tree Structure
         </h3>
         <div style={{
           fontSize: '12px',
@@ -531,16 +530,32 @@ const ProjectTreeViewV2: React.FC<{ treeData: any, fetchProjectById: () => void,
           <Controls showInteractive={false} />
         </ReactFlow>
       </div>
+      </div>
 
-      <ProjectViewModal
-        editNode={editNode}
-        createNode={createNode}
-        project={project}
-        onCloseEdit={handleCloseEdit}
-        onCloseCreate={handleCloseCreate}
-        onSave={handleSave}
-        onSaveCreate={handleSaveCreate}
-      />
+      {/* Edit Panel */}
+      {editSheetOpen && currentNode && (
+        <Card className="w-[400px] max-h-[calc(100vh-12rem)] flex flex-col">
+          <CardHeader className="pb-3 flex flex-row items-center justify-end p-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSheetClose}
+              className="h-7 w-7 hover:bg-muted"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto pt-0">
+            <EditFanout
+              mode="edit"
+              node={currentNode}
+              project={project}
+              onClose={handleSheetClose}
+              onSave={handleSaveNode}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
